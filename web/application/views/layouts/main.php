@@ -22,15 +22,28 @@ button { margin-top: 18px; padding: 10px 18px; border: 0; border-radius: 7px; ba
 button:hover { background: #245ad1; }
 .flash { padding: 10px 14px; border-radius: 7px; margin-bottom: 16px; font-size: 14px; }
 .flash.err { background: #fdecec; border: 1px solid #f5b5b5; color: #a12626; }
-ul { padding-left: 18px; } code { background: #eef0f3; padding: 1px 5px; border-radius: 4px; }
+.flash.ok  { background: #eaf7ee; border: 1px solid #b6e0c4; color: #1f7a3d; }
+ul { padding-left: 18px; } code { background: #eef0f3; padding: 1px 5px; border-radius: 4px; word-break: break-all; }
 .muted { color: #6b7280; font-size: 13px; margin-top: 20px; }
 a { color: #2f6feb; }
+.wrap.wide { max-width: 1000px; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 8px 0; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #e8eaee; vertical-align: top; }
+th { color: #6b7280; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: .04em; }
+.tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.tag.on { background: #eaf7ee; color: #1f7a3d; } .tag.off { background: #f1f2f4; color: #6b7280; }
+.btn-sm { padding: 5px 12px; font-size: 13px; margin: 0; }
+.btn-ghost { background: #eef0f3; color: #1c1e21; } .btn-ghost:hover { background: #e2e4e8; }
+form.inline { display: inline; margin: 0; }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="wrap<?= ! empty($wide) ? ' wide' : '' ?>">
 <?php if ($this->session->flashdata('error')): ?>
 	<div class="flash err"><?= html_escape($this->session->flashdata('error')) ?></div>
+<?php endif; ?>
+<?php if ($this->session->flashdata('ok')): ?>
+	<div class="flash ok"><?= html_escape($this->session->flashdata('ok')) ?></div>
 <?php endif; ?>
 <?php $this->load->view($_content); ?>
 </div>
