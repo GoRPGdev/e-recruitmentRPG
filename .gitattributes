@@ -1,0 +1,10 @@
+# Normalisasi baris. Penting untuk migrasi: tools/migrate.php meng-hash isi
+# file (sha256) untuk deteksi "file berubah setelah dijalankan". Tanpa ini,
+# checkout di Windows (CRLF) vs LF bisa bikin hash beda antar mesin.
+*.sql   text eol=lf
+*.php   text eol=lf
+*.md    text eol=lf
+*.json  text eol=lf
+*.html  text eol=lf
+*.css   text eol=lf
+*.js    text eol=lf
