@@ -18,6 +18,7 @@ web/application/cache/*
 # --- Editor & OS ---
 .vscode/
 .idea/
+.history/
 .DS_Store
 Thumbs.db
 desktop.ini

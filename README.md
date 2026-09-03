@@ -5,6 +5,9 @@ CodeIgniter 3 · PHP 7.4 · SQL Server 2008 R2 · Database-First.
 
 ## Mulai dari mana
 
+Setup mesin dev dari nol (PHP, driver, DB, gerbang Fase 0): ikuti **`SETUP.md`**.
+Ringkasnya:
+
 1. **Baca dulu** — `CLAUDE.md` (aturan main & batasan T-SQL) dan
    `docs/RENCANA_DEVELOPMENT.md` (fase, checklist, pembagian tugas).
 2. **Siapkan koneksi**
