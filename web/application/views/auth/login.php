@@ -5,7 +5,7 @@
 
 	<?= validation_errors('<div class="flash err">', '</div>') ?>
 
-	<form method="post" action="<?= site_url('auth/login') ?>">
+	<?= form_open(site_url('auth/login')) ?>
 		<label for="username">Username</label>
 		<input type="text" id="username" name="username" value="<?= set_value('username') ?>" autocomplete="username" autofocus required>
 
@@ -13,5 +13,5 @@
 		<input type="password" id="password" name="password" autocomplete="current-password" required>
 
 		<button type="submit">Masuk</button>
-	</form>
+	<?= form_close() ?>
 </main>
