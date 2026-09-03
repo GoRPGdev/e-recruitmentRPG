@@ -27,5 +27,8 @@
 		<button type="submit">Simpan</button>
 	<?= form_close() ?>
 
-	<p class="muted">Total submit tercatat: <strong><?= (int) $posting['jumlah_submit'] ?></strong></p>
+	<p class="muted">
+		Total submit sistem: <strong><?= (int) $posting['jumlah_submit'] ?></strong> &middot;
+		<a href="<?= site_url('postings/stats/' . (int) $posting['id_posting']) ?>">Input statistik portal (manual)</a>
+	</p>
 </main>

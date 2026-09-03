@@ -162,6 +162,34 @@ class Posting_model extends CI_Model
 
 	/* ================= dokumen aktif (untuk dropdown upload) ======= */
 
+	/* ================= JOB_POSTING_STATS ========================== */
+
+	public function get_stats($id_posting)
+	{
+		$q = $this->db->query('SELECT * FROM dbo.JOB_POSTING_STATS WHERE id_posting = ?', array((int) $id_posting));
+		$row = $q->row_array(); $q->free_result();
+		return $row ? $row : NULL;
+	}
+
+	public function save_stats($id_posting, $masuk, $sesuai, $tidak, $id_user)
+	{
+		$exists = $this->get_stats($id_posting);
+		if ($exists) {
+			$this->db->query(
+				'UPDATE dbo.JOB_POSTING_STATS
+				 SET jumlah_pelamar_masuk = ?, cv_sesuai = ?, cv_tidak_sesuai = ?,
+				     diperbarui_pada = GETDATE(), diperbarui_oleh = ?
+				 WHERE id_posting = ?',
+				array((int) $masuk, (int) $sesuai, (int) $tidak, (int) $id_user, (int) $id_posting));
+		} else {
+			$this->db->query(
+				'INSERT INTO dbo.JOB_POSTING_STATS
+				   (id_posting, jumlah_pelamar_masuk, cv_sesuai, cv_tidak_sesuai, diperbarui_pada, diperbarui_oleh)
+				 VALUES (?, ?, ?, ?, GETDATE(), ?)',
+				array((int) $id_posting, (int) $masuk, (int) $sesuai, (int) $tidak, (int) $id_user));
+		}
+	}
+
 	public function active_documents()
 	{
 		$q = $this->db->query("SELECT id_dokumen, nama_dokumen, tingkat_sensitif

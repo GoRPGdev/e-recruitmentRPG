@@ -68,6 +68,31 @@ class Postings extends Secured_Controller
 		));
 	}
 
+	public function stats($id_posting = NULL)
+	{
+		$posting = $id_posting ? $this->pm->get_posting($id_posting) : NULL;
+		if ( ! $posting) {
+			show_404();
+		}
+		if ($this->input->method() === 'post') {
+			$this->pm->save_stats(
+				$id_posting,
+				(int) $this->input->post('jumlah_pelamar_masuk'),
+				(int) $this->input->post('cv_sesuai'),
+				(int) $this->input->post('cv_tidak_sesuai'),
+				(int) $this->auth_user['id_user']
+			);
+			$this->session->set_flashdata('ok', 'Statistik posting disimpan.');
+			redirect('postings/stats/' . (int) $id_posting);
+		}
+		$this->load->view('layouts/main', array(
+			'title'    => 'Statistik: ' . $posting['nama_posisi'],
+			'_content' => 'postings/stats',
+			'posting'  => $posting,
+			'stats'    => $this->pm->get_stats($id_posting),
+		));
+	}
+
 	public function tokens($id_lamaran = NULL)
 	{
 		$id_lamaran = (int) $id_lamaran;

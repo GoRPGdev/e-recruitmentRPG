@@ -67,3 +67,17 @@ menolak INSERT/UPDATE kalau sesi `SET QUOTED_IDENTIFIER OFF`.
 | `fn_NormalisasiWA` | Intake | scalar UDF; `0812…`/`+62…`/`62 …` → `62812…` |
 | `sp_GenerateApplicationStages` | Flow Engine | snapshot `M_FLOW_STAGE` → `APPLICATION_STAGES` (idempotent) |
 | `sp_SubmitApplication` | Intake | dedupe WA→email→hash CV, snapshot flow, buat lamaran + tahap |
+| `sp_CreateRequisition` | Requisition | buat MPR (Draft), snapshot pemohon, resolve flow |
+| `sp_SubmitToBOD` | Requisition | Draft→Menunggu_BOD, beri no `MPR/YYYY/MM/NNN`, buka putaran approval |
+| `sp_RecordApproval` | Requisition | catat keputusan BOD → status_req (Sourcing / Draft) |
+| `sp_CreatePosting` | Requisition | buat `JOB_POSTINGS` (slug NULL, form_aktif 0); Approved→Sourcing |
+| `sp_AdvanceStage` | Flow Engine | baca `M_REMARKS.efek_status` → status tahap + `status_global` + next stage + fill rate + history |
+| `sp_LogContact` | Flow Engine | `APPLICATION_CONTACTS`; auto `Unreachable` di batas `maks_upaya_kontak`, reversible |
+| `sp_GetPipeline` | Flow Engine | read-only; 1 query semua tahap 1 requisition (di-group di PHP) |
+| `sp_BuildFunnelHarian` | Report | isi `RPT_FUNNEL_HARIAN` per tanggal (job `tools/build-funnel.php`) |
+| `sp_SavePosisi` / `sp_TogglePosisi` | Master Data | CRUD + soft delete posisi |
+| `sp_SaveFlow` | Flow Builder | tambah/ubah header `M_FLOW` |
+| `sp_SaveFlowStage` | Flow Builder | ADD / UPDATE / REMOVE / MOVE tahap dalam flow, bump `versi` |
+| `sp_CloneFlow` | Flow Builder | "simpan sebagai template baru" (salin + `id_flow_induk`, versi 1) |
+| `sp_SaveRemark` | Flow Builder | CRUD `M_REMARKS` (efek_status dijaga CHECK) |
+| `sp_InsertAdHocStage` | Flow Engine | sisip tahap ke 1 lamaran (`is_sisipan`, renumber `urutan` 1 transaksi) |
