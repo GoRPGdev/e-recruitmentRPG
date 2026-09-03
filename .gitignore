@@ -1,0 +1,33 @@
+# --- Rahasia & konfigurasi lokal ---
+tools/koneksi.local.php
+web/application/config/database.php
+web/application/config/config.php
+.env
+*.local.php
+
+# --- File yang diunggah kandidat (JANGAN pernah masuk Git) ---
+storage/
+uploads/
+
+# --- Log & cache ---
+web/application/logs/*.php
+web/application/cache/*
+!web/application/cache/index.html
+*.log
+
+# --- Editor & OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Dependency ---
+vendor/
+node_modules/
+
+# --- Output migrasi lokal ---
+tools/out/
+
+# Claude Code lokal
+.claude/settings.local.json
