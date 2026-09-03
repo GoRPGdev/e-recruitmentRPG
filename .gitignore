@@ -36,3 +36,6 @@ tools/out/
 
 # Claude Code lokal
 .claude/settings.local.json
+
+# scratch uji lokal
+_*

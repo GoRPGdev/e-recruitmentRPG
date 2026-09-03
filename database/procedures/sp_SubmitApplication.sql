@@ -59,6 +59,8 @@ CREATE PROCEDURE dbo.sp_SubmitApplication
     @gaji_diharapkan     DECIMAL(18,2) = NULL,
     -- dedupe CV
     @cv_hash             CHAR(64)     = NULL,
+    -- jejak import (IMPORT_FILE)
+    @id_import_batch     INT          = NULL,
     -- output
     @id_lamaran          INT OUTPUT,
     @id_kandidat         INT OUTPUT,
@@ -189,10 +191,10 @@ BEGIN
             /* -- 6. APPLICATIONS ------------------------------------- */
             INSERT INTO dbo.APPLICATIONS
                 (id_kandidat, id_req, id_posting, id_flow, flow_versi, status_global,
-                 intake_method, id_channel, tanggal_lamar)
+                 intake_method, id_channel, id_import_batch, tanggal_lamar)
             VALUES
                 (@id_kandidat, @id_req, @id_posting, @id_flow, @flow_versi, 'In_Progress',
-                 @intake_method, @id_channel, CAST(GETDATE() AS DATE));
+                 @intake_method, @id_channel, @id_import_batch, CAST(GETDATE() AS DATE));
 
             SET @id_lamaran = SCOPE_IDENTITY();
 

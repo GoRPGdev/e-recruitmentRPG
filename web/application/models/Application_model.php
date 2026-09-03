@@ -67,7 +67,7 @@ class Application_model extends CI_Model
 	 *   status_pernikahan, kontak_darurat_nama, kontak_darurat_telp, kontak_darurat_hub,
 	 *   consent_versi, setuju_talent_pool, riwayat_penyakit, consent_kesehatan,
 	 *   perusahaan_terakhir, jabatan_terakhir, periode_kerja, gaji_terakhir,
-	 *   gaji_diharapkan, cv_hash
+	 *   gaji_diharapkan, cv_hash, id_import_batch
 	 *
 	 * @return array  ['id_lamaran','id_kandidat','is_kandidat_baru']
 	 * @throws RuntimeException  pesan dari RAISERROR SP
@@ -112,6 +112,7 @@ class Application_model extends CI_Model
 			$g('gaji_terakhir'),
 			$g('gaji_diharapkan'),
 			$g('cv_hash'),
+			$g('id_import_batch'),
 			array(&$id_lamaran,  SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
 			array(&$id_kandidat, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
 			array(&$is_baru,     SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
@@ -157,6 +158,48 @@ class Application_model extends CI_Model
 		$row = $q->row();
 		$q->free_result();
 		return $row ? (int) $row->id_dokumen : NULL;
+	}
+
+	/**
+	 * Requisition yang sedang menerima lamaran (untuk dropdown entry manual / import).
+	 * @param string|null $tipe 'HQ' | 'OUTLET' | NULL (semua)
+	 */
+	public function list_open_requisitions($tipe = NULL)
+	{
+		$sql = 'SELECT r.id_req, r.no_mpr, r.tipe_penempatan, r.status_req,
+		               p.nama_posisi, o.nama_outlet, o.kode_outlet
+		        FROM dbo.REQUISITIONS r
+		        JOIN dbo.M_POSISI p       ON p.id_posisi = r.id_posisi
+		        LEFT JOIN dbo.M_OUTLET o  ON o.id_outlet = r.id_outlet
+		        WHERE r.status_req NOT IN (\'Draft\',\'Terpenuhi\',\'Dibatalkan\',\'Kadaluarsa\')';
+		$bind = array();
+		if ($tipe !== NULL) {
+			$sql .= ' AND r.tipe_penempatan = ?';
+			$bind[] = (string) $tipe;
+		}
+		$sql .= ' ORDER BY r.id_req DESC';
+		$q = $this->db->query($sql, $bind);
+		$rows = $q->result_array();
+		$q->free_result();
+		return $rows;
+	}
+
+	public function list_channels()
+	{
+		$q = $this->db->query('SELECT id_channel, nama_channel FROM dbo.M_CHANNEL WHERE is_aktif = 1 ORDER BY nama_channel');
+		$rows = $q->result_array();
+		$q->free_result();
+		return $rows;
+	}
+
+	/** Catatan bebas ke timeline lamaran (mis. rencana tanggal join dari entry manual). */
+	public function add_note($id_lamaran, $teks, $id_user)
+	{
+		$this->db->query(
+			'INSERT INTO dbo.APPLICATION_HISTORY (id_lamaran, jenis_event, deskripsi, oleh_user)
+			 VALUES (?, \'CATATAN\', ?, ?)',
+			array((int) $id_lamaran, (string) $teks, (int) $id_user)
+		);
 	}
 
 	private function _sqlsrv_error()
