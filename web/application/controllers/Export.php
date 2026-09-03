@@ -1,0 +1,65 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+/**
+ * Export data ke Excel. Butuh permission EXPORT.
+ * Format: tabel HTML dengan Content-Type Excel (dibuka Excel/Sheets tanpa
+ * library tambahan). Kolom sensitif hanya ikut bila RBAC mengizinkan.
+ */
+class Export extends Secured_Controller
+{
+	public function __construct()
+	{
+		parent::__construct();
+		$this->require_permission('EXPORT');
+		$this->load->model('dashboard_model', 'dm');
+		$this->load->helper('url');
+	}
+
+	public function candidates()
+	{
+		$f = array(
+			'dari'   => $this->input->get('dari') ?: NULL,
+			'sampai' => $this->input->get('sampai') ?: NULL,
+			'posisi' => $this->input->get('posisi') ?: NULL,
+			'status' => $this->input->get('status') ?: NULL,
+			'flow'   => $this->input->get('flow') ?: NULL,
+		);
+		$perms = (array) $this->session->userdata('permissions');
+		$rows  = $this->dm->candidates_export($f, $perms);
+
+		$fname = 'kandidat_' . date('Ymd_His') . '.xls';
+		$this->output
+			->set_content_type('application/vnd.ms-excel')
+			->set_header('Content-Disposition: attachment; filename="' . $fname . '"')
+			->set_header('Cache-Control: no-store');
+
+		if ( ! $rows) {
+			$this->output->set_output('<table><tr><td>Tidak ada data.</td></tr></table>');
+			return;
+		}
+
+		$cols = array_keys($rows[0]);
+		$html = '<table border="1"><tr>';
+		foreach ($cols as $c) {
+			$html .= '<th>' . html_escape($c) . '</th>';
+		}
+		$html .= '</tr>';
+		foreach ($rows as $r) {
+			$html .= '<tr>';
+			foreach ($cols as $c) {
+				$v = $r[$c];
+				if ($v instanceof DateTime) { $v = $v->format('Y-m-d'); }
+				// paksa teks supaya nomor WA / rekening tidak jadi notasi ilmiah
+				$html .= '<td style="mso-number-format:\'\@\'">' . html_escape((string) $v) . '</td>';
+			}
+			$html .= '</tr>';
+		}
+		$html .= '</table>';
+
+		$this->output->set_output(
+			'<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body>'
+			. $html . '</body></html>'
+		);
+	}
+}

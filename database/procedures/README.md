@@ -81,3 +81,5 @@ menolak INSERT/UPDATE kalau sesi `SET QUOTED_IDENTIFIER OFF`.
 | `sp_CloneFlow` | Flow Builder | "simpan sebagai template baru" (salin + `id_flow_induk`, versi 1) |
 | `sp_SaveRemark` | Flow Builder | CRUD `M_REMARKS` (efek_status dijaga CHECK) |
 | `sp_InsertAdHocStage` | Flow Engine | sisip tahap ke 1 lamaran (`is_sisipan`, renumber `urutan` 1 transaksi) |
+| `sp_Dashboard` | Report | read-only; 4 result set (metrik / funnel / aging SLA / waktu) dengan 10 filter opsional |
+| `sp_VerifyDocument` | Dokumen | `CANDIDATE_DOCUMENTS` Proses → Done/Ditolak + history |

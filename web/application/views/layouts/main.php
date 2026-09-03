@@ -42,10 +42,12 @@ form.inline { display: inline; margin: 0; }
 <nav style="background:#fff; border-bottom:1px solid #e2e4e8; padding:10px 20px; font-size:13.5px">
 	<div style="max-width:1000px; margin:0 auto; display:flex; gap:14px; flex-wrap:wrap; align-items:center">
 		<a href="<?= site_url('dashboard') ?>" style="font-weight:700; text-decoration:none">E-Rec RPG</a>
+		<a href="<?= site_url('dashboard') ?>">Dashboard</a>
 		<a href="<?= site_url('requisitions') ?>">MPR</a>
 		<a href="<?= site_url('postings') ?>">Link Form</a>
 		<a href="<?= site_url('manual') ?>">Entry Manual</a>
 		<a href="<?= site_url('import') ?>">Import</a>
+		<a href="<?= site_url('documents') ?>">Berkas</a>
 		<a href="<?= site_url('master') ?>">Master Data</a>
 		<a href="<?= site_url('flowbuilder') ?>">Flow Builder</a>
 		<span style="margin-left:auto; color:#6b7280">
