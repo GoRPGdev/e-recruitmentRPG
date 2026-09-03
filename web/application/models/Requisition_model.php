@@ -21,18 +21,30 @@ class Requisition_model extends CI_Model
 
 	/* ================= list / lihat ================================= */
 
-	public function count_list($status = NULL)
+	private function _list_where($f, &$b)
 	{
-		$sql = 'SELECT COUNT(*) AS n FROM dbo.REQUISITIONS';
-		$b = array();
-		if ($status) { $sql .= ' WHERE status_req = ?'; $b[] = $status; }
-		return (int) $this->db->query($sql, $b)->row()->n;
+		$w = array();
+		if ( ! empty($f['status']))  { $w[] = 'r.status_req = ?';   $b[] = $f['status']; }
+		if ( ! empty($f['posisi']))  { $w[] = 'r.id_posisi = ?';    $b[] = (int) $f['posisi']; }
+		if ( ! empty($f['dept']))    { $w[] = 'p.id_departemen = ?'; $b[] = (int) $f['dept']; }
+		if ( ! empty($f['dari']))    { $w[] = 'r.created_at >= ?';   $b[] = $f['dari']; }
+		if ( ! empty($f['sampai']))  { $w[] = 'r.created_at < DATEADD(DAY,1,?)'; $b[] = $f['sampai']; }
+		return $w ? 'WHERE ' . implode(' AND ', $w) : '';
 	}
 
-	public function list_mpr($offset, $per, $status = NULL)
+	public function count_list($f = array())
 	{
-		$where = $status ? 'WHERE r.status_req = ?' : '';
-		$b = $status ? array($status) : array();
+		$b = array();
+		$where = $this->_list_where((array) $f, $b);
+		return (int) $this->db->query(
+			"SELECT COUNT(*) AS n FROM dbo.REQUISITIONS r JOIN dbo.M_POSISI p ON p.id_posisi = r.id_posisi $where", $b
+		)->row()->n;
+	}
+
+	public function list_mpr($offset, $per, $f = array())
+	{
+		$b = array();
+		$where = $this->_list_where((array) $f, $b);
 		$b[] = (int) $offset; $b[] = (int) $offset + (int) $per - 1;
 		$sql = "WITH q AS (
 		            SELECT r.id_req, r.no_mpr, r.status_req, r.tipe_penempatan, r.jumlah_dibutuhkan,
@@ -96,6 +108,12 @@ class Requisition_model extends CI_Model
 	public function outlets()
 	{
 		$q = $this->db->query('SELECT id_outlet, nama_outlet FROM dbo.M_OUTLET WHERE is_aktif = 1 ORDER BY nama_outlet');
+		$r = $q->result_array(); $q->free_result(); return $r;
+	}
+
+	public function departments()
+	{
+		$q = $this->db->query('SELECT id_departemen, nama FROM dbo.M_DEPARTEMEN WHERE is_aktif = 1 ORDER BY nama');
 		$r = $q->result_array(); $q->free_result(); return $r;
 	}
 
@@ -212,5 +230,36 @@ class Requisition_model extends CI_Model
 			'SELECT id_remark, kode_remark, label, efek_status FROM dbo.M_REMARKS
 			 WHERE id_stage = ? AND is_aktif = 1 ORDER BY urutan, id_remark', array((int) $id_stage));
 		$r = $q->result_array(); $q->free_result(); return $r;
+	}
+
+	public function insert_adhoc($id_lamaran, $id_stage, $setelah_urutan, $pic_user, $catatan)
+	{
+		$id = 0;
+		$this->_call('{CALL dbo.sp_InsertAdHocStage(?,?,?,?,?,?)}', array(
+			(int) $id_lamaran, (int) $id_stage, (int) $setelah_urutan, (int) $pic_user, $catatan ?: NULL,
+			array(&$id, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
+		));
+		return (int) $id;
+	}
+
+	public function active_stages()
+	{
+		$q = $this->db->query("SELECT id_stage, nama_tahap, tipe_tahap FROM dbo.M_STAGE WHERE is_aktif = 1 ORDER BY nama_tahap");
+		$r = $q->result_array(); $q->free_result(); return $r;
+	}
+
+	/* current urutan tahap 'Berjalan' untuk 1 lamaran -- titik sisip ad-hoc */
+	public function current_urutan($id_lamaran)
+	{
+		$q = $this->db->query("SELECT TOP 1 urutan FROM dbo.APPLICATION_STAGES
+		                       WHERE id_lamaran = ? AND status_tahap = 'Berjalan'", array((int) $id_lamaran));
+		$row = $q->row(); $q->free_result();
+		return $row ? (int) $row->urutan : 0;
+	}
+
+	public function save_lampiran_approval($id_approval, $path)
+	{
+		$this->db->query('UPDATE dbo.REQUISITION_APPROVALS SET lampiran_path = ? WHERE id_approval = ?',
+			array($path, (int) $id_approval));
 	}
 }

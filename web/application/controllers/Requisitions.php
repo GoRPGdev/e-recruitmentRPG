@@ -17,21 +17,29 @@ class Requisitions extends Secured_Controller
 
 	public function index()
 	{
-		$per    = 20;
-		$page   = max(1, (int) $this->input->get('page'));
-		$status = $this->input->get('status') ?: NULL;
+		$per  = 20;
+		$page = max(1, (int) $this->input->get('page'));
+		$f = array(
+			'status' => $this->input->get('status') ?: NULL,
+			'posisi' => $this->input->get('posisi') ?: NULL,
+			'dept'   => $this->input->get('dept') ?: NULL,
+			'dari'   => $this->input->get('dari') ?: NULL,
+			'sampai' => $this->input->get('sampai') ?: NULL,
+		);
 		$offset = ($page - 1) * $per + 1;
-		$total  = $this->rm->count_list($status);
+		$total  = $this->rm->count_list($f);
 
 		$this->load->view('layouts/main', array(
 			'title'    => 'MPR',
 			'_content' => 'requisitions/index',
 			'wide'     => TRUE,
-			'rows'     => $this->rm->list_mpr($offset, $per, $status),
+			'rows'     => $this->rm->list_mpr($offset, $per, $f),
 			'page'     => $page,
 			'pages'    => max(1, (int) ceil($total / $per)),
-			'status'   => $status,
+			'f'        => $f,
 			'total'    => $total,
+			'positions'=> $this->rm->positions(),
+			'depts'    => $this->rm->departments(),
 		));
 	}
 
@@ -120,18 +128,34 @@ class Requisitions extends Secured_Controller
 		if ( ! $id_req || $this->input->method() !== 'post') {
 			show_404();
 		}
+		// lampiran screenshot WA (opsional)
+		$lampiran = NULL;
+		$id_approval = (int) $this->input->post('id_approval');
+		if ( ! empty($_FILES['lampiran']['name']) && $_FILES['lampiran']['error'] === UPLOAD_ERR_OK) {
+			$dir = rtrim($this->config->item('erec_storage_path'), '/\\') . DIRECTORY_SEPARATOR . 'approval';
+			@mkdir($dir, 0770, TRUE);
+			$ext = strtolower(pathinfo($_FILES['lampiran']['name'], PATHINFO_EXTENSION));
+			if (in_array($ext, array('jpg', 'jpeg', 'png', 'pdf'), TRUE)) {
+				$lampiran = $dir . DIRECTORY_SEPARATOR . $id_approval . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+				if ( ! @move_uploaded_file($_FILES['lampiran']['tmp_name'], $lampiran)) {
+					$lampiran = NULL;
+				}
+			}
+		}
+
 		try {
 			$this->rm->record_approval(array(
-				'id_approval'       => $this->input->post('id_approval'),
+				'id_approval'       => $id_approval,
 				'keputusan'         => $this->input->post('keputusan'),
 				'jumlah_disetujui'  => $this->input->post('jumlah_disetujui', TRUE),
 				'tanggal_keputusan' => $this->input->post('tanggal_keputusan', TRUE),
 				'disetujui_oleh'    => $this->input->post('disetujui_oleh', TRUE),
 				'catatan_bod'       => $this->input->post('catatan_bod', TRUE),
-				'lampiran_path'     => NULL,
+				'lampiran_path'     => $lampiran,
 			), (int) $this->auth_user['id_user']);
 			$this->session->set_flashdata('ok', 'Keputusan BOD dicatat.');
 		} catch (RuntimeException $e) {
+			if ($lampiran) { @unlink($lampiran); }
 			$this->session->set_flashdata('error', $e->getMessage());
 		}
 		redirect('requisitions/view/' . (int) $id_req);

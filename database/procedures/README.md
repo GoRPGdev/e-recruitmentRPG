@@ -75,3 +75,9 @@ menolak INSERT/UPDATE kalau sesi `SET QUOTED_IDENTIFIER OFF`.
 | `sp_LogContact` | Flow Engine | `APPLICATION_CONTACTS`; auto `Unreachable` di batas `maks_upaya_kontak`, reversible |
 | `sp_GetPipeline` | Flow Engine | read-only; 1 query semua tahap 1 requisition (di-group di PHP) |
 | `sp_BuildFunnelHarian` | Report | isi `RPT_FUNNEL_HARIAN` per tanggal (job `tools/build-funnel.php`) |
+| `sp_SavePosisi` / `sp_TogglePosisi` | Master Data | CRUD + soft delete posisi |
+| `sp_SaveFlow` | Flow Builder | tambah/ubah header `M_FLOW` |
+| `sp_SaveFlowStage` | Flow Builder | ADD / UPDATE / REMOVE / MOVE tahap dalam flow, bump `versi` |
+| `sp_CloneFlow` | Flow Builder | "simpan sebagai template baru" (salin + `id_flow_induk`, versi 1) |
+| `sp_SaveRemark` | Flow Builder | CRUD `M_REMARKS` (efek_status dijaga CHECK) |
+| `sp_InsertAdHocStage` | Flow Engine | sisip tahap ke 1 lamaran (`is_sisipan`, renumber `urutan` 1 transaksi) |

@@ -49,6 +49,16 @@
 						<button type="submit" class="btn-sm btn-ghost">Catat kontak</button>
 					<?= form_close() ?>
 					<?php endif; ?>
+
+					<?= form_open(site_url('pipeline/insert_stage/' . (int) $req['id_req']), array('class' => 'inline')) ?>
+						<input type="hidden" name="id_lamaran" value="<?= (int) $c['id_lamaran'] ?>">
+						<select name="id_stage" style="width:auto; padding:4px 8px">
+							<?php foreach ($all_stages as $st): ?>
+								<option value="<?= (int) $st['id_stage'] ?>"><?= html_escape($st['nama_tahap']) ?></option>
+							<?php endforeach; ?>
+						</select>
+						<button type="submit" class="btn-sm btn-ghost">Sisip tahap (setelah tahap kini)</button>
+					<?= form_close() ?>
 				</div>
 				<?php endif; ?>
 			</div>

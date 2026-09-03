@@ -48,13 +48,14 @@ class Pipeline extends Secured_Controller
 		}
 
 		$this->load->view('layouts/main', array(
-			'title'    => 'Pipeline — ' . ($req['no_mpr'] ?: '#' . $req['id_req']),
-			'_content' => 'pipeline/board',
-			'wide'     => TRUE,
-			'req'      => $req,
-			'stages'   => $stages,
-			'remarks'  => $remarks,
-			'can_aksi' => has_permission('KELOLA_REKRUTMEN'),
+			'title'      => 'Pipeline — ' . ($req['no_mpr'] ?: '#' . $req['id_req']),
+			'_content'   => 'pipeline/board',
+			'wide'       => TRUE,
+			'req'        => $req,
+			'stages'     => $stages,
+			'remarks'    => $remarks,
+			'all_stages' => $this->requisition_model->active_stages(),
+			'can_aksi'   => has_permission('KELOLA_REKRUTMEN'),
 		));
 	}
 
@@ -72,6 +73,28 @@ class Pipeline extends Secured_Controller
 				$this->input->post('catatan', TRUE)
 			);
 			$this->session->set_flashdata('ok', 'Tahap diproses. Status: ' . $st);
+		} catch (RuntimeException $e) {
+			$this->session->set_flashdata('error', $e->getMessage());
+		}
+		redirect('pipeline/index/' . (int) $id_req);
+	}
+
+	public function insert_stage($id_req = NULL)
+	{
+		$this->require_permission('KELOLA_REKRUTMEN');
+		if ( ! $id_req || $this->input->method() !== 'post') {
+			show_404();
+		}
+		$id_lamaran = (int) $this->input->post('id_lamaran');
+		try {
+			$this->requisition_model->insert_adhoc(
+				$id_lamaran,
+				(int) $this->input->post('id_stage'),
+				$this->requisition_model->current_urutan($id_lamaran),
+				(int) $this->auth_user['id_user'],
+				$this->input->post('catatan', TRUE)
+			);
+			$this->session->set_flashdata('ok', 'Tahap sisipan ditambahkan.');
 		} catch (RuntimeException $e) {
 			$this->session->set_flashdata('error', $e->getMessage());
 		}

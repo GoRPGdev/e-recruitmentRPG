@@ -26,7 +26,7 @@
 		<p class="muted">Belum diajukan.</p>
 	<?php else: ?>
 	<table>
-		<tr><th>Putaran</th><th>Diajukan</th><th>Keputusan</th><th>Disetujui</th><th>Tanggal</th><th>Oleh BOD</th><th>Catatan</th></tr>
+		<tr><th>Putaran</th><th>Diajukan</th><th>Keputusan</th><th>Disetujui</th><th>Tanggal</th><th>Oleh BOD</th><th>Catatan</th><th>Lampiran</th></tr>
 		<?php foreach ($approvals as $a): ?>
 		<tr>
 			<td><?= (int) $a['putaran_ke'] ?></td>
@@ -36,6 +36,7 @@
 			<td><?= $a['tanggal_keputusan'] ? html_escape(substr($a['tanggal_keputusan'], 0, 10)) : '-' ?></td>
 			<td><?= html_escape($a['disetujui_oleh'] ?: '-') ?></td>
 			<td class="muted" style="margin:0"><?= html_escape($a['catatan_bod'] ?: '') ?></td>
+			<td><?= $a['lampiran_path'] ? '&#128206; ada' : '-' ?></td>
 		</tr>
 		<?php endforeach; ?>
 	</table>
@@ -43,7 +44,7 @@
 
 	<?php if ($can_kelola && $open_appr): ?>
 		<h2>Catat keputusan BOD (putaran <?= (int) $open_appr['putaran_ke'] ?>)</h2>
-		<?= form_open(site_url('requisitions/approve/' . (int) $req['id_req'])) ?>
+		<?= form_open_multipart(site_url('requisitions/approve/' . (int) $req['id_req'])) ?>
 			<input type="hidden" name="id_approval" value="<?= (int) $open_appr['id_approval'] ?>">
 			<label for="keputusan">Keputusan</label>
 			<select id="keputusan" name="keputusan">
@@ -59,6 +60,8 @@
 			<input type="text" id="tanggal_keputusan" name="tanggal_keputusan" placeholder="YYYY-MM-DD">
 			<label for="catatan_bod">Catatan</label>
 			<input type="text" id="catatan_bod" name="catatan_bod">
+			<label for="lampiran">Lampiran screenshot WA (jpg/png/pdf, opsional)</label>
+			<input type="file" id="lampiran" name="lampiran" accept=".jpg,.jpeg,.png,.pdf">
 			<button type="submit">Catat</button>
 		<?= form_close() ?>
 	<?php endif; ?>
