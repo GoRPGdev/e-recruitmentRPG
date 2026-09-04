@@ -47,8 +47,9 @@ class Flowbuilder extends Secured_Controller
 	public function save_header()
 	{
 		if ($this->input->method() !== 'post') { show_404(); }
+		$uid = (int) ($this->auth_user['id_user'] ?? 0);
 		try {
-			$id = $this->mm->save_flow($this->input->post(NULL, TRUE));
+			$id = $this->mm->save_flow($this->input->post(NULL, TRUE), $uid);
 			$this->session->set_flashdata('ok', 'Flow disimpan.');
 			redirect('flowbuilder/edit/' . $id);
 		} catch (RuntimeException $e) {
@@ -60,10 +61,11 @@ class Flowbuilder extends Secured_Controller
 	public function stage_action($id_flow = NULL)
 	{
 		if ( ! $id_flow || $this->input->method() !== 'post') { show_404(); }
+		$uid = (int) ($this->auth_user['id_user'] ?? 0);
 		$in = $this->input->post(NULL, TRUE);
 		$in['id_flow'] = (int) $id_flow;
 		try {
-			$this->mm->flow_stage_action($in);
+			$this->mm->flow_stage_action($in, $uid);
 			$this->session->set_flashdata('ok', 'Tahap flow diperbarui (versi naik).');
 		} catch (RuntimeException $e) {
 			$this->session->set_flashdata('error', $e->getMessage());
@@ -74,11 +76,13 @@ class Flowbuilder extends Secured_Controller
 	public function clone_flow()
 	{
 		if ($this->input->method() !== 'post') { show_404(); }
+		$uid = (int) ($this->auth_user['id_user'] ?? 0);
 		try {
 			$id = $this->mm->clone_flow(
 				(int) $this->input->post('id_flow_sumber'),
 				$this->input->post('kode_flow_baru', TRUE),
-				$this->input->post('nama_flow_baru', TRUE)
+				$this->input->post('nama_flow_baru', TRUE),
+				$uid
 			);
 			$this->session->set_flashdata('ok', 'Template baru dibuat dari salinan.');
 			redirect('flowbuilder/edit/' . $id);
@@ -113,8 +117,9 @@ class Flowbuilder extends Secured_Controller
 	public function save_stage()
 	{
 		if ($this->input->method() !== 'post') { show_404(); }
+		$uid = (int) ($this->auth_user['id_user'] ?? 0);
 		try {
-			$this->mm->save_stage($this->input->post(NULL, TRUE));
+			$this->mm->save_stage($this->input->post(NULL, TRUE), $uid);
 			$this->session->set_flashdata('ok', 'Tahap seleksi disimpan.');
 		} catch (RuntimeException $e) {
 			$this->session->set_flashdata('error', $e->getMessage());
@@ -125,8 +130,9 @@ class Flowbuilder extends Secured_Controller
 	public function toggle_stage()
 	{
 		if ($this->input->method() !== 'post') { show_404(); }
+		$uid = (int) ($this->auth_user['id_user'] ?? 0);
 		try {
-			$this->mm->toggle_stage((int) $this->input->post('id'), (int) $this->input->post('is_aktif'));
+			$this->mm->toggle_stage((int) $this->input->post('id'), (int) $this->input->post('is_aktif'), $uid);
 			$this->session->set_flashdata('ok', $this->input->post('is_aktif') ? 'Diaktifkan.' : 'Dinonaktifkan.');
 		} catch (RuntimeException $e) {
 			$this->session->set_flashdata('error', $e->getMessage());
@@ -193,8 +199,9 @@ class Flowbuilder extends Secured_Controller
 	public function save_remark()
 	{
 		if ($this->input->method() !== 'post') { show_404(); }
+		$uid = (int) ($this->auth_user['id_user'] ?? 0);
 		try {
-			$this->mm->save_remark($this->input->post(NULL, TRUE));
+			$this->mm->save_remark($this->input->post(NULL, TRUE), $uid);
 			$this->session->set_flashdata('ok', 'Remark disimpan.');
 		} catch (RuntimeException $e) {
 			$this->session->set_flashdata('error', $e->getMessage());

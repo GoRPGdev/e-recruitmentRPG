@@ -5,6 +5,7 @@
    @id_flow NULL -> INSERT (versi 1). kode_flow unik.
    Perubahan susunan tahap ditangani terpisah (edit M_FLOW_STAGE +
    sp_BumpFlowVersion). Lamaran berjalan tidak terpengaruh (di-snapshot).
+   Audit trail dicatat via sp_AuditLog.
 
    Deploy:  php tools/migrate.php proc
    ========================================================================= */
@@ -18,7 +19,8 @@ CREATE PROCEDURE dbo.sp_SaveFlow
     @tipe_penempatan   VARCHAR(10),
     @maks_upaya_kontak INT           = 3,
     @sla_total_hari    INT           = NULL,
-    @id_flow_out       INT OUTPUT
+    @id_flow_out       INT OUTPUT,
+    @oleh_user         INT           = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -38,14 +40,25 @@ BEGIN
             INSERT INTO dbo.M_FLOW (kode_flow, nama_flow, tipe_penempatan, maks_upaya_kontak, sla_total_hari, versi, is_aktif)
             VALUES (@kode_flow, @nama_flow, @tipe_penempatan, @maks_upaya_kontak, @sla_total_hari, 1, 1);
             SET @id_flow_out = SCOPE_IDENTITY();
+
+            DECLARE @nb VARCHAR(400) = 'kode=' + @kode_flow + ', nama=' + @nama_flow + ', tipe=' + @tipe_penempatan;
+            EXEC dbo.sp_AuditLog 'M_FLOW', @id_flow_out, 'INSERT', NULL, @nb, @oleh_user;
         END
         ELSE
         BEGIN
+            DECLARE @old_kode VARCHAR(30), @old_nama NVARCHAR(100), @old_tipe VARCHAR(10);
+            SELECT @old_kode = kode_flow, @old_nama = nama_flow, @old_tipe = tipe_penempatan
+            FROM dbo.M_FLOW WHERE id_flow = @id_flow;
+
             UPDATE dbo.M_FLOW
             SET kode_flow = @kode_flow, nama_flow = @nama_flow, tipe_penempatan = @tipe_penempatan,
                 maks_upaya_kontak = @maks_upaya_kontak, sla_total_hari = @sla_total_hari
             WHERE id_flow = @id_flow;
             SET @id_flow_out = @id_flow;
+
+            DECLARE @nl VARCHAR(400) = 'kode=' + ISNULL(@old_kode,'') + ', nama=' + ISNULL(@old_nama,'') + ', tipe=' + ISNULL(@old_tipe,'');
+            DECLARE @nb2 VARCHAR(400) = 'kode=' + @kode_flow + ', nama=' + @nama_flow + ', tipe=' + @tipe_penempatan;
+            EXEC dbo.sp_AuditLog 'M_FLOW', @id_flow, 'UPDATE', @nl, @nb2, @oleh_user;
         END
 
         IF @outer = 0 COMMIT TRANSACTION;

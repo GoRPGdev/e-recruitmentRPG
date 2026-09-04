@@ -40,8 +40,16 @@ class Secured_Controller extends MY_Controller
 	 */
 	protected function require_permission($kode)
 	{
-		if ( ! has_permission($kode)) {
-			show_error('Butuh permission: ' . html_escape($kode), 403, 'Akses ditolak');
-		}
+		require_permission($kode);
+	}
+
+	protected function require_any_permission(array $kode_list)
+	{
+		require_any_permission($kode_list);
+	}
+
+	protected function require_all_permissions(array $kode_list)
+	{
+		require_all_permissions($kode_list);
 	}
 }

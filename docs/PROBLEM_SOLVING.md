@@ -74,3 +74,41 @@ Dokumentasi ini mencatat rekaman problem solving, kendala teknis, serta solusi y
 - **Solusi:**
   1. Di `web/application/controllers/Flowbuilder.php`, tangkap parameter `?edit_remark={id}` dan ambil data baris remark yang bersangkutan.
   2. Di view `web/application/views/flow/remarks.php`, sediakan tombol `edit` pada setiap baris tabel, serta ubah judul formulir menjadi *"Edit Remark #ID"* dengan nilai form terisi otomatis dan tombol *"Batal edit / tambah baru"*.
+
+---
+
+### [PS-006] Penanganan Nilai 0 / NULL pada Parameter OUTPUT Stored Procedure T-SQL
+- **Problem:**
+  Saat memanggil Stored Procedure yang memiliki parameter `@id_x INT = NULL OUTPUT` dari driver PHP `sqlsrv`, jika variabel output diinisialisasi dengan angka 0 (`$id = 0`), kondisi T-SQL `IF @id_x IS NULL` bernilai FALSE. Hal ini menyebabkan SP menganggap nilai 0 sebagai primary key yang sudah ada dan masuk ke blok `UPDATE`, sehingga memicu Foreign Key violation (misalnya `FK_IP_interview` pada tabel `INTERVIEW_PARTICIPANTS`) atau data tidak ditemukan.
+- **Identifikasi:**
+  Di PHP, binding parameter output sering menggunakan referensi variabel bertipe integer (`$id = 0`), yang dikirimkan ke SQL Server sebagai nilai literal `0`, bukan `NULL`.
+- **Solusi:**
+  Pada seluruh Stored Procedure yang menangani dual-action INSERT / UPDATE (seperti `sp_SaveInterview`, `sp_SavePsikotes`, `sp_SaveOffer`), ubah pengecekan parameter ID menjadi:
+  `IF @id_x IS NULL OR @id_x <= 0`
+  Dengan demikian, baik nilai `NULL` maupun integer `<= 0` akan secara konsisten memicu logika `INSERT` dan mengembalikan ID baru via `SCOPE_IDENTITY()`.
+
+---
+
+### [PS-007] Penyesuaian Kolom Nama Snapshot User pada Skema `M_USERS`
+- **Problem:**
+  Query yang memanggil `u.nama_lengkap` atau `u.role` langsung dari tabel `dbo.M_USERS` menghasilkan error SQL Server:
+  `Invalid column name 'nama_lengkap'.`
+- **Identifikasi:**
+  Berdasarkan migrasi `20260908_1000__master_referensi.sql`, tabel `M_USERS` menyimpan nama pengguna dalam kolom `nama_snapshot NVARCHAR(150)`, sedangkan kode peran berada pada tabel relasi `dbo.M_ROLES` via foreign key `id_role`.
+- **Solusi:**
+  Pada query join di model (seperti `Requisition_model` untuk pewawancara, pembuat offer, dan evaluator psikotes), gunakan alias eksplisit:
+  `SELECT u.id_user, u.nama_snapshot AS nama_lengkap, r.kode_role AS role FROM dbo.M_USERS u JOIN dbo.M_ROLES r ON r.id_role = u.id_role`.
+
+---
+
+### [PS-008] Ketersediaan Guard Method `require_any_permission` pada `Secured_Controller`
+- **Problem:**
+  Pemanggilan `$this->require_any_permission(['APPROVE', 'KELOLA_REKRUTMEN'])` pada controller menghasilkan HTTP 500 (Fatal error: Call to undefined method `Requisitions::require_any_permission()`).
+- **Identifikasi:**
+  Fungsi `require_any_permission` awalnya hanya didefinisikan sebagai fungsi helper prosedural di `rbac_helper.php`, sementara kelas basis `Secured_Controller` di `MY_Controller.php` hanya mendefinisikan method instance tunggal `require_permission($kode)`.
+- **Solusi:**
+  Tambahkan method pembungkus di `Secured_Controller` (`web/application/core/MY_Controller.php`):
+  1. `protected function require_any_permission(array $kode_list) { require_any_permission($kode_list); }`
+  2. `protected function require_all_permissions(array $kode_list) { require_all_permissions($kode_list); }`
+  Dengan demikian, pemanggilan method `$this->require_any_permission(...)` dari dalam controller berjalan mulus dan mengembalikan status HTTP 403 yang sah ketika akses ditolak.
+

@@ -262,4 +262,145 @@ class Requisition_model extends CI_Model
 		$this->db->query('UPDATE dbo.REQUISITION_APPROVALS SET lampiran_path = ? WHERE id_approval = ?',
 			array($path, (int) $id_approval));
 	}
+
+	/* ================= SP: Seleksi Lanjutan (Interview, Psikotes, Offer) ============================== */
+
+	public function save_interview(array $in, $oleh_user)
+	{
+		$id_interview = ! empty($in['id_interview']) ? (int) $in['id_interview'] : NULL;
+		$this->_call('{CALL dbo.sp_SaveInterview(?,?,?,?,?,?,?,?,?,?,?)}', array(
+			array(&$id_interview, SQLSRV_PARAM_INOUT, SQLSRV_PHPTYPE_INT),
+			(int) $in['id_app_stage'],
+			! empty($in['tipe']) ? $in['tipe'] : NULL,
+			! empty($in['jadwal']) ? $in['jadwal'] : NULL,
+			! empty($in['lokasi_atau_link']) ? $in['lokasi_atau_link'] : NULL,
+			! empty($in['hasil']) ? $in['hasil'] : NULL,
+			isset($in['skor']) && $in['skor'] !== '' ? (int) $in['skor'] : NULL,
+			! empty($in['catatan']) ? $in['catatan'] : NULL,
+			! empty($in['id_interviewer']) ? (int) $in['id_interviewer'] : NULL,
+			! empty($in['peran_interviewer']) ? $in['peran_interviewer'] : 'HR',
+			(int) $oleh_user,
+		));
+		return (int) $id_interview;
+	}
+
+	public function save_psikotes(array $in, $oleh_user)
+	{
+		$id_psikotes = ! empty($in['id_psikotes']) ? (int) $in['id_psikotes'] : NULL;
+		$this->_call('{CALL dbo.sp_SavePsikotes(?,?,?,?,?,?,?,?)}', array(
+			array(&$id_psikotes, SQLSRV_PARAM_INOUT, SQLSRV_PHPTYPE_INT),
+			(int) $in['id_app_stage'],
+			! empty($in['vendor_tes']) ? $in['vendor_tes'] : NULL,
+			! empty($in['tanggal_tes']) ? $in['tanggal_tes'] : NULL,
+			isset($in['skor_total']) && $in['skor_total'] !== '' ? (int) $in['skor_total'] : NULL,
+			! empty($in['hasil']) ? $in['hasil'] : NULL,
+			! empty($in['rekomendasi']) ? $in['rekomendasi'] : NULL,
+			(int) $oleh_user,
+		));
+		return (int) $id_psikotes;
+	}
+
+	public function save_offer(array $in, $oleh_user)
+	{
+		$id_offer = ! empty($in['id_offer']) ? (int) $in['id_offer'] : NULL;
+		$this->_call('{CALL dbo.sp_SaveOffer(?,?,?,?,?,?,?,?,?)}', array(
+			array(&$id_offer, SQLSRV_PARAM_INOUT, SQLSRV_PHPTYPE_INT),
+			(int) $in['id_lamaran'],
+			isset($in['gaji_ditawarkan']) && $in['gaji_ditawarkan'] !== '' ? (float) $in['gaji_ditawarkan'] : NULL,
+			! empty($in['tanggal_penawaran']) ? $in['tanggal_penawaran'] : NULL,
+			! empty($in['tanggal_join_disepakati']) ? $in['tanggal_join_disepakati'] : NULL,
+			! empty($in['tanggal_join_aktual']) ? $in['tanggal_join_aktual'] : NULL,
+			! empty($in['status_offer']) ? $in['status_offer'] : 'Nego',
+			! empty($in['alasan']) ? $in['alasan'] : NULL,
+			(int) $oleh_user,
+		));
+		return (int) $id_offer;
+	}
+
+	public function get_interviewers()
+	{
+		$q = $this->db->query("SELECT u.id_user, u.nama_snapshot AS nama_lengkap, r.kode_role AS role
+		                       FROM dbo.M_USERS u
+		                       JOIN dbo.M_ROLES r ON r.id_role = u.id_role
+		                       WHERE u.is_aktif = 1
+		                       ORDER BY u.nama_snapshot");
+		$r = $q->result_array();
+		$q->free_result();
+		return $r;
+	}
+
+	public function get_interviews_for_stages(array $app_stage_ids)
+	{
+		if (empty($app_stage_ids)) return array();
+		$placeholders = implode(',', array_map('intval', $app_stage_ids));
+		$sql = "SELECT i.id_interview, i.id_app_stage, i.tipe, i.jadwal, i.lokasi_atau_link, i.hasil, i.skor, i.catatan,
+		               ip.id_user AS id_interviewer, ip.peran AS peran_interviewer, u.nama_snapshot AS nama_interviewer
+		        FROM dbo.INTERVIEWS i
+		        LEFT JOIN dbo.INTERVIEW_PARTICIPANTS ip ON ip.id_interview = i.id_interview
+		        LEFT JOIN dbo.M_USERS u ON u.id_user = ip.id_user
+		        WHERE i.id_app_stage IN ($placeholders)
+		        ORDER BY i.id_interview DESC";
+		$q = $this->db->query($sql);
+		$rows = $q->result_array();
+		$q->free_result();
+		$by_stage = array();
+		foreach ($rows as $r) {
+			foreach ($r as $k => $v) {
+				if ($v instanceof DateTime) { $r[$k] = $v->format('Y-m-d H:i'); }
+			}
+			if ( ! isset($by_stage[$r['id_app_stage']])) {
+				$by_stage[$r['id_app_stage']] = array();
+			}
+			$by_stage[$r['id_app_stage']][] = $r;
+		}
+		return $by_stage;
+	}
+
+	public function get_psikotes_for_stages(array $app_stage_ids)
+	{
+		if (empty($app_stage_ids)) return array();
+		$placeholders = implode(',', array_map('intval', $app_stage_ids));
+		$sql = "SELECT p.id_psikotes, p.id_app_stage, p.vendor_tes, p.tanggal_tes, p.skor_total, p.hasil, p.rekomendasi,
+		               u.nama_snapshot AS dilakukan_oleh_nama
+		        FROM dbo.PSIKOTES_RESULTS p
+		        LEFT JOIN dbo.M_USERS u ON u.id_user = p.dilakukan_oleh
+		        WHERE p.id_app_stage IN ($placeholders)
+		        ORDER BY p.id_psikotes DESC";
+		$q = $this->db->query($sql);
+		$rows = $q->result_array();
+		$q->free_result();
+		$by_stage = array();
+		foreach ($rows as $r) {
+			foreach ($r as $k => $v) {
+				if ($v instanceof DateTime) { $r[$k] = $v->format('Y-m-d'); }
+			}
+			if ( ! isset($by_stage[$r['id_app_stage']])) {
+				$by_stage[$r['id_app_stage']] = array();
+			}
+			$by_stage[$r['id_app_stage']][] = $r;
+		}
+		return $by_stage;
+	}
+
+	public function get_offers_for_lamaran(array $lamaran_ids)
+	{
+		if (empty($lamaran_ids)) return array();
+		$placeholders = implode(',', array_map('intval', $lamaran_ids));
+		$sql = "SELECT o.id_offer, o.id_lamaran, o.gaji_ditawarkan, o.tanggal_penawaran, o.tanggal_join_disepakati,
+		               o.tanggal_join_aktual, o.status_offer, o.alasan, u.nama_snapshot AS dibuat_oleh_nama
+		        FROM dbo.OFFERS o
+		        LEFT JOIN dbo.M_USERS u ON u.id_user = o.dibuat_oleh
+		        WHERE o.id_lamaran IN ($placeholders)";
+		$q = $this->db->query($sql);
+		$rows = $q->result_array();
+		$q->free_result();
+		$by_lamaran = array();
+		foreach ($rows as $r) {
+			foreach ($r as $k => $v) {
+				if ($v instanceof DateTime) { $r[$k] = $v->format('Y-m-d'); }
+			}
+			$by_lamaran[$r['id_lamaran']] = $r;
+		}
+		return $by_lamaran;
+	}
 }

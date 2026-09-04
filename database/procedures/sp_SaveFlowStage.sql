@@ -10,6 +10,7 @@
 
    Selalu menaikkan M_FLOW.versi. Lamaran berjalan tidak terpengaruh
    (di-snapshot ke APPLICATION_STAGES).
+   Audit trail dicatat via sp_AuditLog.
 
    Deploy:  php tools/migrate.php proc
    ========================================================================= */
@@ -24,7 +25,8 @@ CREATE PROCEDURE dbo.sp_SaveFlowStage
     @urutan        INT          = NULL,
     @is_wajib      BIT          = 1,
     @sla_hari      INT          = NULL,
-    @role_pic      VARCHAR(20)  = NULL
+    @role_pic      VARCHAR(20)  = NULL,
+    @oleh_user     INT          = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -46,13 +48,25 @@ BEGIN
             UPDATE dbo.M_FLOW_STAGE SET urutan = urutan + 1 WHERE id_flow = @id_flow AND urutan >= @urutan;
             INSERT INTO dbo.M_FLOW_STAGE (id_flow, id_stage, urutan, is_wajib, sla_hari, role_pic)
             VALUES (@id_flow, @id_stage, @urutan, @is_wajib, @sla_hari, @role_pic);
+            DECLARE @new_fs INT = SCOPE_IDENTITY();
+
+            DECLARE @nb VARCHAR(300) = 'flow=' + CONVERT(VARCHAR(10), @id_flow) + ', stage=' + CONVERT(VARCHAR(10), @id_stage) + ', urut=' + CONVERT(VARCHAR(10), @urutan);
+            EXEC dbo.sp_AuditLog 'M_FLOW_STAGE', @new_fs, 'INSERT', NULL, @nb, @oleh_user;
         END
         ELSE IF @aksi = 'UPDATE'
         BEGIN
+            DECLARE @old_wajib BIT, @old_sla INT, @old_pic VARCHAR(20);
+            SELECT @old_wajib = is_wajib, @old_sla = sla_hari, @old_pic = role_pic
+            FROM dbo.M_FLOW_STAGE WHERE id_flow_stage = @id_flow_stage AND id_flow = @id_flow;
+
             UPDATE dbo.M_FLOW_STAGE
             SET is_wajib = @is_wajib, sla_hari = @sla_hari, role_pic = @role_pic
             WHERE id_flow_stage = @id_flow_stage AND id_flow = @id_flow;
             IF @@ROWCOUNT = 0 RAISERROR('Baris flow-stage tidak ditemukan.', 16, 1);
+
+            DECLARE @nl VARCHAR(300) = 'wajib=' + CONVERT(VARCHAR(1), @old_wajib) + ', sla=' + ISNULL(CONVERT(VARCHAR(10), @old_sla),'NULL') + ', pic=' + ISNULL(@old_pic,'-');
+            DECLARE @nb2 VARCHAR(300) = 'wajib=' + CONVERT(VARCHAR(1), @is_wajib) + ', sla=' + ISNULL(CONVERT(VARCHAR(10), @sla_hari),'NULL') + ', pic=' + ISNULL(@role_pic,'-');
+            EXEC dbo.sp_AuditLog 'M_FLOW_STAGE', @id_flow_stage, 'UPDATE', @nl, @nb2, @oleh_user;
         END
         ELSE IF @aksi = 'REMOVE'
         BEGIN
@@ -60,6 +74,9 @@ BEGIN
             IF @u IS NULL RAISERROR('Baris flow-stage tidak ditemukan.', 16, 1);
             DELETE FROM dbo.M_FLOW_STAGE WHERE id_flow_stage = @id_flow_stage;
             UPDATE dbo.M_FLOW_STAGE SET urutan = urutan - 1 WHERE id_flow = @id_flow AND urutan > @u;
+
+            DECLARE @nl_rm VARCHAR(300) = 'flow=' + CONVERT(VARCHAR(10), @id_flow) + ', urut=' + CONVERT(VARCHAR(10), @u);
+            EXEC dbo.sp_AuditLog 'M_FLOW_STAGE', @id_flow_stage, 'DELETE', @nl_rm, NULL, @oleh_user;
         END
         ELSE IF @aksi = 'MOVE'
         BEGIN
@@ -74,6 +91,10 @@ BEGIN
                 ELSE
                     UPDATE dbo.M_FLOW_STAGE SET urutan = urutan - 1 WHERE id_flow = @id_flow AND urutan <= @urutan AND urutan > @lama;
                 UPDATE dbo.M_FLOW_STAGE SET urutan = @urutan WHERE id_flow_stage = @id_flow_stage;
+
+                DECLARE @nl_mv VARCHAR(100) = 'urutan=' + CONVERT(VARCHAR(10), @lama);
+                DECLARE @nb_mv VARCHAR(100) = 'urutan=' + CONVERT(VARCHAR(10), @urutan);
+                EXEC dbo.sp_AuditLog 'M_FLOW_STAGE', @id_flow_stage, 'UPDATE', @nl_mv, @nb_mv, @oleh_user;
             END
         END
         ELSE

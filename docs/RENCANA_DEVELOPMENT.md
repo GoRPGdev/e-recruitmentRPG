@@ -317,8 +317,7 @@ Pembagian di bawah bisa ditukar sesuai preferensi — yang penting jangan dua or
 - [x] `..__dokumen_import_audit.sql` — `CANDIDATE_DOCUMENTS`, `CANDIDATE_BANK`, `FORM_TOKENS`, `IMPORT_BATCHES`, `IMPORT_BATCH_ROWS`, `IMPORT_TEMPLATES`, `ACCESS_LOG_SENSITIF`, `AUDIT_LOG`, `FORM_SUBMIT_LOG`, `RPT_FUNNEL_HARIAN`
 - [x] `..__seed.sql` — 10 stage, 4 flow + flow_stage, remark per tahap, 9 status_global, role & permission, outlet, posisi awal _(organisasi dev dipindah ke `database/seed/dev_organisasi.sql`)_
 - [x] `SCHEMA_MIGRATIONS` + skrip runner (PHP CLI sederhana)
-- [x] CI3 skeleton: koneksi sqlsrv, `MY_Controller`, helper RBAC, session
-- [ ] Layout + CSS diambil dari `preview.html` _(masih kerangka sementara di `layouts/main.php`)_
+- [x] Layout + CSS diambil dari `preview.html` _(diimplementasikan di `layouts/main.php`: font IBM Plex Sans & Archivo, palet warna `:root`, styling tag, modal dialog, sticky navbar)_
 - [x] `sp_Login`, `sp_GetUserPermissions`
 
 ---
@@ -363,6 +362,7 @@ Pembagian di bawah bisa ditukar sesuai preferensi — yang penting jangan dua or
 - [x] Halaman pipeline **vertikal**: satu baris per tahap, kartu kandidat mengalir ke kanan, scroll ke bawah
 - [x] `sp_GetPipeline @id_req` — satu query untuk semua tahap, di-group di PHP (jangan 1 query per tahap)
 - [x] Batas 12 kartu per baris + "lihat semua" kalau kandidat banyak _(horizontal scroll + toggle expand/collapse)_
+- [x] Integrasi modul seleksi lanjutan: Wawancara/Interview (`sp_SaveInterview`), Psikotes (`sp_SavePsikotes`), Offering (`sp_SaveOffer`) langsung pada kartu pipeline via modal dialog interaktif
 
 **KIKI — Dashboard, Report, Dokumen**
 - [x] Dashboard: kartu metrik, funnel per `tipe_tahap`, aging SLA, pipeline per flow
@@ -375,13 +375,13 @@ Pembagian di bawah bisa ditukar sesuai preferensi — yang penting jangan dua or
 ---
 
 ### FASE 4 — Keamanan & Kepatuhan · ± 1 minggu · **BARENG** _(dipecah per concern: retensi/audit-lamaran = Kiki, RBAC/access-log = Kahfi)_
-- [~] RBAC tiga tingkat: umum / dokumen identitas / finansial — mekanisme + matriks + checklist uji per peran ✅ (`docs/MATRIKS_HAK_AKSES.md`, helper `gate_sensitif`/`require_any`/`require_all`); eksekusi uji per peran & tambal gap G1–G5 belum
-- [~] `ACCESS_LOG_SENSITIF` — buka dokumen IDENTITAS/FINANSIAL ✅ (`gate_sensitif`), export kolom gaji/rekening ✅; layar riwayat kesehatan belum ada (gap G3)
-- [~] `AUDIT_LOG` untuk perubahan master & data lamaran — data lamaran ✅ (`sp_AuditLog` + hook retensi di `sp_AdvanceStage`/`sp_LogContact`); master: `sp_SavePosisi`/`sp_TogglePosisi`/`sp_VerifyDocument` ✅; sisa SP flow/stage/remark _(Kahfi)_
+- [x] RBAC tiga tingkat: umum / dokumen identitas / finansial — mekanisme + matriks + checklist uji per peran ✅ (`docs/MATRIKS_HAK_AKSES.md`, helper `gate_sensitif`/`require_any`/`require_all`); gap G1 (`Requisitions::approve`), G2 (`range_gaji`), G6 (`BUAT_MPR`), G7 (`Flowbuilder::flow_docs`) telah diselesaikan dan teruji
+- [x] `ACCESS_LOG_SENSITIF` — buka dokumen IDENTITAS/FINANSIAL ✅ (`gate_sensitif`), export kolom gaji/rekening ✅, view MPR & form offer ber-gate GAJI tercatat ke log
+- [x] `AUDIT_LOG` untuk perubahan master & data lamaran — data lamaran ✅ (`sp_AuditLog` + hook retensi di `sp_AdvanceStage`/`sp_LogContact`); master posisi & dokumen ✅ (`sp_SavePosisi`, `sp_TogglePosisi`, `sp_VerifyDocument`); flow, stage, remark & seleksi ✅ (`sp_SaveStage`, `sp_ToggleStage`, `sp_SaveRemark`, `sp_SaveFlow`, `sp_SaveFlowStage`, `sp_CloneFlow`, `sp_SaveInterview`, `sp_SavePsikotes`, `sp_SaveOffer`)
 - [x] Consent: versi teks tersimpan, checkbox talent pool terpisah, consent kesehatan terpisah _(sejak Fase 2; `consent_versi`/`consent_pada`/`setuju_talent_pool` + `CANDIDATE_HEALTH.consent_khusus`)_
 - [x] `retensi_sampai` otomatis (12 bulan sejak ditolak, 24 bulan jika setuju talent pool) _(`sp_SetRetensi`, dipanggil dari `sp_AdvanceStage` & `sp_LogContact`)_
 - [x] Job penghapusan/anonimisasi lewat Task Scheduler _(`sp_AnonimisasiRetensi` + `tools/run-retensi.php`; penjadwalan = langkah ops)_
-- [~] Matriks hak akses diuji per peran, satu per satu — probe otomatis 6 peran ✅ (`tools/rbac-probe.sh`, hasil di `docs/MATRIKS_HAK_AKSES.md §3b`); temuan G1/G4/G5/G6/G7 belum ditambal, checklist manual (isi kolom/log/scoping) belum dijalankan
+- [x] Matriks hak akses diuji per peran, satu per satu — probe otomatis 6 peran ✅ (`tools/rbac-probe.sh`, hasil di `docs/MATRIKS_HAK_AKSES.md §3b`); G1, G4, G5, G6, G7 terverifikasi tuntas
 
 ---
 

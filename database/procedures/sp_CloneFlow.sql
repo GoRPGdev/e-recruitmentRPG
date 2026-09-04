@@ -5,6 +5,7 @@
    Menyalin M_FLOW + M_FLOW_STAGE (+ M_FLOW_STAGE_DOKUMEN) ke flow baru:
    kode_flow baru, id_flow_induk = sumber, versi = 1, is_aktif = 1.
    RENCANA sec.3 Fase 3.
+   Audit trail dicatat via sp_AuditLog.
 
    Deploy:  php tools/migrate.php proc
    ========================================================================= */
@@ -15,7 +16,8 @@ CREATE PROCEDURE dbo.sp_CloneFlow
     @id_flow_sumber INT,
     @kode_flow_baru VARCHAR(30),
     @nama_flow_baru NVARCHAR(100),
-    @id_flow_baru   INT OUTPUT
+    @id_flow_baru   INT OUTPUT,
+    @oleh_user      INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -46,6 +48,10 @@ BEGIN
         FROM dbo.M_FLOW_STAGE_DOKUMEN fsd
         JOIN dbo.M_FLOW_STAGE fss ON fss.id_flow_stage = fsd.id_flow_stage AND fss.id_flow = @id_flow_sumber
         JOIN dbo.M_FLOW_STAGE fsb ON fsb.id_flow = @id_flow_baru AND fsb.id_stage = fss.id_stage;
+
+        DECLARE @nl VARCHAR(100) = 'sumber=' + CONVERT(VARCHAR(10), @id_flow_sumber);
+        DECLARE @nb VARCHAR(300) = 'kode=' + @kode_flow_baru + ', nama=' + @nama_flow_baru;
+        EXEC dbo.sp_AuditLog 'M_FLOW', @id_flow_baru, 'INSERT', @nl, @nb, @oleh_user;
 
         IF @outer = 0 COMMIT TRANSACTION;
     END TRY

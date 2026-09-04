@@ -60,11 +60,13 @@
 		<label for="kualifikasi">Kualifikasi</label>
 		<input type="text" id="kualifikasi" name="kualifikasi" value="<?= set_value('kualifikasi') ?>">
 
+		<?php if (can_sensitif('GAJI')): ?>
 		<label for="range_gaji_min">Range gaji min / max (SENSITIF)</label>
 		<div style="display:flex; gap:8px">
-			<input type="text" id="range_gaji_min" name="range_gaji_min" value="<?= set_value('range_gaji_min') ?>" inputmode="numeric" style="flex:1">
-			<input type="text" name="range_gaji_max" value="<?= set_value('range_gaji_max') ?>" inputmode="numeric" style="flex:1">
+			<input type="text" id="range_gaji_min" name="range_gaji_min" value="<?= set_value('range_gaji_min') ?>" inputmode="numeric" style="flex:1" placeholder="Gaji min (Rp)">
+			<input type="text" name="range_gaji_max" value="<?= set_value('range_gaji_max') ?>" inputmode="numeric" style="flex:1" placeholder="Gaji max (Rp)">
 		</div>
+		<?php endif; ?>
 
 		<button type="submit">Buat draft</button>
 	<?= form_close() ?>

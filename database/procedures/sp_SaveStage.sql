@@ -1,6 +1,6 @@
 /* =========================================================================
    sp_SaveStage  --  tambah / ubah master tahap seleksi
-   E-Recruitment RPG  --  modul Master Data / Flow Engine (Kahfi, Fase 3)
+   E-Recruitment RPG  --  modul Flow Builder (Kahfi, Fase 3)
 
    @id_stage NULL -> INSERT, selain itu UPDATE.
    tipe_tahap WAJIB dari 7 nilai tetap:
@@ -8,6 +8,7 @@
    kode_stage unik.
    Tahap sistem (is_sistem = 1): nama_tahap & is_terminal boleh diedit,
    tetapi kode_stage & tipe_tahap terkunci untuk menjaga integritas flow/report.
+   Audit trail dicatat via sp_AuditLog.
 
    Deploy:  php tools/migrate.php proc
    ========================================================================= */
@@ -21,7 +22,8 @@ CREATE PROCEDURE dbo.sp_SaveStage
     @tipe_tahap   VARCHAR(20),
     @is_terminal  BIT           = 0,
     @is_aktif     BIT           = 1,
-    @id_stage_out INT OUTPUT
+    @id_stage_out INT OUTPUT,
+    @oleh_user    INT           = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -55,11 +57,18 @@ BEGIN
             INSERT INTO dbo.M_STAGE (kode_stage, nama_tahap, tipe_tahap, is_terminal, is_sistem, is_aktif)
             VALUES (@kode_stage, @nama_tahap, @tipe_tahap, ISNULL(@is_terminal, 0), 0, ISNULL(@is_aktif, 1));
             SET @id_stage_out = SCOPE_IDENTITY();
+
+            DECLARE @nb VARCHAR(400) = 'kode=' + @kode_stage + ', nama=' + @nama_tahap + ', tipe=' + @tipe_tahap + ', term=' + CONVERT(VARCHAR(1), ISNULL(@is_terminal,0));
+            EXEC dbo.sp_AuditLog 'M_STAGE', @id_stage_out, 'INSERT', NULL, @nb, @oleh_user;
         END
         ELSE
         BEGIN
             DECLARE @sis BIT;
-            SELECT @sis = is_sistem FROM dbo.M_STAGE WHERE id_stage = @id_stage;
+            DECLARE @old_kode VARCHAR(30), @old_nama NVARCHAR(100), @old_tipe VARCHAR(20), @old_term BIT, @old_akt BIT;
+            SELECT @sis = is_sistem, @old_kode = kode_stage, @old_nama = nama_tahap, @old_tipe = tipe_tahap,
+                   @old_term = is_terminal, @old_akt = is_aktif
+            FROM dbo.M_STAGE WHERE id_stage = @id_stage;
+
             IF @sis IS NULL
                 RAISERROR('Tahap tidak ditemukan.', 16, 1);
 
@@ -83,6 +92,10 @@ BEGIN
                 WHERE id_stage = @id_stage;
             END
             SET @id_stage_out = @id_stage;
+
+            DECLARE @nl VARCHAR(400) = 'kode=' + ISNULL(@old_kode,'') + ', nama=' + ISNULL(@old_nama,'') + ', tipe=' + ISNULL(@old_tipe,'') + ', term=' + CONVERT(VARCHAR(1), @old_term);
+            DECLARE @nb2 VARCHAR(400) = 'kode=' + @kode_stage + ', nama=' + @nama_tahap + ', tipe=' + @tipe_tahap + ', term=' + CONVERT(VARCHAR(1), ISNULL(@is_terminal,0));
+            EXEC dbo.sp_AuditLog 'M_STAGE', @id_stage, 'UPDATE', @nl, @nb2, @oleh_user;
         END
 
         IF @outer = 0 COMMIT TRANSACTION;

@@ -76,10 +76,10 @@ class Master_model extends CI_Model
 		return $q->row_array() ?: NULL;
 	}
 
-	public function save_stage($in)
+	public function save_stage($in, $oleh_user = NULL)
 	{
 		$id = 0;
-		$this->_sp('{CALL dbo.sp_SaveStage(?,?,?,?,?,?,?)}', array(
+		$this->_sp('{CALL dbo.sp_SaveStage(?,?,?,?,?,?,?,?)}', array(
 			! empty($in['id_stage']) ? (int) $in['id_stage'] : NULL,
 			(string) $in['kode_stage'],
 			(string) $in['nama_tahap'],
@@ -87,13 +87,18 @@ class Master_model extends CI_Model
 			! empty($in['is_terminal']) ? 1 : 0,
 			isset($in['is_aktif']) ? ($in['is_aktif'] ? 1 : 0) : 1,
 			array(&$id, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
+			$oleh_user ? (int) $oleh_user : NULL,
 		));
 		return (int) $id;
 	}
 
-	public function toggle_stage($id_stage, $is_aktif)
+	public function toggle_stage($id_stage, $is_aktif, $oleh_user = NULL)
 	{
-		$this->_sp('{CALL dbo.sp_ToggleStage(?,?)}', array((int) $id_stage, $is_aktif ? 1 : 0));
+		$this->_sp('{CALL dbo.sp_ToggleStage(?,?,?)}', array(
+			(int) $id_stage,
+			$is_aktif ? 1 : 0,
+			$oleh_user ? (int) $oleh_user : NULL,
+		));
 	}
 
 	/* ================= MASTER FLAT ================================ */
@@ -201,22 +206,23 @@ class Master_model extends CI_Model
 		return $this->db->query("SELECT kode_role, nama_role FROM dbo.M_ROLES WHERE is_aktif = 1 ORDER BY kode_role")->result_array();
 	}
 
-	public function save_flow($in)
+	public function save_flow($in, $oleh_user = NULL)
 	{
 		$id = 0;
-		$this->_sp('{CALL dbo.sp_SaveFlow(?,?,?,?,?,?,?)}', array(
+		$this->_sp('{CALL dbo.sp_SaveFlow(?,?,?,?,?,?,?,?)}', array(
 			! empty($in['id_flow']) ? (int) $in['id_flow'] : NULL,
 			(string) $in['kode_flow'], (string) $in['nama_flow'], (string) $in['tipe_penempatan'],
 			(int) ($in['maks_upaya_kontak'] ?: 3),
 			$in['sla_total_hari'] !== '' ? (int) $in['sla_total_hari'] : NULL,
 			array(&$id, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
+			$oleh_user ? (int) $oleh_user : NULL,
 		));
 		return (int) $id;
 	}
 
-	public function flow_stage_action($in)
+	public function flow_stage_action($in, $oleh_user = NULL)
 	{
-		$this->_sp('{CALL dbo.sp_SaveFlowStage(?,?,?,?,?,?,?,?)}', array(
+		$this->_sp('{CALL dbo.sp_SaveFlowStage(?,?,?,?,?,?,?,?,?)}', array(
 			(string) $in['aksi'],
 			(int) $in['id_flow'],
 			! empty($in['id_flow_stage']) ? (int) $in['id_flow_stage'] : NULL,
@@ -225,15 +231,17 @@ class Master_model extends CI_Model
 			! empty($in['is_wajib']) ? 1 : 0,
 			$in['sla_hari'] !== '' ? (int) $in['sla_hari'] : NULL,
 			$in['role_pic'] ?: NULL,
+			$oleh_user ? (int) $oleh_user : NULL,
 		));
 	}
 
-	public function clone_flow($id_sumber, $kode_baru, $nama_baru)
+	public function clone_flow($id_sumber, $kode_baru, $nama_baru, $oleh_user = NULL)
 	{
 		$id = 0;
-		$this->_sp('{CALL dbo.sp_CloneFlow(?,?,?,?)}', array(
+		$this->_sp('{CALL dbo.sp_CloneFlow(?,?,?,?,?)}', array(
 			(int) $id_sumber, (string) $kode_baru, (string) $nama_baru,
 			array(&$id, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
+			$oleh_user ? (int) $oleh_user : NULL,
 		));
 		return (int) $id;
 	}
@@ -255,16 +263,17 @@ class Master_model extends CI_Model
 		return $this->db->query($sql, $b)->result_array();
 	}
 
-	public function save_remark($in)
+	public function save_remark($in, $oleh_user = NULL)
 	{
 		$id = 0;
-		$this->_sp('{CALL dbo.sp_SaveRemark(?,?,?,?,?,?,?,?)}', array(
+		$this->_sp('{CALL dbo.sp_SaveRemark(?,?,?,?,?,?,?,?,?)}', array(
 			! empty($in['id_remark']) ? (int) $in['id_remark'] : NULL,
 			(int) $in['id_stage'],
 			(string) $in['kode_remark'], (string) $in['label'], (string) $in['efek_status'],
 			(int) ($in['urutan'] ?: 0),
 			isset($in['is_aktif']) ? ($in['is_aktif'] ? 1 : 0) : 1,
 			array(&$id, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
+			$oleh_user ? (int) $oleh_user : NULL,
 		));
 		return (int) $id;
 	}

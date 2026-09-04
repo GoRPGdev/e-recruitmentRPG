@@ -12,6 +12,16 @@
 		<tr><th>Penempatan</th><td><?= html_escape($req['tipe_penempatan'] . ($req['nama_outlet'] ? ' / ' . $req['nama_outlet'] : '')) ?></td></tr>
 		<tr><th>Flow</th><td><?= html_escape($req['kode_flow'] ?: '(belum ada)') ?></td></tr>
 		<tr><th>Jumlah</th><td>butuh <?= (int) $req['jumlah_dibutuhkan'] ?> · setuju <?= $req['jumlah_disetujui'] === NULL ? '-' : (int) $req['jumlah_disetujui'] ?> · terpenuhi <?= (int) $req['jumlah_terpenuhi'] ?></td></tr>
+		<?php if (can_sensitif('GAJI')): ?>
+		<tr>
+			<th>Range Gaji</th>
+			<td>
+				<?= ($req['range_gaji_min'] !== NULL || $req['range_gaji_max'] !== NULL)
+					? 'Rp ' . number_format((float) $req['range_gaji_min'], 0, ',', '.') . ' &mdash; Rp ' . number_format((float) $req['range_gaji_max'], 0, ',', '.')
+					: '<span class="muted">(belum ditentukan)</span>' ?>
+			</td>
+		</tr>
+		<?php endif; ?>
 		<tr><th>Status</th><td><span class="tag <?= in_array($req['status_req'], array('Sourcing','Approved','Terpenuhi','Terpenuhi_Sebagian')) ? 'on' : 'off' ?>"><?= html_escape($req['status_req']) ?></span></td></tr>
 	</table>
 

@@ -45,6 +45,8 @@ class Requisitions extends Secured_Controller
 
 	public function create()
 	{
+		$this->require_permission('BUAT_MPR');
+
 		if ($this->input->method() === 'post') {
 			$this->form_validation->set_rules('id_posisi', 'Posisi', 'required|integer');
 			$this->form_validation->set_rules('tipe_penempatan', 'Penempatan', 'required|in_list[HQ,OUTLET]');
@@ -69,8 +71,8 @@ class Requisitions extends Secured_Controller
 						'pengalaman_minimal_tahun' => $this->input->post('pengalaman_minimal_tahun', TRUE),
 						'job_desc'                 => $this->input->post('job_desc', TRUE),
 						'kualifikasi'              => $this->input->post('kualifikasi', TRUE),
-						'range_gaji_min'           => $this->input->post('range_gaji_min', TRUE),
-						'range_gaji_max'           => $this->input->post('range_gaji_max', TRUE),
+						'range_gaji_min'           => can_sensitif('GAJI') ? $this->input->post('range_gaji_min', TRUE) : NULL,
+						'range_gaji_max'           => can_sensitif('GAJI') ? $this->input->post('range_gaji_max', TRUE) : NULL,
 						'preferensi_internal'      => $this->input->post('preferensi_internal', TRUE),
 					), (int) $this->auth_user['id_user']);
 					$this->session->set_flashdata('ok', 'MPR draft dibuat.');
@@ -95,6 +97,12 @@ class Requisitions extends Secured_Controller
 		if ( ! $req) {
 			show_404();
 		}
+
+		// Catat log jika user berhak melihat data sensitif gaji dan range gaji terisi
+		if (can_sensitif('GAJI') && ($req['range_gaji_min'] !== NULL || $req['range_gaji_max'] !== NULL)) {
+			log_akses_sensitif('GAJI', (int) $id_req);
+		}
+
 		$this->load->model('application_model');
 		$this->load->view('layouts/main', array(
 			'title'     => 'MPR ' . ($req['no_mpr'] ?: '#' . $req['id_req']),
@@ -110,6 +118,8 @@ class Requisitions extends Secured_Controller
 
 	public function submit($id_req = NULL)
 	{
+		$this->require_permission('BUAT_MPR');
+
 		if ( ! $id_req || $this->input->method() !== 'post') {
 			show_404();
 		}
@@ -124,7 +134,7 @@ class Requisitions extends Secured_Controller
 
 	public function approve($id_req = NULL)
 	{
-		$this->require_permission('KELOLA_REKRUTMEN');
+		$this->require_any_permission(array('APPROVE', 'KELOLA_REKRUTMEN'));
 		if ( ! $id_req || $this->input->method() !== 'post') {
 			show_404();
 		}
