@@ -61,6 +61,10 @@ BEGIN
             INSERT INTO dbo.APPLICATION_HISTORY (id_lamaran, jenis_event, status_dari, status_ke, deskripsi, oleh_user)
             VALUES (@id_lamaran, 'KONTAK', @st_global, @st_baru,
                     'Kontak #' + CONVERT(VARCHAR(10), @upaya_ke) + ' (' + @metode + '/' + @hasil + ')', @oleh_user);
+
+            /* -- Fase 4 (Kiki): retensi data pelamar saat status jadi final -- */
+            IF @st_baru = 'Withdrawn'
+                EXEC dbo.sp_SetRetensi @id_lamaran = @id_lamaran, @oleh_user = @oleh_user;
         END
         ELSE
             INSERT INTO dbo.APPLICATION_HISTORY (id_lamaran, jenis_event, deskripsi, oleh_user)

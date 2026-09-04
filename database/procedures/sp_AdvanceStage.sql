@@ -116,6 +116,11 @@ BEGIN
             id_remark_terakhir = COALESCE(@id_remark, id_remark_terakhir)
         WHERE id_lamaran = @id_lamaran;
 
+        /* -- Fase 4 (Kiki): retensi data pelamar saat status jadi final -- */
+        IF @st_global_baru <> @st_global
+           AND @st_global_baru IN ('Hired','Rejected','Withdrawn','Offer_Declined','No_Show','Talent_Pool')
+            EXEC dbo.sp_SetRetensi @id_lamaran = @id_lamaran, @oleh_user = @pic_user;
+
         /* -- fill rate requisition saat Hired -- */
         IF @efek = 'HIRED'
         BEGIN
