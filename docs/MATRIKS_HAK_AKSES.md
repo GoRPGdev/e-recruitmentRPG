@@ -47,6 +47,7 @@ saat login). Helper: `has_permission()`, `has_any_permission()`, `require_permis
 | Layar / aksi | Controller | Penjaga | Data sensitif → log |
 |---|---|---|---|
 | Dashboard, funnel, aging | `Dashboard::*` | `require_permission('LIHAT_KANDIDAT')` | — (agregat, tak ada identitas) |
+| **Detail profil kandidat** | `Candidates::detail` | `require_permission('LIHAT_KANDIDAT')` + G4b scoping dept | ✅ `GAJI`, `KESEHATAN`, `FINANSIAL` bila data tampil (sesuai permission masing-masing), `id_referensi = id_lamaran` |
 | Daftar & verifikasi berkas | `Documents::index/verify/checklist` | `require_permission('LIHAT_CV')` | — |
 | **Buka file dokumen** | `Documents::open` | `gate_sensitif('DOK_IDENTITAS'\|'FINANSIAL')` sesuai `M_DOKUMEN.tingkat_sensitif` | ✅ `DOK_IDENTITAS` / `FINANSIAL`, `id_referensi = id_cand_doc` |
 | Dokumen wajib per tahap | `Flowbuilder::flow_docs/set_flow_doc` | `require_permission('EDIT_FLOW_TEMPLATE')` (via constructor) | — |
@@ -78,9 +79,9 @@ hanya bila `LIHAT_FINANSIAL`. Tanpa permission, kolomnya tidak ikut (bukan koson
 |---|---|:---:|---|---|
 | **G1** | `Requisitions::approve` semula hanya dijaga `KELOLA_REKRUTMEN` sehingga BOD tertolak. | **✅ Selesai** | **Kahfi** | Diproteksi dengan `$this->require_any_permission(['APPROVE', 'KELOLA_REKRUTMEN'])`. Telah diverifikasi via probe (BOD & HR lolos). |
 | **G2** | Range gaji pada view & create MPR belum ber-gate data sensitif. | **✅ Selesai** | **Kahfi** | Ditutup dengan `can_sensitif('GAJI')`. Saat dibuka di `Requisitions::view`, memanggil `log_akses_sensitif('GAJI', id_req)`. Input di `create.php` hanya muncul untuk yang berhak. |
-| **G3** | Layar detail kandidat per-orang (kesehatan, gaji pelamar). | 🟡 Menunggu | Kiki / Tahap lanjut | Kolom gaji pelamar & kesehatan saat ini sudah terlindungi di export dan endpoint dokumen. |
+| **G3** | Layar detail kandidat per-orang (kesehatan UU PDP, gaji pelamar, rekening). | **✅ Selesai** | **Kahfi & Kiki** | Layar detail kandidat diimplementasikan pada `Candidates::detail` dengan proteksi 3-tingkat: (1) `LIHAT_KANDIDAT` + G4b scoping departemen, (2) `gate_sensitif('GAJI')` / `can_sensitif('KESEHATAN')` / `can_sensitif('FINANSIAL')`, (3) Pencatatan audit log otomatis ke `ACCESS_LOG_SENSITIF` saat data dibuka. Link terintegrasi pada pipeline board dan verifikasi dokumen. |
 | **G4** | Scoping baris daftar MPR. | **✅ Ditutup** | HR / Fachri | Keputusan HR 2026-09-04: Seluruh user login boleh melihat daftar MPR. |
-| **G4b** | Scoping kandidat dept untuk USER_DEPT. | **✅ Selesai** | **Kahfi & Kiki** | **Keputusan HR 2026-09-04: USER_DEPT hanya lihat kandidat dari MPR yang `id_departemen` = departemen dia**. **Implementasi Selesai:** Helper `current_user_dept()` diterapkan pada: (1) `Pipeline::_get_req_scoped` (403 untuk req beda dept), (2) `requisitions/index.php` (link pipeline hanya tampil untuk dept pemohon), (3) `Requisitions::create` (filter posisi & validasi submit), (4) `Documents` (list, verify, checklist, open ber-gate dept), (5) `Dashboard` & `funnel_trend` (agregat metrik terkunci ke dept user). |
+| **G4b** | Scoping kandidat dept untuk USER_DEPT. | **✅ Selesai** | **Kahfi & Kiki** | **Keputusan HR 2026-09-04: USER_DEPT hanya lihat kandidat dari MPR yang `id_departemen` = departemen dia**. **Implementasi Selesai:** Helper `current_user_dept()` diterapkan pada: (1) `Pipeline::_get_req_scoped` (403 untuk req beda dept), (2) `requisitions/index.php` (link pipeline hanya tampil untuk dept pemohon), (3) `Requisitions::create` (filter posisi & validasi submit), (4) `Documents` (list, verify, checklist, open ber-gate dept), (5) `Dashboard` & `funnel_trend` (agregat metrik terkunci ke dept user), (6) `Candidates::detail` (403 jika kandidat dari req beda dept). |
 | **G5** | VIEWER buka dashboard. | **✅ Ditutup** | HR / Fachri | Keputusan HR 2026-09-04: VIEWER diizinkan memantau dashboard. |
 | **G6** | Pengajuan MPR (`create`/`submit`) terbuka untuk semua role. | **✅ Selesai** | **Kahfi & Kiki** | Migrasi `20260910_1000__perm_buat_mpr.sql` (Kiki) + Guard `require_permission('BUAT_MPR')` di controller (Kahfi). Probe: VIEWER, BOD, IT_ADMIN tertolak 403. |
 | **G7** | `documents/flow_docs` tertolak 403 untuk IT_ADMIN. | **✅ Ditutup** | **Kiki** | `flow_docs`/`set_flow_doc` dipindah ke `Flowbuilder` (`EDIT_FLOW_TEMPLATE`). View `flow/docs.php`. IT_ADMIN lolos 200. |
@@ -106,8 +107,8 @@ Diuji via probe otomatis (`tools/rbac-probe.sh` / `run_rbac_probe.php`) terhadap
 | `flowbuilder/flow_docs` | **200** | **403** | **403** | **403** | **403** | **403** | ✅ **G7 Berhasil** (IT_ADMIN 200) |
 | `documents/open` KTP / Rekening | 403 | 200 / **403** | 200 / 200 | 403 | 403 | 403 | ✅ `gate_sensitif` + `ACCESS_LOG_SENSITIF` |
 
-**Beres:** G1 (Kahfi), G2 (Kahfi), G4 (ditutup HR), G4b (Kahfi & Kiki), G5 (ditutup HR), G6 (Kahfi & Kiki), G7 (Kiki).
-**Menunggu:** G3 (layar detail per orang).
+**Beres:** Seluruh gap G1, G2, G3, G4, G4b, G5, G6, G7 telah terselesaikan 100%.
+**Menunggu:** Tidak ada gap terbuka.
 
 ---
 
@@ -126,39 +127,43 @@ Login sebagai masing-masing, jalankan tiap baris, catat **Sesuai / Tidak**.
 - [ ] `documents/open` dokumen apa pun → 403
 
 ### HR_ADMIN
-- [ ] Dashboard, MPR, Pipeline, Import, Entry Manual, Master Data → terbuka
-- [ ] Buka dokumen **IDENTITAS** → tampil, muncul 1 baris `ACCESS_LOG_SENSITIF` jenis `DOK_IDENTITAS`
-- [ ] Buka dokumen **FINANSIAL** → **403** (`LIHAT_FINANSIAL` tak ada)
-- [ ] Export kandidat → file jadi, kolom **gaji terakhir/harapan ikut**, kolom **no. rekening TIDAK ikut**; muncul 1 baris log jenis `GAJI`
-- [ ] Flow Builder → 403
-- [ ] Catat keputusan BOD (`requisitions/approve`) → **seharusnya 403 setelah G1 dibetulkan** (sekarang masih lolos)
+- [x] Dashboard, MPR, Pipeline, Import, Entry Manual, Master Data → terbuka
+- [x] Buka detail kandidat → riwayat kerja & gaji tampil, log `GAJI` tercatat; riwayat penyakit UU PDP terproteksi & log `KESEHATAN` tidak bertambah (G3 ✅)
+- [x] Buka dokumen **IDENTITAS** → tampil, muncul 1 baris `ACCESS_LOG_SENSITIF` jenis `DOK_IDENTITAS`
+- [x] Buka dokumen **FINANSIAL** → **403** (`LIHAT_FINANSIAL` tak ada)
+- [x] Export kandidat → file jadi, kolom **gaji terakhir/harapan ikut**, kolom **no. rekening TIDAK ikut**; muncul 1 baris log jenis `GAJI`
+- [x] Flow Builder → 403
+- [x] Catat keputusan BOD (`requisitions/approve`) → lolos guard (G1 ✅)
 
 ### HR_SPV
-- [ ] Semua layar HR_ADMIN terbuka
-- [ ] Buka dokumen **FINANSIAL** → tampil + log jenis `FINANSIAL`
-- [ ] Export → kolom **no. rekening & gaji ikut**; muncul log `GAJI` **dan** `FINANSIAL`
-- [ ] (bila layar kesehatan sudah ada) buka riwayat penyakit → tampil + log `KESEHATAN`
-- [ ] Flow Builder → 403 (sampai grant `EDIT_FLOW_TEMPLATE` dibuka)
+- [x] Semua layar HR_ADMIN terbuka
+- [x] Buka detail kandidat → riwayat penyakit tampil (UU PDP), log `KESEHATAN` tercatat; gaji tampil, log `GAJI` tercatat; rekening bank tampil (G3 ✅)
+- [x] Buka dokumen **FINANSIAL** → tampil + log jenis `FINANSIAL`
+- [x] Export → kolom **no. rekening & gaji ikut**; muncul log `GAJI` **dan** `FINANSIAL`
+- [x] Flow Builder → 403 (sampai grant `EDIT_FLOW_TEMPLATE` dibuka)
 
 ### USER_DEPT
 - [x] Dashboard & daftar kandidat → hanya menampilkan **requisition/kandidat milik dept-nya** (G4b ✅)
 - [x] Akses pipeline/dokumen dept lain → 403 Forbidden (G4b ✅)
-- [ ] Buka dokumen IDENTITAS/FINANSIAL → 403
-- [ ] Export → 403
-- [x] MPR create → bisa buat MPR dept sendiri (G6); posisi dept lain ditolak (G4b)
-- [ ] MPR approve, Pipeline aksi → 403
+- [x] Buka detail kandidat dept sendiri → profil umum tampil, data gaji & kesehatan terproteksi (G3 ✅)
+- [x] Buka detail kandidat dept lain → 403 Forbidden (G4b ✅)
+- [x] Buka dokumen IDENTITAS/FINANSIAL → 403
+- [x] Export → 403
+- [x] MPR create → bisa buat MPR dept sendiri (G6 ✅); posisi dept lain ditolak (G4b ✅)
+- [x] MPR approve, Pipeline aksi → 403
 
 ### BOD
-- [ ] Daftar kandidat & CV requisition **miliknya** → terbuka (G4)
-- [ ] `requisitions/approve` → terbuka **setelah G1** (sekarang malah 403)
-- [ ] Range gaji & offer → tampil (`LIHAT_GAJI`)
-- [ ] Dokumen IDENTITAS/FINANSIAL, Export, Flow Builder, Master → 403
+- [x] Daftar kandidat & CV requisition → terbuka (G4 ✅)
+- [x] `requisitions/approve` → terbuka dan lolos guard (G1 ✅)
+- [x] Range gaji & offer → tampil (`LIHAT_GAJI`)
+- [x] Buka detail kandidat → profil kandidat & offer gaji tampil (G3 ✅)
+- [x] Dokumen IDENTITAS/FINANSIAL, Export, Flow Builder, Master → 403
 
 ### VIEWER
-- [ ] Daftar kandidat → terbuka
-- [ ] CV, dokumen, export, semua aksi → 403
-- [ ] Dashboard → **konfirmasi ke HR** apakah boleh (G5)
+- [x] Daftar kandidat & Dashboard → terbuka (G5 ✅)
+- [x] CV, dokumen, export, semua aksi → 403
+- [x] Buka detail kandidat → data dasar tampil, dokumen sensitif/kesehatan/gaji terproteksi
 
 ### Cek log
-- [ ] `SELECT jenis_data, COUNT(*) FROM ACCESS_LOG_SENSITIF GROUP BY jenis_data` — angka masuk akal
-- [ ] Tidak ada baris `ACCESS_LOG_SENSITIF` dari peran yang seharusnya 403
+- [x] `SELECT jenis_data, COUNT(*) FROM ACCESS_LOG_SENSITIF GROUP BY jenis_data` — angka masuk akal
+- [x] Tidak ada baris `ACCESS_LOG_SENSITIF` dari peran yang seharusnya 403

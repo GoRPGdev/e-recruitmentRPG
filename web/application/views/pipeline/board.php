@@ -37,7 +37,11 @@
 			<div style="flex:0 0 290px; width:290px; border:1px solid var(--border); border-radius:8px; padding:12px; background:var(--surface); box-shadow:var(--shadow-sm); display:flex; flex-direction:column; justify-content:space-between">
 				<div>
 					<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px">
-						<strong style="font-size:14.5px; color:var(--text); line-height:1.3"><?= html_escape($c['nama_lengkap']) ?></strong>
+						<strong style="font-size:14.5px; line-height:1.3">
+							<a href="<?= site_url('candidates/detail/' . $id_lamaran) ?>" style="color:var(--text); text-decoration:none; border-bottom:1px dashed var(--accent)" title="Lihat Detail Profil Kandidat">
+								<?= html_escape($c['nama_lengkap']) ?>
+							</a>
+						</strong>
 						<span class="tag <?= $c['status_global'] === 'In_Progress' ? 'on' : 'off' ?>"><?= html_escape($c['status_global']) ?></span>
 					</div>
 					<div class="muted mono" style="font-size:12px; margin-bottom:6px"><?= html_escape($c['no_wa_normal'] ?: '-') ?></div>

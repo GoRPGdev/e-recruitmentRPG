@@ -134,3 +134,35 @@ Dokumentasi ini mencatat rekaman problem solving, kendala teknis, serta solusi y
      - Opsi filter departemen dan posisi di view dikunci hanya untuk departemen user.
      - Agregasi tren historis `funnel_trend(14, $dept)` difilter via join ke `dbo.M_POSISI pos WHERE pos.id_departemen = ?`.
      - Ekspor Excel kandidat (`candidates_export()`) membatasi baris ke departemen user.
+
+---
+
+### [PS-010] Proteksi Data Sensitif PDP & Finansial pada Layar Detail Kandidat (G3) serta Penyesuaian Skema Kolom
+- **Problem:**
+  1. Pada penggabungan fitur G3 (layar detail kandidat), terdapat data-data pribadi spesifik kandidat:
+     - Riwayat Penyakit (UU PDP No. 27/2022 Pasal 4 ayat 2, kategori data spesifik) hanya boleh dilihat oleh pemegang izin `LIHAT_KESEHATAN` (HR Supervisor) dan wajib dicatat di `ACCESS_LOG_SENSITIF`.
+     - Gaji Pelamar (`gaji_terakhir`, `gaji_diharapkan`) dan Penawaran Kerja (`gaji_ditawarkan`) memerlukan izin `LIHAT_GAJI` dan wajib dicatat di `ACCESS_LOG_SENSITIF`.
+     - Nomor rekening bank kandidat memerlukan izin `LIHAT_FINANSIAL` dan wajib dicatat di `ACCESS_LOG_SENSITIF`.
+     - Kandidat yang melamar pada lowongan departemen lain tidak boleh dibuka oleh `USER_DEPT` (HTTP 403 Scoping G4b).
+  2. Terjadi ketidaksesuaian nama kolom pada skema basis data:
+     - `APPLICATION_STAGES`: kolom PIC adalah `pic_user` (bukan `diproses_oleh`).
+     - `APPLICATION_CONTACTS`: kolom PIC user adalah `oleh_user` (bukan `dilakukan_oleh`).
+     - `APPLICATION_HISTORY`: kolom waktu adalah `waktu` (bukan `waktu_event`), dan transisi tahap disimpan sebagai `id_stage_dari` & `id_stage_ke` (bukan `tahap_asal` & `tahap_tujuan`), status tersimpan di `status_dari` & `status_ke`.
+     - `CANDIDATES`: kolom retensi adalah `c.retensi_sampai` (bukan di tabel `APPLICATIONS`), dan kolom blacklist adalah `is_blacklist` (bukan `is_blacklisted`).
+- **Identifikasi:**
+  Pengujian runtime dan verifikasi skema DDL terhadap migrasi SQL (`20260908_1100__kandidat_lamaran.sql` & `20260908_1130__import_dokumen_audit.sql`) mengungkap perbedaan penamaan kolom tersebut saat query dieksekusi.
+- **Solusi:**
+  1. **Controller `Candidates.php`:**
+     - Mengimplementasikan guard `require_permission('LIHAT_KANDIDAT')`.
+     - Menerapkan scoping G4b: memverifikasi apakah `current_user_dept() !== NULL && $cand['id_departemen'] != current_user_dept()`. Bila melanggar, memicu `show_error(..., 403)`.
+     - Melakukan pengecekan granular menggunakan `can_sensitif('KESEHATAN')`, `can_sensitif('GAJI')`, dan `can_sensitif('FINANSIAL')`.
+     - Mencatat audit log sensitif secara otomatis via `log_akses_sensitif($jenis, 'DETAIL_KANDIDAT', $id_lamaran, ...)` yang memanggil SP `sp_LogAksesSensitif` dan tabel `ACCESS_LOG_SENSITIF`.
+  2. **Model `Candidate_model.php`:**
+     - Menyelaraskan seluruh nama kolom dan relasi join:
+       - `APPLICATION_STAGES`: `LEFT JOIN dbo.M_USERS u ON u.id_user = aps.pic_user` dengan alias `u.nama_snapshot AS diproses_oleh_nama`.
+       - `APPLICATION_CONTACTS`: `LEFT JOIN dbo.M_USERS u ON u.id_user = ac.oleh_user`.
+       - `APPLICATION_HISTORY`: Join ke `dbo.M_STAGE s_dari` dan `s_ke`, serta `dbo.M_REMARKS r` untuk menyajikan kronologi pergerakan tahap yang informatif.
+  3. **View `views/candidates/detail.php`:**
+     - Layout 2 kolom yang informatif: profil personal, status blacklist, tanggal retensi PDP, riwayat karir/gaji, data kesehatan bertanda proteksi gembok, rekening perbankan, berkas dokumen dengan status verifikasi, rekap wawancara & psikotes, status offering, tahapan flow seleksi, dan jejak aktivitas audit trail.
+  4. **Tautan Integrasi:**
+     - Nama kandidat pada board pipeline vertikal (`pipeline/board.php`) dan daftar dokumen (`documents/index.php`) kini menjadi tautan aktif menuju `candidates/detail/<id_lamaran>`.
