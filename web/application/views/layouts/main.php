@@ -491,10 +491,13 @@ dialog::backdrop {
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
         <span>Entry Manual</span>
       </a>
+      <?php /* ponytail: Menu Import Portal di-hide sementara, aktifkan kembali saat format CSV/portal dibakukan */ ?>
+      <?php if (false): ?>
       <a href="<?= site_url('import') ?>" class="nav-item <?= $seg1 === 'import' ? 'active' : '' ?>">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
         <span>Import Portal</span>
       </a>
+      <?php endif; ?>
       <a href="<?= site_url('documents') ?>" class="nav-item <?= $seg1 === 'documents' ? 'active' : '' ?>">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
         <span>Berkas & PDP</span>
