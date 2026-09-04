@@ -8,6 +8,10 @@ Dokumen acuan ada di `docs/` — baca `docs/RENCANA_DEVELOPMENT.md` dan
 CodeIgniter 3 · PHP 7.4 · SQL Server 2008 R2 · Database-First
 (logika transaksi di Stored Procedure, model tipis)
 
+**Runtime produksi: Windows** (keputusan Fase 0). Web server IIS/Apache
+dipastikan saat Fase 5. Job terjadwal pakai **Windows Task Scheduler**
+(`tools/build-funnel.php`, `tools/run-retensi.php`) — bukan SQL Server Agent.
+
 ## Batasan T-SQL SQL Server 2008 R2 — JANGAN dipakai
 
 | Tidak ada di 2008 R2   | Pakai ini                       |

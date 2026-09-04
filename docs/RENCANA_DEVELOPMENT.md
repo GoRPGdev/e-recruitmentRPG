@@ -298,7 +298,7 @@ Pembagian di bawah bisa ditukar sesuai preferensi — yang penting jangan dua or
 - [x] Install **Microsoft ODBC Driver 17 for SQL Server (17.4+)** — bukan 18
 - [x] `test-koneksi.php`: `SELECT @@VERSION` + `sqlsrv_client_info()` + `EXEC` SP dummy dengan parameter binding
 - [ ] Jalankan di **mesin produksi**, bukan cuma Laragon
-- [ ] Putuskan runtime produksi (Windows+IIS / Windows+Apache / Linux+Nginx) dan siapa yang mengelola
+- [x] Putuskan runtime produksi (Windows+IIS / Windows+Apache / Linux+Nginx) dan siapa yang mengelola _(**Windows**; IIS vs Apache dipastikan saat Fase 5)_
 - [x] Repo GitHub privat + `CLAUDE.md` + `.gitignore` + struktur folder
 - [x] Dua database dev terpisah
 - [ ] Minta HR: sample export pelamar JobStreet & Glints (field apa saja, CV ikut atau tidak)
