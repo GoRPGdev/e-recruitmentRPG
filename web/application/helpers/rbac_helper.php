@@ -14,6 +14,20 @@ if ( ! function_exists('current_user')) {
 	}
 }
 
+if ( ! function_exists('current_user_dept')) {
+	/**
+	 * id_departemen user login, atau NULL untuk peran non-departemen
+	 * (IT_ADMIN / HR_ADMIN / HR_SPV / BOD / VIEWER). Dipakai untuk scoping
+	 * "req sendiri": USER_DEPT hanya lihat kandidat dari MPR dept-nya (G4b).
+	 */
+	function current_user_dept()
+	{
+		$au = current_user();
+		return isset($au['id_departemen']) && $au['id_departemen'] !== NULL
+			? (int) $au['id_departemen'] : NULL;
+	}
+}
+
 if ( ! function_exists('has_permission')) {
 	/**
 	 * @param string $kode  mis. 'LIHAT_CV', 'EDIT_FLOW_TEMPLATE'

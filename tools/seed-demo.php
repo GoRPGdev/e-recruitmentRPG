@@ -108,20 +108,27 @@ echo "- organisasi (dev_organisasi.sql) OK\n";
 
 /* ------------------------------------------------------------------ user -- */
 $roles = array('IT_ADMIN','HR_ADMIN','HR_SPV','USER_DEPT','BOD','VIEWER');
+// USER_DEPT di-scope ke Marketing (posisi demo = Marketing Staff) untuk uji G4b
+$deptMkt = scalar($conn, "SELECT id_departemen FROM dbo.M_DEPARTEMEN WHERE kode = 'MKT'");
 $uid = array();
 foreach ($roles as $r) {
     $u = 'demo_' . strtolower($r);
+    $row = array(
+        'username' => $u, 'password_hash' => password_hash('demo123', PASSWORD_DEFAULT),
+        'nama_snapshot' => 'Demo ' . $r, 'is_aktif' => 1,
+        'id_role' => scalar($conn, "SELECT id_role FROM dbo.M_ROLES WHERE kode_role=?", array($r)),
+        'id_departemen' => ($r === 'USER_DEPT') ? $deptMkt : NULL,
+    );
     $id = scalar($conn, "SELECT id_user FROM dbo.M_USERS WHERE username=?", array($u));
-    if (!$id) {
-        $rid = scalar($conn, "SELECT id_role FROM dbo.M_ROLES WHERE kode_role=?", array($r));
-        $id = insert_row($conn, 'M_USERS', array(
-            'username' => $u, 'password_hash' => password_hash('demo123', PASSWORD_DEFAULT),
-            'nama_snapshot' => 'Demo ' . $r, 'id_role' => $rid, 'is_aktif' => 1,
-        ), 'id_user');
+    if ($id) {
+        q($conn, "UPDATE dbo.M_USERS SET id_departemen = ? WHERE id_user = ?",
+          array($row['id_departemen'], (int) $id));
+    } else {
+        $id = insert_row($conn, 'M_USERS', $row, 'id_user');
     }
     $uid[$r] = (int) $id;
 }
-echo "- 6 user demo (demo_<role> / demo123)\n";
+echo "- 6 user demo (demo_<role> / demo123; demo_user_dept -> dept Marketing)\n";
 
 if (scalar($conn, "SELECT COUNT(*) FROM dbo.CANDIDATES WHERE email LIKE '%@demo.local'") > 0) {
     echo "- data demo sudah ada. 'php tools/seed-demo.php --reset' dulu kalau mau ulang.\n";

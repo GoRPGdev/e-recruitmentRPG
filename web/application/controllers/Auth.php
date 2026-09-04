@@ -33,10 +33,12 @@ class Auth extends MY_Controller
 					$this->session->set_userdata(array(
 						'logged_in'   => TRUE,
 						'auth_user'   => array(
-							'id_user'   => (int) $user['id_user'],
-							'username'  => $user['username'],
-							'nama'      => $user['nama_snapshot'],
-							'kode_role' => $user['kode_role'],
+							'id_user'       => (int) $user['id_user'],
+							'username'      => $user['username'],
+							'nama'          => $user['nama_snapshot'],
+							'kode_role'     => $user['kode_role'],
+							'id_departemen' => isset($user['id_departemen']) && $user['id_departemen'] !== NULL
+								? (int) $user['id_departemen'] : NULL,
 						),
 						'permissions' => $this->auth_model->get_permissions($user['id_user']),
 					));

@@ -24,6 +24,7 @@ BEGIN
         u.password_hash,
         u.nama_snapshot,
         u.departemen_snapshot,
+        u.id_departemen,
         u.id_role,
         r.kode_role,
         r.nama_role
