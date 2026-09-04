@@ -24,7 +24,8 @@ Sumber: `M_ROLE_PERMISSIONS` (seed `20260908_1200` + `20260909_1000`).
 | `LIHAT_KESEHATAN` (riwayat penyakit) | – | – | ✅ | – | – | – |
 | `APPROVE` (keputusan BOD) | – | – | – | – | ✅ | – |
 | `EXPORT` | – | ✅ | ✅ | – | – | – |
-| `KELOLA_REKRUTMEN` (link form, token, entry, import, pipeline, MPR) | – | ✅ | ✅ | – | – | – |
+| `KELOLA_REKRUTMEN` (link form, token, entry, import, pipeline) | – | ✅ | ✅ | – | – | – |
+| `BUAT_MPR` (buat & ajukan requisition) | – | ✅ | ✅ | ✅ | – | – |
 | `EDIT_FLOW_TEMPLATE` (flow/stage/remark/dok wajib) | ✅ | – | –¹ | – | – | – |
 
 ¹ `EDIT_FLOW_TEMPLATE` untuk HR_SPV **sengaja belum di-grant** — dibuka setelah 2 siklus / 2 bulan (ERD §10.1). Cukup 1 INSERT ke `M_ROLE_PERMISSIONS` nanti.
@@ -48,7 +49,7 @@ saat login). Helper: `has_permission()`, `has_any_permission()`, `require_permis
 | Dashboard, funnel, aging | `Dashboard::*` | `require_permission('LIHAT_KANDIDAT')` | — (agregat, tak ada identitas) |
 | Daftar & verifikasi berkas | `Documents::index/verify/checklist` | `require_permission('LIHAT_CV')` | — |
 | **Buka file dokumen** | `Documents::open` | `gate_sensitif('DOK_IDENTITAS'\|'FINANSIAL')` sesuai `M_DOKUMEN.tingkat_sensitif` | ✅ `DOK_IDENTITAS` / `FINANSIAL`, `id_referensi = id_cand_doc` |
-| Atur dokumen wajib per tahap | `Documents::flow_docs/set_flow_doc` | `require_permission('EDIT_FLOW_TEMPLATE')` | — |
+| Dokumen wajib per tahap | `Flowbuilder::flow_docs/set_flow_doc` | `require_permission('EDIT_FLOW_TEMPLATE')` (via constructor) | — |
 | **Export kandidat** | `Export::candidates` | `require_permission('EXPORT')` | ✅ `GAJI` bila kolom gaji ikut (`LIHAT_GAJI_PELAMAR`), `FINANSIAL` bila no. rekening ikut (`LIHAT_FINANSIAL`) — 1 baris / export, `id_referensi = NULL` |
 | Flow Builder (flow / **tahap M_STAGE** / remark) | `Flowbuilder::*` (`stages`/`save_stage`/`toggle_stage`, `remarks`, `edit`, …) | `require_permission('EDIT_FLOW_TEMPLATE')` | — |
 | Import file portal | `Import::*` | `require_permission('KELOLA_REKRUTMEN')` | — |
@@ -58,7 +59,7 @@ saat login). Helper: `has_permission()`, `has_any_permission()`, `require_permis
 | Pipeline (lihat) | `Pipeline::index` | `require_permission('LIHAT_KANDIDAT')` | — |
 | Pipeline aksi (advance/kontak/sisip tahap) | `Pipeline::advance/contact/insert_stage` | `require_permission('KELOLA_REKRUTMEN')` | — |
 | MPR list / view | `Requisitions::index/view` | **tak ada penjaga** — semua user login (by design: "buat & ajukan semua user"), TAPI tak di-scope "req sendiri" ⚠️ G4 | — |
-| MPR create / submit | `Requisitions::create/submit` | **tak ada penjaga** — termasuk VIEWER ⚠️ G6 | — |
+| MPR create / submit | `Requisitions::create/submit` | perlu `require_permission('BUAT_MPR')` ⚠️ G6 (permission sudah ada, guard belum dipasang) | — |
 | MPR post job | `Requisitions::post_job` | `require_permission('KELOLA_REKRUTMEN')` | — |
 | **Catat keputusan BOD** | `Requisitions::approve` | `require_permission('KELOLA_REKRUTMEN')` ⚠️ G1 (harusnya `APPROVE`) | — |
 
@@ -78,8 +79,8 @@ hanya bila `LIHAT_FINANSIAL`. Tanpa permission, kolomnya tidak ikut (bukan koson
 | **G4** | **Terkonfirmasi (probe).** `/requisitions` menampilkan **SEMUA MPR ke semua peran**. | — | — | **✅ Ditutup (HR 2026-09-04): "BOD lihat aja", "VIEWER boleh lihat MPR".** Daftar MPR memang terbuka untuk semua peran login — tak perlu scope. Scoping baris kandidat/CV (`LIHAT_KANDIDAT` "req sendiri" di ERD) tetap terpisah & belum diverifikasi — lihat G4b. |
 | **G4b** | Daftar **kandidat & CV** belum di-scope "req sendiri" untuk USER_DEPT. | USER_DEPT mungkin lihat kandidat dept lain | **Kahfi** (`Requisition_model`), **Kiki** (`Dashboard_model`) | Konfirmasi HR apakah USER_DEPT hanya boleh lihat kandidat dari MPR dept-nya. Kalau ya, filter `id_departemen` di list kandidat & funnel dashboard. |
 | **G5** | **Terkonfirmasi (probe).** `/dashboard` → 200 untuk USER_DEPT, BOD, VIEWER. | — | — | **✅ Ditutup (HR 2026-09-04): "VIEWER boleh lihat dashboard".** Akses dashboard dengan `LIHAT_KANDIDAT` memang disengaja. |
-| **G6** | **Terkonfirmasi (probe).** `requisitions/create` & `submit` → 200 untuk **VIEWER & BOD & IT_ADMIN**. | Peran non-pengaju bisa buat MPR | **Kahfi** (guard) + **Kiki** (migrasi permission) | **Keputusan HR 2026-09-04: yang boleh mengajukan MPR = USER_DEPT + HR_ADMIN (+ HR_SPV).** Rencana: permission baru `BUAT_MPR`, di-grant ke `USER_DEPT`, `HR_ADMIN`, `HR_SPV`; `Requisitions::create`/`submit` → `require_permission('BUAT_MPR')`. |
-| **G7** | **Baru (probe).** `documents/flow_docs` (atur dokumen wajib per tahap = tugas `EDIT_FLOW_TEMPLATE`) → **403 untuk IT_ADMIN**, karena constructor `Documents` minta `LIHAT_CV`. | IT Admin tak bisa atur dokumen wajib per tahap | **Kiki** (`Documents.php`) | Pindah `flow_docs`/`set_flow_doc` ke `Flowbuilder`, atau angkat penjaga `LIHAT_CV` dari constructor ke per-method. |
+| **G6** | `requisitions/create` & `submit` → 200 untuk semua peran. | Peran non-pengaju bisa buat MPR | **Kahfi** (guard) | 🟡 **Separuh.** Permission `BUAT_MPR` + grant `USER_DEPT`/`HR_ADMIN`/`HR_SPV` ✅ (migrasi `20260910_1000`). Tinggal: `Requisitions::create`/`submit` → `require_permission('BUAT_MPR')` (Kahfi). |
+| **G7** | `documents/flow_docs` (tugas `EDIT_FLOW_TEMPLATE`) → 403 untuk IT_ADMIN karena constructor `Documents` minta `LIHAT_CV`. | — | — | ✅ **Ditutup.** `flow_docs`/`set_flow_doc` pindah ke `Flowbuilder` (`EDIT_FLOW_TEMPLATE`). View `flow/docs.php`. Diverifikasi: IT_ADMIN `flowbuilder/flow_docs` = 200, `documents/flow_docs` = 404. |
 
 ### Keputusan HR — Mas Fachri, 2026-09-04
 1. **BOD** cukup **lihat** MPR (tidak di-scope, tidak buat/ubah). → G4 ditutup.
@@ -102,13 +103,13 @@ hanya bila `LIHAT_FINANSIAL`. Tanpa permission, kolomnya tidak ikut (bukan koson
 | `master` | 403 | 200 | 200 | 403 | 403 | 403 | ✅ |
 | `import` / `postings` / `export/candidates` | 403 | 200 | 200 | 403 | 403 | 403 | ✅ |
 | `flowbuilder` | 200 | 403 | 403 | 403 | 403 | 403 | ✅ |
-| `documents/flow_docs` | **403** | 403 | 403 | 403 | 403 | 403 | ⚠️ G7 (IT_ADMIN harusnya 200) |
+| `flowbuilder/flow_docs` | **200** | 403 | 403 | 403 | 403 | 403 | ✅ G7 ditutup (pindah dari `documents/`, kini `EDIT_FLOW_TEMPLATE`) |
 | `pipeline` (tanpa id) | 403 | 404 | 404 | 404 | 404 | 404 | ✅ penjaga jalan (IT_ADMIN 403; sisanya lolos lalu 404 karena butuh `id_req`) |
 | `documents/open` KTP / Rekening | 403 | 200 / **403** | 200 / 200 | 403 | 403 | 403 | ✅ `gate_sensitif` + `ACCESS_LOG_SENSITIF` (diuji terpisah) |
 
 **Beres:** semua penjaga `KELOLA_REKRUTMEN` / `EDIT_FLOW_TEMPLATE` / `EXPORT` / `LIHAT_CV` + gerbang dokumen sensitif.
 **Ditutup oleh keputusan HR:** G4 (BOD lihat aja), G5 (VIEWER boleh dashboard).
-**Perlu tindakan:** G1 (Kahfi), G2 (Kahfi), G6 (`BUAT_MPR` — Kiki migrasi + Kahfi guard), G7 (Kiki), G4b (perlu konfirmasi HR).
+**Perlu tindakan:** G1 (Kahfi), G2 (Kahfi), G6 guard `BUAT_MPR` di `Requisitions` (Kahfi — permission & grant sudah ada), G4b (perlu konfirmasi HR). ~~G7~~ ✅ ditutup.
 
 ---
 

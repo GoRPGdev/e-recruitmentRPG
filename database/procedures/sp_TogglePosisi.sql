@@ -4,6 +4,7 @@
 
    Hard delete tidak dipakai (CLAUDE.md aturan 4). Menonaktifkan posisi
    membuatnya hilang dari dropdown; requisition/lamaran lama tetap terbaca.
+   Perubahan dicatat ke AUDIT_LOG.
 
    Deploy:  php tools/migrate.php proc
    ========================================================================= */
@@ -12,24 +13,21 @@ GO
 
 CREATE PROCEDURE dbo.sp_TogglePosisi
     @id_posisi INT,
-    @is_aktif  BIT
+    @is_aktif  BIT,
+    @oleh_user INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
 
     IF NOT EXISTS (SELECT 1 FROM dbo.M_POSISI WHERE id_posisi = @id_posisi)
-    BEGIN
         RAISERROR('Posisi tidak ditemukan.', 16, 1);
-        RETURN;
+    ELSE
+    BEGIN
+        UPDATE dbo.M_POSISI SET is_aktif = @is_aktif WHERE id_posisi = @id_posisi;
+
+        DECLARE @av VARCHAR(40) = 'is_aktif=' + CONVERT(VARCHAR(1), @is_aktif);
+        EXEC dbo.sp_AuditLog @nama_tabel = 'M_POSISI', @id_baris = @id_posisi,
+             @aksi = 'UPDATE', @nilai_baru = @av, @oleh_user = @oleh_user;
     END
-
-    -- kalau menonaktifkan: peringatkan bila masih dipakai requisition aktif
-    IF @is_aktif = 0 AND EXISTS (
-        SELECT 1 FROM dbo.REQUISITIONS
-        WHERE id_posisi = @id_posisi
-          AND status_req IN ('Draft','Diajukan','Menunggu_BOD','Approved','Sourcing','Sourcing_Ulang','Terpenuhi_Sebagian'))
-        RAISERROR('Posisi masih dipakai requisition yang berjalan. Nonaktif tetap dilakukan; dropdown baru tidak menampilkannya.', 10, 1);
-
-    UPDATE dbo.M_POSISI SET is_aktif = @is_aktif WHERE id_posisi = @id_posisi;
 END
 GO

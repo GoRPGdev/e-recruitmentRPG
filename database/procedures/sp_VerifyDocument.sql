@@ -25,8 +25,9 @@ BEGIN
         IF @status NOT IN ('Done','Ditolak')
             RAISERROR('Status verifikasi harus Done / Ditolak.', 16, 1);
 
-        DECLARE @id_lamaran INT;
-        SELECT @id_lamaran = id_lamaran FROM dbo.CANDIDATE_DOCUMENTS WHERE id_cand_doc = @id_cand_doc;
+        DECLARE @id_lamaran INT, @status_lama VARCHAR(10);
+        SELECT @id_lamaran = id_lamaran, @status_lama = status_verifikasi
+        FROM dbo.CANDIDATE_DOCUMENTS WHERE id_cand_doc = @id_cand_doc;
         IF @id_lamaran IS NULL
             RAISERROR('Dokumen tidak ditemukan.', 16, 1);
 
@@ -41,6 +42,12 @@ BEGIN
         VALUES (@id_lamaran, 'DOKUMEN',
                 'Verifikasi dokumen #' + CONVERT(VARCHAR(10), @id_cand_doc) + ' -> ' + @status
                 + ISNULL(' | ' + @catatan, ''), @oleh_user);
+
+        EXEC dbo.sp_AuditLog @nama_tabel = 'CANDIDATE_DOCUMENTS', @id_baris = @id_cand_doc,
+             @aksi = 'UPDATE',
+             @nilai_lama = @status_lama,
+             @nilai_baru = @status,
+             @oleh_user = @oleh_user;
 
         IF @outer = 0 COMMIT TRANSACTION;
     END TRY
