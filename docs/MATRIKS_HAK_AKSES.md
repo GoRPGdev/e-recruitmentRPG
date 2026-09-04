@@ -50,7 +50,7 @@ saat login). Helper: `has_permission()`, `has_any_permission()`, `require_permis
 | **Buka file dokumen** | `Documents::open` | `gate_sensitif('DOK_IDENTITAS'\|'FINANSIAL')` sesuai `M_DOKUMEN.tingkat_sensitif` | ✅ `DOK_IDENTITAS` / `FINANSIAL`, `id_referensi = id_cand_doc` |
 | Atur dokumen wajib per tahap | `Documents::flow_docs/set_flow_doc` | `require_permission('EDIT_FLOW_TEMPLATE')` | — |
 | **Export kandidat** | `Export::candidates` | `require_permission('EXPORT')` | ✅ `GAJI` bila kolom gaji ikut (`LIHAT_GAJI_PELAMAR`), `FINANSIAL` bila no. rekening ikut (`LIHAT_FINANSIAL`) — 1 baris / export, `id_referensi = NULL` |
-| Flow Builder (flow/stage/remark) | `Flowbuilder::*` | `require_permission('EDIT_FLOW_TEMPLATE')` | — |
+| Flow Builder (flow / **tahap M_STAGE** / remark) | `Flowbuilder::*` (`stages`/`save_stage`/`toggle_stage`, `remarks`, `edit`, …) | `require_permission('EDIT_FLOW_TEMPLATE')` | — |
 | Import file portal | `Import::*` | `require_permission('KELOLA_REKRUTMEN')` | — |
 | Entry manual | `Manual::*` | `require_permission('KELOLA_REKRUTMEN')` | — |
 | Master Data CRUD | `Master::*` | `require_permission('KELOLA_REKRUTMEN')` | — |

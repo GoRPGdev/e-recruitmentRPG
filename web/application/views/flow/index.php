@@ -1,7 +1,10 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
 <main class="card">
 	<h1>Flow Builder</h1>
-	<p class="muted" style="margin-top:0"><a href="<?= site_url('flowbuilder/remarks') ?>">Kelola remark &rarr;</a></p>
+	<p class="muted" style="margin-top:0">
+		<a href="<?= site_url('flowbuilder/stages') ?>">Kelola tahap seleksi &rarr;</a> &middot;
+		<a href="<?= site_url('flowbuilder/remarks') ?>">Kelola remark &rarr;</a>
+	</p>
 
 	<div style="overflow-x:auto"><table>
 		<tr><th>Kode</th><th>Nama</th><th>Penempatan</th><th>Versi</th><th>Tahap</th><th>Maks kontak</th><th>Induk</th><th>Status</th><th></th></tr>

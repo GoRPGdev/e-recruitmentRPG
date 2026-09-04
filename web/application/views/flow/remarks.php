@@ -13,7 +13,8 @@
 			<td><?= html_escape($r['efek_status']) ?></td>
 			<td><?= (int) $r['urutan'] ?></td>
 			<td><span class="tag <?= $r['is_aktif'] ? 'on' : 'off' ?>"><?= $r['is_aktif'] ? 'aktif' : 'nonaktif' ?></span></td>
-			<td>
+			<td style="white-space:nowrap">
+				<a href="<?= site_url('flowbuilder/remarks' . ($id_stage ? '/' . (int) $id_stage : '') . '?edit_remark=' . (int) $r['id_remark']) ?>" class="btn-sm btn-ghost" style="text-decoration:none; display:inline-block">edit</a>
 				<?= form_open(site_url('flowbuilder/save_remark'), array('class' => 'inline')) ?>
 					<input type="hidden" name="id_remark" value="<?= (int) $r['id_remark'] ?>">
 					<input type="hidden" name="id_stage" value="<?= (int) $r['id_stage'] ?>">
@@ -29,20 +30,36 @@
 		<?php endforeach; ?>
 	</table></div>
 
-	<h2>Tambah remark</h2>
+	<h2><?= ! empty($edit_remark) ? 'Edit Remark #' . (int) $edit_remark['id_remark'] : 'Tambah remark' ?></h2>
+	<?php if (! empty($edit_remark)): ?>
+		<p class="muted" style="margin-top:0"><a href="<?= site_url('flowbuilder/remarks' . ($id_stage ? '/' . (int) $id_stage : '')) ?>">&larr; batal edit / tambah baru</a></p>
+	<?php endif; ?>
+
 	<?= validation_errors('<div class="flash err">', '</div>') ?>
 	<?= form_open(site_url('flowbuilder/save_remark')) ?>
+		<?php if (! empty($edit_remark)): ?>
+			<input type="hidden" name="id_remark" value="<?= (int) $edit_remark['id_remark'] ?>">
+		<?php endif; ?>
 		<label>Tahap</label>
-		<select name="id_stage">
-			<?php foreach ($all_stages as $st): ?>
-				<option value="<?= (int) $st['id_stage'] ?>" <?= $id_stage == $st['id_stage'] ? 'selected' : '' ?>><?= html_escape($st['nama_tahap']) ?></option>
+		<select name="id_stage" required>
+			<?php
+			$sel_st = ! empty($edit_remark) ? $edit_remark['id_stage'] : $id_stage;
+			foreach ($all_stages as $st): ?>
+				<option value="<?= (int) $st['id_stage'] ?>" <?= $sel_st == $st['id_stage'] ? 'selected' : '' ?>><?= html_escape($st['nama_tahap']) ?></option>
 			<?php endforeach; ?>
 		</select>
-		<label>Kode remark</label><input type="text" name="kode_remark" placeholder="SCV_XXX" required>
-		<label>Label</label><input type="text" name="label" required>
+		<label>Kode remark</label>
+		<input type="text" name="kode_remark" value="<?= html_escape($edit_remark['kode_remark'] ?? '') ?>" placeholder="MIS. SCV_PASS" required>
+		<label>Label</label>
+		<input type="text" name="label" value="<?= html_escape($edit_remark['label'] ?? '') ?>" placeholder="Mis. Lolos Seleksi Berkas" required>
 		<label>Efek status</label>
-		<select name="efek_status"><?php foreach ($efek as $e): ?><option><?= $e ?></option><?php endforeach; ?></select>
-		<label>Urutan</label><input type="text" name="urutan" value="0" inputmode="numeric">
-		<button type="submit">Simpan</button>
+		<select name="efek_status" required>
+			<?php foreach ($efek as $e): ?>
+				<option value="<?= $e ?>" <?= (isset($edit_remark['efek_status']) && $edit_remark['efek_status'] === $e) ? 'selected' : '' ?>><?= $e ?></option>
+			<?php endforeach; ?>
+		</select>
+		<label>Urutan</label>
+		<input type="text" name="urutan" value="<?= (int) ($edit_remark['urutan'] ?? 0) ?>" inputmode="numeric">
+		<button type="submit"><?= ! empty($edit_remark) ? 'Update' : 'Simpan' ?></button>
 	<?= form_close() ?>
 </main>

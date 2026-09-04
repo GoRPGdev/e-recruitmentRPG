@@ -94,18 +94,65 @@ class Flowbuilder extends Secured_Controller
 		redirect('flowbuilder');
 	}
 
+	/* ---- master tahap seleksi (M_STAGE) ---- */
+
+	public function stages()
+	{
+		$edit_id = (int) $this->input->get('edit');
+		$this->load->view('layouts/main', array(
+			'title'      => 'Tahap Seleksi',
+			'_content'   => 'flow/stages',
+			'wide'       => TRUE,
+			'rows'       => $this->mm->list_stage(),
+			'tipe_tahap' => array('SCREENING','KONTAK','FORM','TEST','INTERVIEW','OFFER','ONBOARD'),
+			'edit_row'   => $edit_id ? $this->mm->get_stage($edit_id) : NULL,
+		));
+	}
+
+	public function save_stage()
+	{
+		if ($this->input->method() !== 'post') { show_404(); }
+		try {
+			$this->mm->save_stage($this->input->post(NULL, TRUE));
+			$this->session->set_flashdata('ok', 'Tahap seleksi disimpan.');
+		} catch (RuntimeException $e) {
+			$this->session->set_flashdata('error', $e->getMessage());
+		}
+		redirect('flowbuilder/stages');
+	}
+
+	public function toggle_stage()
+	{
+		if ($this->input->method() !== 'post') { show_404(); }
+		try {
+			$this->mm->toggle_stage((int) $this->input->post('id'), (int) $this->input->post('is_aktif'));
+			$this->session->set_flashdata('ok', $this->input->post('is_aktif') ? 'Diaktifkan.' : 'Dinonaktifkan.');
+		} catch (RuntimeException $e) {
+			$this->session->set_flashdata('error', $e->getMessage());
+		}
+		redirect('flowbuilder/stages');
+	}
+
 	/* ---- remarks ---- */
 
 	public function remarks($id_stage = NULL)
 	{
+		$edit_id  = (int) $this->input->get('edit_remark');
+		$edit_row = NULL;
+		if ($edit_id) {
+			$q = $this->db->query('SELECT * FROM dbo.M_REMARKS WHERE id_remark = ?', array($edit_id));
+			$edit_row = $q->row_array() ?: NULL;
+		}
+
 		$this->load->view('layouts/main', array(
-			'title'      => 'Remark',
-			'_content'   => 'flow/remarks',
-			'wide'       => TRUE,
-			'id_stage'   => $id_stage ? (int) $id_stage : NULL,
-			'rows'       => $this->mm->remarks($id_stage ? (int) $id_stage : NULL),
-			'all_stages' => $this->mm->all_stages(),
-			'efek'       => array('LANJUT','TOLAK','ON_HOLD','UNREACHABLE','WITHDRAWN','OFFER_DECLINED','NO_SHOW','HIRED','TALENT_POOL'),
+			'title'       => 'Remark',
+			'_content'    => 'flow/remarks',
+			'wide'        => TRUE,
+			'id_stage'    => $id_stage ? (int) $id_stage : NULL,
+			'rows'        => $this->mm->remarks($id_stage ? (int) $id_stage : NULL),
+			'all_stages'  => $this->mm->all_stages(),
+			'efek'        => array('LANJUT','TOLAK','ON_HOLD','UNREACHABLE','WITHDRAWN','OFFER_DECLINED','NO_SHOW','HIRED','TALENT_POOL'),
+			'edit_remark' => $edit_row,
 		));
 	}
 
