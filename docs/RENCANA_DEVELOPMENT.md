@@ -191,12 +191,12 @@ Betul, kerjakan di PC kantor. Alasannya bukan sekadar praktis: **Fase 0 tidak bi
 
 ### 4.1 Yang disiapkan sekali di awal
 
-- [ ] Install Claude Code di PC kantor
-- [ ] Buat repo GitHub **privat**, `git init`, push pertama
-- [ ] Copy ke `docs/`: `ERD_Terkoreksi_E-Recruitment_RPG.md`, `Formulir Data Pelamar.pdf`, `preview.html`, file ini
-- [ ] Buat `CLAUDE.md` di root repo (isi di §4.3) — supaya Claude Code langsung paham konteks tiap sesi baru
-- [ ] Buat `.gitignore`
-- [ ] Buat **dua database dev terpisah**: `RPG_EREC_DEV_KIKI` dan `RPG_EREC_DEV_KAHFI`
+- [x] Install Claude Code di PC kantor
+- [x] Buat repo GitHub **privat**, `git init`, push pertama
+- [x] Copy ke `docs/`: `ERD_Terkoreksi_E-Recruitment_RPG.md`, `Formulir Data Pelamar.pdf`, `preview.html`, file ini
+- [x] Buat `CLAUDE.md` di root repo (isi di §4.3) — supaya Claude Code langsung paham konteks tiap sesi baru
+- [x] Buat `.gitignore`
+- [x] Buat **dua database dev terpisah**: `RPG_EREC_DEV_KIKI` dan `RPG_EREC_DEV_KAHFI`
 
 ### 4.2 `.gitignore`
 
@@ -293,16 +293,16 @@ Pembagian di bawah bisa ditukar sesuai preferensi — yang penting jangan dua or
 ### FASE 0 — Validasi Asumsi · 2–3 hari · **BARENG**
 > Gerbang: **tidak boleh menulis Stored Procedure sebelum tes koneksi hijau.**
 
-- [ ] Install PHP 7.4 (TS/NTS sesuai Apache) di mesin target
-- [ ] Install `php_sqlsrv_74_*.dll` + `php_pdo_sqlsrv_74_*.dll` versi **5.9**
-- [ ] Install **Microsoft ODBC Driver 17 for SQL Server (17.4+)** — bukan 18
-- [ ] `test-koneksi.php`: `SELECT @@VERSION` + `sqlsrv_client_info()` + `EXEC` SP dummy dengan parameter binding
+- [x] Install PHP 7.4 (TS/NTS sesuai Apache) di mesin target
+- [x] Install `php_sqlsrv_74_*.dll` + `php_pdo_sqlsrv_74_*.dll` versi **5.9**
+- [x] Install **Microsoft ODBC Driver 17 for SQL Server (17.4+)** — bukan 18
+- [x] `test-koneksi.php`: `SELECT @@VERSION` + `sqlsrv_client_info()` + `EXEC` SP dummy dengan parameter binding
 - [ ] Jalankan di **mesin produksi**, bukan cuma Laragon
 - [ ] Putuskan runtime produksi (Windows+IIS / Windows+Apache / Linux+Nginx) dan siapa yang mengelola
-- [ ] Repo GitHub privat + `CLAUDE.md` + `.gitignore` + struktur folder
-- [ ] Dua database dev terpisah
+- [x] Repo GitHub privat + `CLAUDE.md` + `.gitignore` + struktur folder
+- [x] Dua database dev terpisah
 - [ ] Minta HR: sample export pelamar JobStreet & Glints (field apa saja, CV ikut atau tidak)
-- [ ] Minta HR: konfirmasi 5 pertanyaan di §3 (email, data kesehatan, gaji, gender, sumber posisi)
+- [x] Minta HR: konfirmasi 5 pertanyaan di §3 (email, data kesehatan, gaji, gender, sumber posisi)
 - [ ] Telusuri 3 rekrutmen nyata yang sudah selesai (1 staff, 1 staff krusial, 1 manager) di atas skema — **di atas kertas**
 - [ ] **Checkpoint:** tidak ada kolom baru yang dibutuhkan setelah menelusuri ketiga kasus itu
 
@@ -311,66 +311,66 @@ Pembagian di bawah bisa ditukar sesuai preferensi — yang penting jangan dua or
 ### FASE 1 — Fondasi · ± 1 minggu · **BARENG**
 > Harus barengan: semua modul bergantung ke sini. Jangan dipecah.
 
-- [ ] `20260908_1000__master_referensi.sql` — `M_ROLES`, `M_PERMISSIONS`, `M_ROLE_PERMISSIONS`, `M_USERS`, `M_DEPARTEMEN`, `M_OUTLET`, `M_POSISI`, `M_FLOW`, `M_STAGE`, `M_FLOW_STAGE`, `M_FLOW_STAGE_DOKUMEN`, `M_DOKUMEN`, `M_REMARKS`, `M_CHANNEL`
-- [ ] `..__requisition.sql` — `REQUISITIONS`, `REQUISITION_APPROVALS`, `JOB_POSTINGS`, `JOB_POSTING_STATS`
-- [ ] `..__kandidat_seleksi.sql` — `CANDIDATES`, `APPLICATIONS`, `APPLICATION_STAGES`, `APPLICATION_CONTACTS`, `INTERVIEWS`, `INTERVIEW_PARTICIPANTS`, `OFFERS`, `APPLICATION_HISTORY`, `APPLICATION_PROFILE`, `CANDIDATE_HEALTH`
-- [ ] `..__dokumen_import_audit.sql` — `CANDIDATE_DOCUMENTS`, `CANDIDATE_BANK`, `FORM_TOKENS`, `IMPORT_BATCHES`, `IMPORT_BATCH_ROWS`, `IMPORT_TEMPLATES`, `ACCESS_LOG_SENSITIF`, `AUDIT_LOG`, `FORM_SUBMIT_LOG`, `RPT_FUNNEL_HARIAN`
-- [ ] `..__seed.sql` — 10 stage, 4 flow + flow_stage, remark per tahap, 9 status_global, role & permission, outlet, posisi awal
-- [ ] `SCHEMA_MIGRATIONS` + skrip runner (PHP CLI sederhana)
-- [ ] CI3 skeleton: koneksi sqlsrv, `MY_Controller`, helper RBAC, session
-- [ ] Layout + CSS diambil dari `preview.html`
-- [ ] `sp_Login`, `sp_GetUserPermissions`
+- [x] `20260908_1000__master_referensi.sql` — `M_ROLES`, `M_PERMISSIONS`, `M_ROLE_PERMISSIONS`, `M_USERS`, `M_DEPARTEMEN`, `M_OUTLET`, `M_POSISI`, `M_FLOW`, `M_STAGE`, `M_FLOW_STAGE`, `M_FLOW_STAGE_DOKUMEN`, `M_DOKUMEN`, `M_REMARKS`, `M_CHANNEL`
+- [x] `..__requisition.sql` — `REQUISITIONS`, `REQUISITION_APPROVALS`, `JOB_POSTINGS`, `JOB_POSTING_STATS`
+- [x] `..__kandidat_seleksi.sql` — `CANDIDATES`, `APPLICATIONS`, `APPLICATION_STAGES`, `APPLICATION_CONTACTS`, `INTERVIEWS`, `INTERVIEW_PARTICIPANTS`, `OFFERS`, `APPLICATION_HISTORY`, `APPLICATION_PROFILE`, `CANDIDATE_HEALTH` _(dipecah: `..__kandidat_lamaran.sql`)_
+- [x] `..__dokumen_import_audit.sql` — `CANDIDATE_DOCUMENTS`, `CANDIDATE_BANK`, `FORM_TOKENS`, `IMPORT_BATCHES`, `IMPORT_BATCH_ROWS`, `IMPORT_TEMPLATES`, `ACCESS_LOG_SENSITIF`, `AUDIT_LOG`, `FORM_SUBMIT_LOG`, `RPT_FUNNEL_HARIAN`
+- [x] `..__seed.sql` — 10 stage, 4 flow + flow_stage, remark per tahap, 9 status_global, role & permission, outlet, posisi awal _(organisasi dev dipindah ke `database/seed/dev_organisasi.sql`)_
+- [x] `SCHEMA_MIGRATIONS` + skrip runner (PHP CLI sederhana)
+- [x] CI3 skeleton: koneksi sqlsrv, `MY_Controller`, helper RBAC, session
+- [ ] Layout + CSS diambil dari `preview.html` _(masih kerangka sementara di `layouts/main.php`)_
+- [x] `sp_Login`, `sp_GetUserPermissions`
 
 ---
 
 ### FASE 2 — Modul inti · ± 2 minggu · **PARALEL**
 
 **KAHFI — Master Data + Requisition**
-- [ ] CRUD `M_POSISI` (+ departemen, outlet) — soft delete, level posisi, default flow
-- [ ] `sp_SavePosisi`, `sp_TogglePosisi`
-- [ ] Form pengajuan MPR + validasi + auto-nomor `MPR/YYYY/MM/NNN`
-- [ ] `sp_CreateRequisition`, `sp_SubmitToBOD`
-- [ ] Pencatatan keputusan BOD per putaran + upload lampiran WA
-- [ ] `sp_RecordApproval` — putaran baru saat diajukan ulang
-- [ ] Daftar MPR + filter + paginasi `ROW_NUMBER()`
-- [ ] Job posting + `JOB_POSTING_STATS` (input manual)
+- [x] CRUD `M_POSISI` (+ departemen, outlet) — soft delete, level posisi, default flow
+- [x] `sp_SavePosisi`, `sp_TogglePosisi`
+- [x] Form pengajuan MPR + validasi + auto-nomor `MPR/YYYY/MM/NNN`
+- [x] `sp_CreateRequisition`, `sp_SubmitToBOD`
+- [x] Pencatatan keputusan BOD per putaran + upload lampiran WA
+- [x] `sp_RecordApproval` — putaran baru saat diajukan ulang
+- [x] Daftar MPR + filter + paginasi `ROW_NUMBER()`
+- [x] Job posting + `JOB_POSTING_STATS` (input manual)
 
 **KIKI — Intake & Form Publik**
-- [ ] Halaman form publik `/lamar/<slug>` — 21 field sesuai GForm + consent + consent kesehatan terpisah
-- [ ] `sp_SubmitApplication` — dedupe WA ternormalisasi → email → hash CV
-- [ ] Normalisasi WA: `0812…` / `62 812…` / `+62812…` → `62812…`
-- [ ] Generator & pengelola link form: aktif/nonaktif, tanggal buka-tutup, hitung submit
-- [ ] Upload CV ke luar webroot + hash SHA-256 + validasi mime/ukuran
-- [ ] Rate limit sederhana via `FORM_SUBMIT_LOG`
-- [ ] Link personal bertoken (`FORM_TOKENS`) untuk lengkapi berkas — kadaluarsa, sekali pakai, bisa dicabut & digenerate ulang
-- [ ] Entry manual cepat (MP/outlet: nama, WA, outlet, tanggal join)
-- [ ] Import file portal: preview → dedupe → commit / rollback (`IMPORT_BATCHES`)
+- [x] Halaman form publik `/lamar/<slug>` — 21 field sesuai GForm + consent + consent kesehatan terpisah
+- [x] `sp_SubmitApplication` — dedupe WA ternormalisasi → email → hash CV
+- [x] Normalisasi WA: `0812…` / `62 812…` / `+62812…` → `62812…`
+- [x] Generator & pengelola link form: aktif/nonaktif, tanggal buka-tutup, hitung submit
+- [x] Upload CV ke luar webroot + hash SHA-256 + validasi mime/ukuran
+- [x] Rate limit sederhana via `FORM_SUBMIT_LOG`
+- [x] Link personal bertoken (`FORM_TOKENS`) untuk lengkapi berkas — kadaluarsa, sekali pakai, bisa dicabut & digenerate ulang
+- [x] Entry manual cepat (MP/outlet: nama, WA, outlet, tanggal join)
+- [x] Import file portal: preview → dedupe → commit / rollback (`IMPORT_BATCHES`) _(CSV; XLSX ditunda — tanpa Composer)_
 
 ---
 
 ### FASE 3 — Seleksi & Dashboard · ± 2 minggu · **PARALEL**
 
 **KAHFI — Flow Engine + Pipeline**
-- [ ] Flow builder: susun tahap, drag urutan, wajib/opsional, SLA, PIC
-- [ ] "Simpan sebagai template baru" (clone `M_FLOW` + `M_FLOW_STAGE`, isi `id_flow_induk`)
-- [ ] Naikkan `M_FLOW.versi` setiap kali template diubah
-- [ ] CRUD `M_STAGE` (dengan `tipe_tahap` wajib) & `M_REMARKS` (+ `efek_status`, urutan, soft delete)
-- [ ] `sp_GenerateApplicationStages` — snapshot flow saat lamaran dibuat
-- [ ] `sp_AdvanceStage` — baca `efek_status` dari remark, tulis history, atomik
-- [ ] `sp_InsertAdHocStage` — tahap sisipan + renumber urutan
-- [ ] `sp_LogContact` — baca `maks_upaya_kontak` dari flow, auto `Unreachable` saat batas tercapai
-- [ ] Status `Unreachable` reversible saat kandidat merespons
-- [ ] Halaman pipeline **vertikal**: satu baris per tahap, kartu kandidat mengalir ke kanan, scroll ke bawah
-- [ ] `sp_GetPipeline @id_req` — satu query untuk semua tahap, di-group di PHP (jangan 1 query per tahap)
+- [x] Flow builder: susun tahap, drag urutan, wajib/opsional, SLA, PIC
+- [x] "Simpan sebagai template baru" (clone `M_FLOW` + `M_FLOW_STAGE`, isi `id_flow_induk`)
+- [x] Naikkan `M_FLOW.versi` setiap kali template diubah
+- [ ] CRUD `M_STAGE` (dengan `tipe_tahap` wajib) & `M_REMARKS` (+ `efek_status`, urutan, soft delete) _(M_REMARKS ✅ via `sp_SaveRemark`; CRUD `M_STAGE` belum — baru dibaca untuk dropdown)_
+- [x] `sp_GenerateApplicationStages` — snapshot flow saat lamaran dibuat
+- [x] `sp_AdvanceStage` — baca `efek_status` dari remark, tulis history, atomik
+- [x] `sp_InsertAdHocStage` — tahap sisipan + renumber urutan
+- [x] `sp_LogContact` — baca `maks_upaya_kontak` dari flow, auto `Unreachable` saat batas tercapai
+- [x] Status `Unreachable` reversible saat kandidat merespons
+- [x] Halaman pipeline **vertikal**: satu baris per tahap, kartu kandidat mengalir ke kanan, scroll ke bawah
+- [x] `sp_GetPipeline @id_req` — satu query untuk semua tahap, di-group di PHP (jangan 1 query per tahap)
 - [ ] Batas 12 kartu per baris + "lihat semua" kalau kandidat banyak
 
 **KIKI — Dashboard, Report, Dokumen**
-- [ ] Dashboard: kartu metrik, funnel per `tipe_tahap`, aging SLA, pipeline per flow
-- [ ] Filter: periode, departemen, posisi, outlet, flow, tipe tahap, status global, channel, PIC
-- [ ] Dua metrik waktu terpisah: `lama_proses` (dari tanggal permintaan) & `hari_menunggu_approval` (diajukan→keputusan BOD)
-- [ ] `sp_BuildFunnelHarian` + penjadwalan Windows Task Scheduler
-- [ ] Modul dokumen: upload, verifikasi, `M_FLOW_STAGE_DOKUMEN` (dokumen wajib per tahap)
-- [ ] Export Excel (hormati RBAC — kolom sensitif ikut disaring)
+- [x] Dashboard: kartu metrik, funnel per `tipe_tahap`, aging SLA, pipeline per flow
+- [x] Filter: periode, departemen, posisi, outlet, flow, tipe tahap, status global, channel, PIC
+- [x] Dua metrik waktu terpisah: `lama_proses` (dari tanggal permintaan) & `hari_menunggu_approval` (diajukan→keputusan BOD)
+- [x] `sp_BuildFunnelHarian` + penjadwalan Windows Task Scheduler _(`tools/build-funnel.php`; penjadwalan = langkah ops)_
+- [x] Modul dokumen: upload, verifikasi, `M_FLOW_STAGE_DOKUMEN` (dokumen wajib per tahap)
+- [x] Export Excel (hormati RBAC — kolom sensitif ikut disaring)
 
 ---
 
