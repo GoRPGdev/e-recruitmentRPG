@@ -76,12 +76,15 @@ class Document_model extends CI_Model
 		return $rows;
 	}
 
+	/**
+	 * Catat pembukaan data sensitif. Dipertahankan untuk pemanggil lama;
+	 * jalur baru pakai helper gate_sensitif() / log_akses_sensitif().
+	 */
 	public function log_sensitive($id_user, $jenis, $id_ref, $ip)
 	{
-		$this->db->query(
-			'INSERT INTO dbo.ACCESS_LOG_SENSITIF (id_user, jenis_data, id_referensi, waktu, ip)
-			 VALUES (?, ?, ?, GETDATE(), ?)',
-			array((int) $id_user, $jenis, (int) $id_ref, $ip));
+		$stmt = sqlsrv_query($this->db->conn_id, '{CALL dbo.sp_LogAksesSensitif(?,?,?,?)}',
+			array((int) $id_user, $jenis, $id_ref !== NULL ? (int) $id_ref : NULL, $ip));
+		if ($stmt !== FALSE) { do { } while (sqlsrv_next_result($stmt)); sqlsrv_free_stmt($stmt); }
 	}
 
 	/* ---- M_FLOW_STAGE_DOKUMEN config ---- */

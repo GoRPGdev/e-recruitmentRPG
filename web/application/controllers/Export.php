@@ -26,6 +26,11 @@ class Export extends Secured_Controller
 			'flow'   => $this->input->get('flow') ?: NULL,
 		);
 		$perms = (array) $this->session->userdata('permissions');
+
+		// export yang membawa kolom sensitif -> catat ke ACCESS_LOG_SENSITIF (1 baris / export)
+		if (in_array('LIHAT_GAJI_PELAMAR', $perms, TRUE)) { log_akses_sensitif('GAJI_PELAMAR'); }
+		if (in_array('LIHAT_FINANSIAL', $perms, TRUE))    { log_akses_sensitif('FINANSIAL'); }
+
 		$rows  = $this->dm->candidates_export($f, $perms);
 
 		$fname = 'kandidat_' . date('Ymd_His') . '.xls';
