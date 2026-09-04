@@ -3,11 +3,14 @@
  * Bikin / reset user login. Belum ada halaman registrasi -- ini jalan masuk
  * user pertama untuk mengetes skeleton.
  *
- *   php tools/mkuser.php <username> <password> <kode_role>
+ *   php tools/mkuser.php <username> <password> <kode_role> [kode_departemen]
  *   php tools/mkuser.php admin rahasia123 IT_ADMIN
+ *   php tools/mkuser.php budi rahasia123 USER_DEPT MKT
  *
  * kode_role harus salah satu yang ada di M_ROLES (IT_ADMIN, HR_ADMIN,
  * HR_SPV, USER_DEPT, BOD, VIEWER). Hash pakai password_hash() PHP.
+ * kode_departemen opsional -- untuk USER_DEPT, mengisi M_USERS.id_departemen
+ * (scoping G4b). Peran lain biarkan kosong.
  */
 if (php_sapi_name() !== 'cli') { die("Jalankan dari command line.\n"); }
 
@@ -19,8 +22,9 @@ array_shift($argv);
 $username = isset($argv[0]) ? $argv[0] : null;
 $password = isset($argv[1]) ? $argv[1] : null;
 $role     = isset($argv[2]) ? $argv[2] : null;
+$dept     = isset($argv[3]) ? $argv[3] : null;
 if ($username === null || $password === null || $role === null) {
-    die("Usage: php tools/mkuser.php <username> <password> <kode_role>\n");
+    die("Usage: php tools/mkuser.php <username> <password> <kode_role> [kode_departemen]\n");
 }
 
 $conn = sqlsrv_connect($cfg['host'], array(
@@ -34,6 +38,14 @@ if ($rc === false || !sqlsrv_fetch_array($rc)) {
     die("kode_role '$role' tidak ada di M_ROLES.\n");
 }
 
+$id_dept = null;
+if ($dept !== null) {
+    $dc = sqlsrv_query($conn, "SELECT id_departemen FROM dbo.M_DEPARTEMEN WHERE kode = ?", array($dept));
+    $dr = ($dc !== false) ? sqlsrv_fetch_array($dc, SQLSRV_FETCH_NUMERIC) : false;
+    if (!$dr) { die("kode_departemen '$dept' tidak ada di M_DEPARTEMEN.\n"); }
+    $id_dept = (int) $dr[0];
+}
+
 $hash = password_hash($password, PASSWORD_DEFAULT);
 
 $chk = sqlsrv_query($conn, "SELECT id_user FROM dbo.M_USERS WHERE username = ?", array($username));
@@ -43,17 +55,18 @@ if ($exists) {
     $ok = sqlsrv_query($conn,
         "UPDATE dbo.M_USERS
             SET password_hash = ?, is_aktif = 1,
-                id_role = (SELECT id_role FROM dbo.M_ROLES WHERE kode_role = ?)
+                id_role = (SELECT id_role FROM dbo.M_ROLES WHERE kode_role = ?),
+                id_departemen = ?
           WHERE username = ?",
-        array($hash, $role, $username));
+        array($hash, $role, $id_dept, $username));
     $aksi = 'diperbarui';
 } else {
     $ok = sqlsrv_query($conn,
-        "INSERT INTO dbo.M_USERS (username, password_hash, nama_snapshot, id_role)
-         VALUES (?, ?, ?, (SELECT id_role FROM dbo.M_ROLES WHERE kode_role = ?))",
-        array($username, $hash, $username, $role));
+        "INSERT INTO dbo.M_USERS (username, password_hash, nama_snapshot, id_role, id_departemen)
+         VALUES (?, ?, ?, (SELECT id_role FROM dbo.M_ROLES WHERE kode_role = ?), ?)",
+        array($username, $hash, $username, $role, $id_dept));
     $aksi = 'dibuat';
 }
 
 if ($ok === false) { die("Gagal: " . print_r(sqlsrv_errors(), true)); }
-echo "User '$username' $aksi (role $role).\n";
+echo "User '$username' $aksi (role $role" . ($dept !== null ? ", dept $dept" : "") . ").\n";
