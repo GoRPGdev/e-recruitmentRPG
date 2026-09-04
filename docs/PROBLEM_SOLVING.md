@@ -112,3 +112,25 @@ Dokumentasi ini mencatat rekaman problem solving, kendala teknis, serta solusi y
   2. `protected function require_all_permissions(array $kode_list) { require_all_permissions($kode_list); }`
   Dengan demikian, pemanggilan method `$this->require_any_permission(...)` dari dalam controller berjalan mulus dan mengembalikan status HTTP 403 yang sah ketika akses ditolak.
 
+---
+
+### [PS-009] Scoping Data Kandidat & Pipeline Multi-Departemen (G4b)
+- **Problem:**
+  Berdasarkan keputusan HR (2026-09-04), user dengan peran `USER_DEPT` hanya boleh melihat dan memproses kandidat yang melamar pada lowongan (MPR) di departemen miliknya sendiri. Tanpa scoping yang ketat, user departemen yang memiliki izin `LIHAT_KANDIDAT` dan `LIHAT_CV` berpotensi membuka data kandidat, berkas/dokumen, pipeline seleksi, dan data agregat dashboard dari departemen lain (misal user Marketing melihat pelamar Operasional/Outlet atau Accounting).
+- **Identifikasi:**
+  Entitas `REQUISITIONS` tidak menyimpan kolom `id_departemen` langsung, melainkan berelasi ke `M_POSISI` yang memiliki `id_departemen`. Skema user telah dilengkapi kolom `M_USERS.id_departemen` (migrasi `20260910_1100`) dan helper `current_user_dept()`. Namun controller dan query model belum menerapkan filter scoping ini.
+- **Solusi:**
+  1. **Pipeline (`Pipeline.php`):**
+     Dibuat method helper privat `_get_req_scoped($id_req)` yang memeriksa apakah `current_user_dept() !== NULL && (int)$req['id_departemen'] !== (int)current_user_dept()`. Jika tidak cocok, request langsung ditolak dengan `show_error(..., 403)`. Helper ini dipanggil di `index()` serta seluruh endpoint POST aksi pipeline (`advance`, `contact`, `insert_stage`, `save_interview`, `save_psikotes`, `save_offer`).
+  2. **Daftar Requisition (`requisitions/index.php`):**
+     Daftar MPR tetap terbuka untuk seluruh peran sesuai kesepakatan G4, namun tautan aksi `[pipeline]` hanya ditampilkan jika requisition berasal dari departemen pemohon (`$can_view_pipeline`).
+  3. **Pengajuan MPR (`Requisitions::create`):**
+     Daftar dropdown posisi difilter hanya menampilkan posisi di departemen pemohon (`positions($dept)`), dan validasi POST menolak pemilihan posisi dari departemen lain.
+  4. **Verifikasi & Checklist Dokumen (`Documents.php` & `Document_model.php`):**
+     - `list_docs()` menambahkan klausa `AND pos.id_departemen = ?` saat `current_user_dept()` terisi.
+     - `verify()`, `checklist()`, dan `open()` memvalidasi bahwa dokumen/lamaran yang dibuka berasal dari departemen pengguna.
+  5. **Dashboard & Trend Funnel (`Dashboard.php` & `Dashboard_model.php`):**
+     - Parameter filter `dept` dikunci ke `current_user_dept()` untuk peran departemen.
+     - Opsi filter departemen dan posisi di view dikunci hanya untuk departemen user.
+     - Agregasi tren historis `funnel_trend(14, $dept)` difilter via join ke `dbo.M_POSISI pos WHERE pos.id_departemen = ?`.
+     - Ekspor Excel kandidat (`candidates_export()`) membatasi baris ke departemen user.

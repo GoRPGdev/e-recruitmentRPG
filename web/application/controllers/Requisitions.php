@@ -53,9 +53,20 @@ class Requisitions extends Secured_Controller
 			$this->form_validation->set_rules('jumlah_dibutuhkan', 'Jumlah', 'required|integer|greater_than[0]');
 
 			if ($this->form_validation->run()) {
+				$id_posisi = (int) $this->input->post('id_posisi');
+				$dept = current_user_dept();
+				if ($dept !== NULL) {
+					$pos_list = $this->rm->positions($dept);
+					$valid_ids = array_map(function($p) { return (int)$p['id_posisi']; }, $pos_list);
+					if ( ! in_array($id_posisi, $valid_ids, TRUE)) {
+						$this->session->set_flashdata('error', 'Posisi yang dipilih tidak sesuai dengan departemen Anda.');
+						redirect('requisitions/create');
+						return;
+					}
+				}
 				try {
 					$id = $this->rm->create(array(
-						'id_posisi'                => $this->input->post('id_posisi'),
+						'id_posisi'                => $id_posisi,
 						'tipe_penempatan'          => $this->input->post('tipe_penempatan'),
 						'id_outlet'                => $this->input->post('id_outlet'),
 						'jumlah_dibutuhkan'        => $this->input->post('jumlah_dibutuhkan'),
@@ -83,10 +94,11 @@ class Requisitions extends Secured_Controller
 			}
 		}
 
+		$dept = current_user_dept();
 		$this->load->view('layouts/main', array(
 			'title'     => 'Buat MPR',
 			'_content'  => 'requisitions/create',
-			'positions' => $this->rm->positions(),
+			'positions' => $this->rm->positions($dept),
 			'outlets'   => $this->rm->outlets(),
 		));
 	}

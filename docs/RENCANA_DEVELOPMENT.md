@@ -375,13 +375,13 @@ Pembagian di bawah bisa ditukar sesuai preferensi — yang penting jangan dua or
 ---
 
 ### FASE 4 — Keamanan & Kepatuhan · ± 1 minggu · **BARENG** _(dipecah per concern: retensi/audit-lamaran = Kiki, RBAC/access-log = Kahfi)_
-- [x] RBAC tiga tingkat: umum / dokumen identitas / finansial — mekanisme + matriks + checklist uji per peran ✅ (`docs/MATRIKS_HAK_AKSES.md`, helper `gate_sensitif`/`require_any`/`require_all`); gap G1 (`Requisitions::approve`), G2 (`range_gaji`), G6 (`BUAT_MPR`), G7 (`Flowbuilder::flow_docs`) telah diselesaikan dan teruji
+- [x] RBAC tiga tingkat: umum / dokumen identitas / finansial — mekanisme + matriks + checklist uji per peran ✅ (`docs/MATRIKS_HAK_AKSES.md`, helper `gate_sensitif`/`require_any`/`require_all`); gap G1 (`Requisitions::approve`), G2 (`range_gaji`), G4b (`scoping USER_DEPT`), G6 (`BUAT_MPR`), G7 (`Flowbuilder::flow_docs`) telah diselesaikan dan teruji
 - [x] `ACCESS_LOG_SENSITIF` — buka dokumen IDENTITAS/FINANSIAL ✅ (`gate_sensitif`), export kolom gaji/rekening ✅, view MPR & form offer ber-gate GAJI tercatat ke log
 - [x] `AUDIT_LOG` untuk perubahan master & data lamaran — data lamaran ✅ (`sp_AuditLog` + hook retensi di `sp_AdvanceStage`/`sp_LogContact`); master posisi & dokumen ✅ (`sp_SavePosisi`, `sp_TogglePosisi`, `sp_VerifyDocument`); flow, stage, remark & seleksi ✅ (`sp_SaveStage`, `sp_ToggleStage`, `sp_SaveRemark`, `sp_SaveFlow`, `sp_SaveFlowStage`, `sp_CloneFlow`, `sp_SaveInterview`, `sp_SavePsikotes`, `sp_SaveOffer`)
 - [x] Consent: versi teks tersimpan, checkbox talent pool terpisah, consent kesehatan terpisah _(sejak Fase 2; `consent_versi`/`consent_pada`/`setuju_talent_pool` + `CANDIDATE_HEALTH.consent_khusus`)_
 - [x] `retensi_sampai` otomatis (12 bulan sejak ditolak, 24 bulan jika setuju talent pool) _(`sp_SetRetensi`, dipanggil dari `sp_AdvanceStage` & `sp_LogContact`)_
 - [x] Job penghapusan/anonimisasi lewat Task Scheduler _(`sp_AnonimisasiRetensi` + `tools/run-retensi.php`; penjadwalan = langkah ops)_
-- [x] Matriks hak akses diuji per peran, satu per satu — probe otomatis 6 peran ✅ (`tools/rbac-probe.sh`, hasil di `docs/MATRIKS_HAK_AKSES.md §3b`); G1, G4, G5, G6, G7 terverifikasi tuntas
+- [x] Matriks hak akses diuji per peran, satu per satu — probe otomatis 6 peran ✅ (`tools/rbac-probe.sh`, hasil di `docs/MATRIKS_HAK_AKSES.md §3b`); G1, G4, G4b, G5, G6, G7 terverifikasi tuntas
 
 ---
 

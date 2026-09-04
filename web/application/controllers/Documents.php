@@ -23,6 +23,7 @@ class Documents extends Secured_Controller
 			'status'     => $this->input->get('status') !== NULL ? $this->input->get('status') : 'Proses',
 			'kategori'   => $this->input->get('kategori') ?: NULL,
 			'id_lamaran' => $this->input->get('id_lamaran') ?: NULL,
+			'dept'       => current_user_dept(),
 		);
 		$this->load->view('layouts/main', array(
 			'title'    => 'Verifikasi Berkas',
@@ -37,6 +38,14 @@ class Documents extends Secured_Controller
 	{
 		if ( ! $id_cand_doc || $this->input->method() !== 'post') {
 			show_404();
+		}
+		$doc = $this->document_model->get_doc($id_cand_doc);
+		if ( ! $doc) {
+			show_404();
+		}
+		$dept = current_user_dept();
+		if ($dept !== NULL && (int) $doc['id_departemen'] !== (int) $dept) {
+			show_error('Akses ditolak: Dokumen bukan milik kandidat departemen Anda.', 403, '403 Forbidden');
 		}
 		try {
 			$this->document_model->verify(
@@ -58,6 +67,13 @@ class Documents extends Secured_Controller
 		if ( ! $id_lamaran) {
 			show_404();
 		}
+		$dept = current_user_dept();
+		if ($dept !== NULL) {
+			$lamaran_dept = $this->document_model->get_lamaran_dept($id_lamaran);
+			if ($lamaran_dept === NULL || (int) $lamaran_dept !== (int) $dept) {
+				show_error('Akses ditolak: Lamaran bukan dari departemen Anda.', 403, '403 Forbidden');
+			}
+		}
 		$this->load->view('layouts/main', array(
 			'title'      => 'Checklist Berkas #' . (int) $id_lamaran,
 			'_content'   => 'documents/checklist',
@@ -75,6 +91,11 @@ class Documents extends Secured_Controller
 		$doc = $id_cand_doc ? $this->document_model->get_doc($id_cand_doc) : NULL;
 		if ( ! $doc) {
 			show_404();
+		}
+
+		$dept = current_user_dept();
+		if ($dept !== NULL && (int) $doc['id_departemen'] !== (int) $dept) {
+			show_error('Akses ditolak: Dokumen bukan milik kandidat departemen Anda.', 403, '403 Forbidden');
 		}
 
 		// RBAC dokumen sensitif -- cek permission + catat ke ACCESS_LOG_SENSITIF

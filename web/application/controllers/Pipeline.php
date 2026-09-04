@@ -15,12 +15,22 @@ class Pipeline extends Secured_Controller
 		$this->load->helper(array('form', 'url'));
 	}
 
-	public function index($id_req = NULL)
+	private function _get_req_scoped($id_req)
 	{
 		$req = $id_req ? $this->requisition_model->get($id_req) : NULL;
 		if ( ! $req) {
 			show_404();
 		}
+		$dept = current_user_dept();
+		if ($dept !== NULL && (int) $req['id_departemen'] !== (int) $dept) {
+			show_error('Akses ditolak: Anda hanya dapat mengakses pipeline kandidat dari departemen Anda.', 403, '403 Forbidden');
+		}
+		return $req;
+	}
+
+	public function index($id_req = NULL)
+	{
+		$req = $this->_get_req_scoped($id_req);
 
 		$rows = $this->requisition_model->pipeline($id_req);
 
@@ -91,6 +101,7 @@ class Pipeline extends Secured_Controller
 		if ( ! $id_req || $this->input->method() !== 'post') {
 			show_404();
 		}
+		$this->_get_req_scoped($id_req);
 		try {
 			$st = $this->requisition_model->advance(
 				(int) $this->input->post('id_app_stage'),
@@ -111,6 +122,7 @@ class Pipeline extends Secured_Controller
 		if ( ! $id_req || $this->input->method() !== 'post') {
 			show_404();
 		}
+		$this->_get_req_scoped($id_req);
 		$id_lamaran = (int) $this->input->post('id_lamaran');
 		try {
 			$this->requisition_model->insert_adhoc(
@@ -133,6 +145,7 @@ class Pipeline extends Secured_Controller
 		if ( ! $id_req || $this->input->method() !== 'post') {
 			show_404();
 		}
+		$this->_get_req_scoped($id_req);
 		try {
 			$u = $this->requisition_model->log_contact(
 				(int) $this->input->post('id_lamaran'),
@@ -154,6 +167,7 @@ class Pipeline extends Secured_Controller
 		if ( ! $id_req || $this->input->method() !== 'post') {
 			show_404();
 		}
+		$this->_get_req_scoped($id_req);
 		try {
 			$in = array(
 				'id_interview'      => $this->input->post('id_interview'),
@@ -181,6 +195,7 @@ class Pipeline extends Secured_Controller
 		if ( ! $id_req || $this->input->method() !== 'post') {
 			show_404();
 		}
+		$this->_get_req_scoped($id_req);
 		try {
 			$in = array(
 				'id_psikotes'  => $this->input->post('id_psikotes'),
@@ -205,6 +220,7 @@ class Pipeline extends Secured_Controller
 		if ( ! $id_req || $this->input->method() !== 'post') {
 			show_404();
 		}
+		$this->_get_req_scoped($id_req);
 		try {
 			$gaji = $this->input->post('gaji_ditawarkan');
 			$gaji_val = NULL;

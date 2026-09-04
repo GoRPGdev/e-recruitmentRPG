@@ -46,14 +46,22 @@ class Dashboard_model extends CI_Model
 		);
 	}
 
-	public function funnel_trend($days = 14)
+	public function funnel_trend($days = 14, $id_dept = NULL)
 	{
+		$where = 'WHERE f.tanggal >= DATEADD(DAY, ?, CAST(GETDATE() AS DATE))';
+		$params = array(-1 * (int) $days);
+		if ($id_dept !== NULL) {
+			$where .= ' AND pos.id_departemen = ?';
+			$params[] = (int) $id_dept;
+		}
 		$q = $this->db->query(
-			'SELECT tanggal, tipe_tahap, SUM(jumlah) AS jumlah
-			 FROM dbo.RPT_FUNNEL_HARIAN
-			 WHERE tanggal >= DATEADD(DAY, ?, CAST(GETDATE() AS DATE))
-			 GROUP BY tanggal, tipe_tahap ORDER BY tanggal, tipe_tahap',
-			array(-1 * (int) $days));
+			"SELECT f.tanggal, f.tipe_tahap, SUM(f.jumlah) AS jumlah
+			 FROM dbo.RPT_FUNNEL_HARIAN f
+			 JOIN dbo.REQUISITIONS r ON r.id_req = f.id_req
+			 JOIN dbo.M_POSISI pos   ON pos.id_posisi = r.id_posisi
+			 $where
+			 GROUP BY f.tanggal, f.tipe_tahap ORDER BY f.tanggal, f.tipe_tahap",
+			$params);
 		$rows = $q->result_array(); $q->free_result();
 		foreach ($rows as &$r) { $r['tanggal'] = substr($r['tanggal'], 0, 10); }
 		return $rows;
@@ -62,7 +70,16 @@ class Dashboard_model extends CI_Model
 	/* ---- opsi filter ---- */
 	public function opt($sql) { return $this->db->query($sql)->result_array(); }
 	public function departments() { return $this->opt("SELECT id_departemen, nama FROM dbo.M_DEPARTEMEN WHERE is_aktif=1 ORDER BY nama"); }
-	public function positions()   { return $this->opt("SELECT id_posisi, nama_posisi FROM dbo.M_POSISI WHERE is_aktif=1 ORDER BY nama_posisi"); }
+	public function positions($id_dept = NULL)
+	{
+		$where = 'WHERE is_aktif=1';
+		$params = array();
+		if ($id_dept !== NULL) {
+			$where .= ' AND id_departemen = ?';
+			$params[] = (int) $id_dept;
+		}
+		return $this->db->query("SELECT id_posisi, nama_posisi FROM dbo.M_POSISI $where ORDER BY nama_posisi", $params)->result_array();
+	}
 	public function outlets()     { return $this->opt("SELECT id_outlet, nama_outlet FROM dbo.M_OUTLET WHERE is_aktif=1 ORDER BY nama_outlet"); }
 	public function flows()       { return $this->opt("SELECT id_flow, kode_flow FROM dbo.M_FLOW WHERE is_aktif=1 ORDER BY kode_flow"); }
 	public function channels()    { return $this->opt("SELECT id_channel, nama_channel FROM dbo.M_CHANNEL WHERE is_aktif=1 ORDER BY nama_channel"); }
@@ -109,6 +126,7 @@ class Dashboard_model extends CI_Model
 		if ( ! empty($f['posisi'])) { $sql .= ' AND r.id_posisi = ?'; $b[] = (int) $f['posisi']; }
 		if ( ! empty($f['status'])) { $sql .= ' AND a.status_global = ?'; $b[] = $f['status']; }
 		if ( ! empty($f['flow']))   { $sql .= ' AND a.id_flow = ?'; $b[] = (int) $f['flow']; }
+		if ( ! empty($f['dept']))   { $sql .= ' AND pos.id_departemen = ?'; $b[] = (int) $f['dept']; }
 		$sql .= ' ORDER BY a.id_lamaran DESC';
 
 		$q = $this->db->query($sql, $b);

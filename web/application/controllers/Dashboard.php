@@ -13,10 +13,11 @@ class Dashboard extends Secured_Controller
 
 	public function index()
 	{
+		$dept = current_user_dept();
 		$f = array(
 			'dari'       => $this->input->get('dari') ?: NULL,
 			'sampai'     => $this->input->get('sampai') ?: NULL,
-			'dept'       => $this->input->get('dept') ?: NULL,
+			'dept'       => $dept !== NULL ? $dept : ($this->input->get('dept') ?: NULL),
 			'posisi'     => $this->input->get('posisi') ?: NULL,
 			'outlet'     => $this->input->get('outlet') ?: NULL,
 			'flow'       => $this->input->get('flow') ?: NULL,
@@ -28,16 +29,23 @@ class Dashboard extends Secured_Controller
 
 		$d = $this->dm->dashboard($f);
 
+		$depts = $this->dm->departments();
+		if ($dept !== NULL) {
+			$depts = array_values(array_filter($depts, function ($item) use ($dept) {
+				return (int) $item['id_departemen'] === (int) $dept;
+			}));
+		}
+
 		$this->load->view('layouts/main', array(
 			'title'    => 'Dashboard',
 			'_content' => 'dashboard/index',
 			'wide'     => TRUE,
 			'f'        => $f,
 			'd'        => $d,
-			'trend'    => $this->dm->funnel_trend(14),
+			'trend'    => $this->dm->funnel_trend(14, $f['dept']),
 			'opt'      => array(
-				'dept'    => $this->dm->departments(),
-				'posisi'  => $this->dm->positions(),
+				'dept'    => $depts,
+				'posisi'  => $this->dm->positions($dept),
 				'outlet'  => $this->dm->outlets(),
 				'flow'    => $this->dm->flows(),
 				'channel' => $this->dm->channels(),

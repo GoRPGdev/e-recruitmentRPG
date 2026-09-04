@@ -80,7 +80,7 @@ hanya bila `LIHAT_FINANSIAL`. Tanpa permission, kolomnya tidak ikut (bukan koson
 | **G2** | Range gaji pada view & create MPR belum ber-gate data sensitif. | **✅ Selesai** | **Kahfi** | Ditutup dengan `can_sensitif('GAJI')`. Saat dibuka di `Requisitions::view`, memanggil `log_akses_sensitif('GAJI', id_req)`. Input di `create.php` hanya muncul untuk yang berhak. |
 | **G3** | Layar detail kandidat per-orang (kesehatan, gaji pelamar). | 🟡 Menunggu | Kiki / Tahap lanjut | Kolom gaji pelamar & kesehatan saat ini sudah terlindungi di export dan endpoint dokumen. |
 | **G4** | Scoping baris daftar MPR. | **✅ Ditutup** | HR / Fachri | Keputusan HR 2026-09-04: Seluruh user login boleh melihat daftar MPR. |
-| **G4b** | Scoping kandidat dept untuk USER_DEPT. | 🟡 Menunggu | Kahfi & Kiki | **Keputusan HR 2026-09-04: USER_DEPT hanya lihat kandidat dari MPR yang `id_departemen` = departemen dia**. **Prasyarat ✅ (migrasi `20260910_1100`):** `M_USERS.id_departemen` + FK; `sp_Login` mengembalikannya; ada di sesi `auth_user['id_departemen']`; helper `current_user_dept()`. **Sisa:** filter `WHERE (current_user_dept() IS NULL OR ...)` di list MPR/kandidat/pipeline (Kahfi) + funnel/metrik dashboard (Kiki). |
+| **G4b** | Scoping kandidat dept untuk USER_DEPT. | **✅ Selesai** | **Kahfi & Kiki** | **Keputusan HR 2026-09-04: USER_DEPT hanya lihat kandidat dari MPR yang `id_departemen` = departemen dia**. **Implementasi Selesai:** Helper `current_user_dept()` diterapkan pada: (1) `Pipeline::_get_req_scoped` (403 untuk req beda dept), (2) `requisitions/index.php` (link pipeline hanya tampil untuk dept pemohon), (3) `Requisitions::create` (filter posisi & validasi submit), (4) `Documents` (list, verify, checklist, open ber-gate dept), (5) `Dashboard` & `funnel_trend` (agregat metrik terkunci ke dept user). |
 | **G5** | VIEWER buka dashboard. | **✅ Ditutup** | HR / Fachri | Keputusan HR 2026-09-04: VIEWER diizinkan memantau dashboard. |
 | **G6** | Pengajuan MPR (`create`/`submit`) terbuka untuk semua role. | **✅ Selesai** | **Kahfi & Kiki** | Migrasi `20260910_1000__perm_buat_mpr.sql` (Kiki) + Guard `require_permission('BUAT_MPR')` di controller (Kahfi). Probe: VIEWER, BOD, IT_ADMIN tertolak 403. |
 | **G7** | `documents/flow_docs` tertolak 403 untuk IT_ADMIN. | **✅ Ditutup** | **Kiki** | `flow_docs`/`set_flow_doc` dipindah ke `Flowbuilder` (`EDIT_FLOW_TEMPLATE`). View `flow/docs.php`. IT_ADMIN lolos 200. |
@@ -99,14 +99,15 @@ Diuji via probe otomatis (`tools/rbac-probe.sh` / `run_rbac_probe.php`) terhadap
 | `requisitions/create` | **403** | **200** | **200** | **200** | **403** | **403** | ✅ **G6 Berhasil** (Hanya `BUAT_MPR`) |
 | `requisitions/approve/999` | **403** | **404** | **404** | **403** | **404** | **403** | ✅ **G1 Berhasil** (BOD & HR lolos guard) |
 | `pipeline/index/1` | 403 | 200 | 200 | 200 | 200 | 200 | ✅ Lolos bagi pemegang `LIHAT_KANDIDAT` |
+| `pipeline/index/2` (Dept Luar) | 403 | 200 | 200 | **403** | 200 | 200 | ✅ **G4b Berhasil** (USER_DEPT 403, BOD/HR 200) |
 | `master` | 403 | 200 | 200 | 403 | 403 | 403 | ✅ Khusus HR (`KELOLA_REKRUTMEN`) |
 | `import` / `postings` / `export` | 403 | 200 | 200 | 403 | 403 | 403 | ✅ Khusus HR (`KELOLA_REKRUTMEN` / `EXPORT`) |
 | `flowbuilder` | 200 | 403 | 403 | 403 | 403 | 403 | ✅ Khusus IT_ADMIN (`EDIT_FLOW_TEMPLATE`) |
 | `flowbuilder/flow_docs` | **200** | **403** | **403** | **403** | **403** | **403** | ✅ **G7 Berhasil** (IT_ADMIN 200) |
 | `documents/open` KTP / Rekening | 403 | 200 / **403** | 200 / 200 | 403 | 403 | 403 | ✅ `gate_sensitif` + `ACCESS_LOG_SENSITIF` |
 
-**Beres:** G1 (Kahfi), G2 (Kahfi), G6 (Kahfi & Kiki), G7 (Kiki), G4 (ditutup HR), G5 (ditutup HR).
-**Menunggu:** G4b (scoping kandidat dept untuk USER_DEPT), G3 (layar detail per orang).
+**Beres:** G1 (Kahfi), G2 (Kahfi), G4 (ditutup HR), G4b (Kahfi & Kiki), G5 (ditutup HR), G6 (Kahfi & Kiki), G7 (Kiki).
+**Menunggu:** G3 (layar detail per orang).
 
 ---
 
@@ -140,10 +141,12 @@ Login sebagai masing-masing, jalankan tiap baris, catat **Sesuai / Tidak**.
 - [ ] Flow Builder → 403 (sampai grant `EDIT_FLOW_TEMPLATE` dibuka)
 
 ### USER_DEPT
-- [ ] Dashboard & daftar kandidat → hanya menampilkan **requisition milik dept-nya** (G4)
+- [x] Dashboard & daftar kandidat → hanya menampilkan **requisition/kandidat milik dept-nya** (G4b ✅)
+- [x] Akses pipeline/dokumen dept lain → 403 Forbidden (G4b ✅)
 - [ ] Buka dokumen IDENTITAS/FINANSIAL → 403
 - [ ] Export → 403
-- [ ] MPR create/approve, Pipeline aksi → 403
+- [x] MPR create → bisa buat MPR dept sendiri (G6); posisi dept lain ditolak (G4b)
+- [ ] MPR approve, Pipeline aksi → 403
 
 ### BOD
 - [ ] Daftar kandidat & CV requisition **miliknya** → terbuka (G4)

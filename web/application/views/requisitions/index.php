@@ -60,7 +60,11 @@
 			<td><span class="tag <?= in_array($r['status_req'], array('Sourcing','Approved','Terpenuhi','Terpenuhi_Sebagian')) ? 'on' : 'off' ?>"><?= html_escape($r['status_req']) ?></span></td>
 			<td>
 				<a href="<?= site_url('requisitions/view/' . (int) $r['id_req']) ?>">detail</a>
-				&middot; <a href="<?= site_url('pipeline/index/' . (int) $r['id_req']) ?>">pipeline</a>
+				<?php
+				$can_view_pipeline = (current_user_dept() === NULL || (isset($r['id_departemen']) && (int) $r['id_departemen'] === (int) current_user_dept()));
+				if ($can_view_pipeline): ?>
+					&middot; <a href="<?= site_url('pipeline/index/' . (int) $r['id_req']) ?>">pipeline</a>
+				<?php endif; ?>
 			</td>
 		</tr>
 		<?php endforeach; ?>

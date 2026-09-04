@@ -49,7 +49,7 @@ class Requisition_model extends CI_Model
 		$sql = "WITH q AS (
 		            SELECT r.id_req, r.no_mpr, r.status_req, r.tipe_penempatan, r.jumlah_dibutuhkan,
 		                   r.jumlah_disetujui, r.jumlah_terpenuhi, r.tanggal_pengajuan,
-		                   p.nama_posisi, o.nama_outlet, u.nama_snapshot AS pemohon,
+		                   p.nama_posisi, p.id_departemen, o.nama_outlet, u.nama_snapshot AS pemohon,
 		                   ROW_NUMBER() OVER (ORDER BY r.id_req DESC) AS rn
 		            FROM dbo.REQUISITIONS r
 		            JOIN dbo.M_POSISI p      ON p.id_posisi = r.id_posisi
@@ -66,7 +66,7 @@ class Requisition_model extends CI_Model
 	public function get($id_req)
 	{
 		$q = $this->db->query(
-			'SELECT r.*, p.nama_posisi, o.nama_outlet, d.nama AS departemen, u.nama_snapshot AS pemohon,
+			'SELECT r.*, p.nama_posisi, p.id_departemen, o.nama_outlet, d.nama AS departemen, u.nama_snapshot AS pemohon,
 			        f.kode_flow, f.nama_flow
 			 FROM dbo.REQUISITIONS r
 			 JOIN dbo.M_POSISI p       ON p.id_posisi = r.id_posisi
@@ -99,9 +99,15 @@ class Requisition_model extends CI_Model
 		return $row ? $row : NULL;
 	}
 
-	public function positions()
+	public function positions($id_dept = NULL)
 	{
-		$q = $this->db->query('SELECT id_posisi, nama_posisi, level_posisi, default_flow FROM dbo.M_POSISI WHERE is_aktif = 1 ORDER BY nama_posisi');
+		$where = 'WHERE is_aktif = 1';
+		$params = array();
+		if ($id_dept !== NULL) {
+			$where .= ' AND id_departemen = ?';
+			$params[] = (int) $id_dept;
+		}
+		$q = $this->db->query("SELECT id_posisi, nama_posisi, level_posisi, default_flow, id_departemen FROM dbo.M_POSISI $where ORDER BY nama_posisi", $params);
 		$r = $q->result_array(); $q->free_result(); return $r;
 	}
 
