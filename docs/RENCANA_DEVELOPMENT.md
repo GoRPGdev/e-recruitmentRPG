@@ -354,7 +354,7 @@ Pembagian di bawah bisa ditukar sesuai preferensi — yang penting jangan dua or
 - [x] Flow builder: susun tahap, drag urutan, wajib/opsional, SLA, PIC
 - [x] "Simpan sebagai template baru" (clone `M_FLOW` + `M_FLOW_STAGE`, isi `id_flow_induk`)
 - [x] Naikkan `M_FLOW.versi` setiap kali template diubah
-- [ ] CRUD `M_STAGE` (dengan `tipe_tahap` wajib) & `M_REMARKS` (+ `efek_status`, urutan, soft delete) _(M_REMARKS ✅ via `sp_SaveRemark`; CRUD `M_STAGE` belum — baru dibaca untuk dropdown)_
+- [x] CRUD `M_STAGE` (dengan `tipe_tahap` wajib) & `M_REMARKS` (+ `efek_status`, urutan, soft delete) _(M_STAGE ✅ via `sp_SaveStage` & `sp_ToggleStage` + menu Master; M_REMARKS ✅ via `sp_SaveRemark` + edit support)_
 - [x] `sp_GenerateApplicationStages` — snapshot flow saat lamaran dibuat
 - [x] `sp_AdvanceStage` — baca `efek_status` dari remark, tulis history, atomik
 - [x] `sp_InsertAdHocStage` — tahap sisipan + renumber urutan
@@ -362,7 +362,7 @@ Pembagian di bawah bisa ditukar sesuai preferensi — yang penting jangan dua or
 - [x] Status `Unreachable` reversible saat kandidat merespons
 - [x] Halaman pipeline **vertikal**: satu baris per tahap, kartu kandidat mengalir ke kanan, scroll ke bawah
 - [x] `sp_GetPipeline @id_req` — satu query untuk semua tahap, di-group di PHP (jangan 1 query per tahap)
-- [ ] Batas 12 kartu per baris + "lihat semua" kalau kandidat banyak
+- [x] Batas 12 kartu per baris + "lihat semua" kalau kandidat banyak _(horizontal scroll + toggle expand/collapse)_
 
 **KIKI — Dashboard, Report, Dokumen**
 - [x] Dashboard: kartu metrik, funnel per `tipe_tahap`, aging SLA, pipeline per flow

@@ -98,14 +98,22 @@ class Flowbuilder extends Secured_Controller
 
 	public function remarks($id_stage = NULL)
 	{
+		$edit_id  = (int) $this->input->get('edit_remark');
+		$edit_row = NULL;
+		if ($edit_id) {
+			$q = $this->db->query('SELECT * FROM dbo.M_REMARKS WHERE id_remark = ?', array($edit_id));
+			$edit_row = $q->row_array() ?: NULL;
+		}
+
 		$this->load->view('layouts/main', array(
-			'title'      => 'Remark',
-			'_content'   => 'flow/remarks',
-			'wide'       => TRUE,
-			'id_stage'   => $id_stage ? (int) $id_stage : NULL,
-			'rows'       => $this->mm->remarks($id_stage ? (int) $id_stage : NULL),
-			'all_stages' => $this->mm->all_stages(),
-			'efek'       => array('LANJUT','TOLAK','ON_HOLD','UNREACHABLE','WITHDRAWN','OFFER_DECLINED','NO_SHOW','HIRED','TALENT_POOL'),
+			'title'       => 'Remark',
+			'_content'    => 'flow/remarks',
+			'wide'        => TRUE,
+			'id_stage'    => $id_stage ? (int) $id_stage : NULL,
+			'rows'        => $this->mm->remarks($id_stage ? (int) $id_stage : NULL),
+			'all_stages'  => $this->mm->all_stages(),
+			'efek'        => array('LANJUT','TOLAK','ON_HOLD','UNREACHABLE','WITHDRAWN','OFFER_DECLINED','NO_SHOW','HIRED','TALENT_POOL'),
+			'edit_remark' => $edit_row,
 		));
 	}
 

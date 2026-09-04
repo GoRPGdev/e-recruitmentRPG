@@ -8,11 +8,12 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class Master extends Secured_Controller
 {
 	private $types = array(
-		'posisi'     => array('label' => 'Posisi',     'pk' => 'id_posisi'),
-		'departemen' => array('label' => 'Departemen', 'pk' => 'id_departemen', 'tabel' => 'M_DEPARTEMEN'),
-		'outlet'     => array('label' => 'Outlet',     'pk' => 'id_outlet',     'tabel' => 'M_OUTLET'),
-		'channel'    => array('label' => 'Channel',    'pk' => 'id_channel',    'tabel' => 'M_CHANNEL'),
-		'dokumen'    => array('label' => 'Dokumen',    'pk' => 'id_dokumen',    'tabel' => 'M_DOKUMEN'),
+		'posisi'     => array('label' => 'Posisi',        'pk' => 'id_posisi'),
+		'stage'      => array('label' => 'Tahap Seleksi', 'pk' => 'id_stage'),
+		'departemen' => array('label' => 'Departemen',    'pk' => 'id_departemen', 'tabel' => 'M_DEPARTEMEN'),
+		'outlet'     => array('label' => 'Outlet',        'pk' => 'id_outlet',     'tabel' => 'M_OUTLET'),
+		'channel'    => array('label' => 'Channel',       'pk' => 'id_channel',    'tabel' => 'M_CHANNEL'),
+		'dokumen'    => array('label' => 'Dokumen',       'pk' => 'id_dokumen',    'tabel' => 'M_DOKUMEN'),
 	);
 
 	public function __construct()
@@ -41,6 +42,12 @@ class Master extends Secured_Controller
 				$data['depts']   = $this->master_model->list_departemen();
 				$data['flows']   = $this->master_model->list_flow();
 				break;
+			case 'stage':
+				$data['rows']       = $this->master_model->list_stage();
+				$data['tipe_tahap'] = array('SCREENING','KONTAK','FORM','TEST','INTERVIEW','OFFER','ONBOARD');
+				$edit_id            = (int) $this->input->get('edit');
+				$data['edit_row']   = $edit_id ? $this->master_model->get_stage($edit_id) : NULL;
+				break;
 			case 'departemen': $data['rows'] = $this->master_model->list_departemen(); break;
 			case 'outlet':     $data['rows'] = $this->master_model->list_outlet(); break;
 			case 'channel':    $data['rows'] = $this->master_model->list_channel(); break;
@@ -58,6 +65,7 @@ class Master extends Secured_Controller
 		try {
 			switch ($t) {
 				case 'posisi':     $this->master_model->save_posisi($p); break;
+				case 'stage':      $this->master_model->save_stage($p); break;
 				case 'departemen': $this->master_model->save_departemen($p); break;
 				case 'outlet':     $this->master_model->save_outlet($p); break;
 				case 'channel':    $this->master_model->save_channel($p); break;
@@ -80,6 +88,8 @@ class Master extends Secured_Controller
 		try {
 			if ($t === 'posisi') {
 				$this->master_model->toggle_posisi($id, $akt);
+			} elseif ($t === 'stage') {
+				$this->master_model->toggle_stage($id, $akt);
 			} else {
 				$this->master_model->toggle_flat($this->types[$t]['tabel'], $this->types[$t]['pk'], $id, $akt);
 			}

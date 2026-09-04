@@ -53,6 +53,46 @@ class Master_model extends CI_Model
 		$this->_sp('{CALL dbo.sp_TogglePosisi(?,?)}', array((int) $id_posisi, $is_aktif ? 1 : 0));
 	}
 
+	/* ================= TAHAP SELEKSI (M_STAGE) ===================== */
+
+	public function list_stage()
+	{
+		return $this->db->query(
+			'SELECT s.id_stage, s.kode_stage, s.nama_tahap, s.tipe_tahap,
+			        s.is_terminal, s.is_sistem, s.is_aktif,
+			        (SELECT COUNT(*) FROM dbo.M_FLOW_STAGE fs WHERE fs.id_stage = s.id_stage) AS n_flow,
+			        (SELECT COUNT(*) FROM dbo.M_REMARKS r WHERE r.id_stage = s.id_stage) AS n_remark
+			 FROM dbo.M_STAGE s
+			 ORDER BY s.is_aktif DESC, s.nama_tahap'
+		)->result_array();
+	}
+
+	public function get_stage($id_stage)
+	{
+		$q = $this->db->query('SELECT * FROM dbo.M_STAGE WHERE id_stage = ?', array((int) $id_stage));
+		return $q->row_array() ?: NULL;
+	}
+
+	public function save_stage($in)
+	{
+		$id = 0;
+		$this->_sp('{CALL dbo.sp_SaveStage(?,?,?,?,?,?,?)}', array(
+			! empty($in['id_stage']) ? (int) $in['id_stage'] : NULL,
+			(string) $in['kode_stage'],
+			(string) $in['nama_tahap'],
+			(string) $in['tipe_tahap'],
+			! empty($in['is_terminal']) ? 1 : 0,
+			isset($in['is_aktif']) ? ($in['is_aktif'] ? 1 : 0) : 1,
+			array(&$id, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
+		));
+		return (int) $id;
+	}
+
+	public function toggle_stage($id_stage, $is_aktif)
+	{
+		$this->_sp('{CALL dbo.sp_ToggleStage(?,?)}', array((int) $id_stage, $is_aktif ? 1 : 0));
+	}
+
 	/* ================= MASTER FLAT ================================ */
 
 	private function _flat_list($tabel, $cols)
