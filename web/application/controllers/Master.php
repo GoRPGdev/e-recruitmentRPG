@@ -57,7 +57,7 @@ class Master extends Secured_Controller
 		$p = $this->input->post(NULL, TRUE);
 		try {
 			switch ($t) {
-				case 'posisi':     $this->master_model->save_posisi($p); break;
+				case 'posisi':     $this->master_model->save_posisi($p, $this->auth_user['id_user']); break;
 				case 'departemen': $this->master_model->save_departemen($p); break;
 				case 'outlet':     $this->master_model->save_outlet($p); break;
 				case 'channel':    $this->master_model->save_channel($p); break;
@@ -79,7 +79,7 @@ class Master extends Secured_Controller
 		$akt = (int) $this->input->post('is_aktif');
 		try {
 			if ($t === 'posisi') {
-				$this->master_model->toggle_posisi($id, $akt);
+				$this->master_model->toggle_posisi($id, $akt, $this->auth_user['id_user']);
 			} else {
 				$this->master_model->toggle_flat($this->types[$t]['tabel'], $this->types[$t]['pk'], $id, $akt);
 			}

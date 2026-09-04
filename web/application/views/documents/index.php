@@ -1,9 +1,6 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
 <main class="card">
 	<h1>Verifikasi Berkas</h1>
-	<p class="muted" style="margin-top:0">
-		<a href="<?= site_url('documents/flow_docs') ?>">Atur dokumen wajib per tahap &rarr;</a>
-	</p>
 
 	<form method="get" action="<?= site_url('documents') ?>" style="margin:0 0 12px; font-size:13px">
 		Status:

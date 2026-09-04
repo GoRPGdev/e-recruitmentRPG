@@ -34,23 +34,26 @@ class Master_model extends CI_Model
 		return $q->result_array();
 	}
 
-	public function save_posisi($in)
+	public function save_posisi($in, $oleh_user = NULL)
 	{
 		$id = 0;
-		$this->_sp('{CALL dbo.sp_SavePosisi(?,?,?,?,?,?)}', array(
+		$this->_sp('{CALL dbo.sp_SavePosisi(?,?,?,?,?,?,?)}', array(
 			! empty($in['id_posisi']) ? (int) $in['id_posisi'] : NULL,
 			(string) $in['nama_posisi'],
 			(int) $in['id_departemen'],
 			(string) $in['level_posisi'],
 			! empty($in['default_flow']) ? (int) $in['default_flow'] : NULL,
+			$oleh_user ? (int) $oleh_user : NULL,
 			array(&$id, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
 		));
 		return (int) $id;
 	}
 
-	public function toggle_posisi($id_posisi, $is_aktif)
+	public function toggle_posisi($id_posisi, $is_aktif, $oleh_user = NULL)
 	{
-		$this->_sp('{CALL dbo.sp_TogglePosisi(?,?)}', array((int) $id_posisi, $is_aktif ? 1 : 0));
+		$this->_sp('{CALL dbo.sp_TogglePosisi(?,?,?)}', array(
+			(int) $id_posisi, $is_aktif ? 1 : 0, $oleh_user ? (int) $oleh_user : NULL,
+		));
 	}
 
 	/* ================= TAHAP SELEKSI (M_STAGE) ===================== */

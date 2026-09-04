@@ -16,6 +16,7 @@ CREATE PROCEDURE dbo.sp_SavePosisi
     @id_departemen INT,
     @level_posisi  VARCHAR(20),
     @default_flow  INT           = NULL,
+    @oleh_user     INT           = NULL,
     @id_posisi_out INT OUTPUT
 AS
 BEGIN
@@ -35,6 +36,8 @@ BEGIN
                    AND (@id_posisi IS NULL OR id_posisi <> @id_posisi))
             RAISERROR('Nama posisi sudah dipakai.', 16, 1);
 
+        DECLARE @aksi VARCHAR(10) = CASE WHEN @id_posisi IS NULL THEN 'INSERT' ELSE 'UPDATE' END;
+
         IF @id_posisi IS NULL
         BEGIN
             INSERT INTO dbo.M_POSISI (nama_posisi, id_departemen, level_posisi, default_flow, is_aktif)
@@ -49,6 +52,13 @@ BEGIN
             WHERE id_posisi = @id_posisi;
             SET @id_posisi_out = @id_posisi;
         END
+
+        DECLARE @av VARCHAR(400) = 'nama=' + @nama_posisi
+            + ' | dept=' + CONVERT(VARCHAR(12), @id_departemen)
+            + ' | level=' + @level_posisi
+            + ' | flow=' + ISNULL(CONVERT(VARCHAR(12), @default_flow), '-');
+        EXEC dbo.sp_AuditLog @nama_tabel = 'M_POSISI', @id_baris = @id_posisi_out,
+             @aksi = @aksi, @nilai_baru = @av, @oleh_user = @oleh_user;
 
         IF @outer = 0 COMMIT TRANSACTION;
     END TRY

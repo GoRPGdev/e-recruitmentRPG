@@ -75,14 +75,14 @@ menolak INSERT/UPDATE kalau sesi `SET QUOTED_IDENTIFIER OFF`.
 | `sp_LogContact` | Flow Engine | `APPLICATION_CONTACTS`; auto `Unreachable` di batas `maks_upaya_kontak`, reversible |
 | `sp_GetPipeline` | Flow Engine | read-only; 1 query semua tahap 1 requisition (di-group di PHP) |
 | `sp_BuildFunnelHarian` | Report | isi `RPT_FUNNEL_HARIAN` per tanggal (job `tools/build-funnel.php`) |
-| `sp_SavePosisi` / `sp_TogglePosisi` | Master Data | CRUD + soft delete posisi |
+| `sp_SavePosisi` / `sp_TogglePosisi` | Master Data | CRUD + soft delete posisi; `@oleh_user` → `AUDIT_LOG` |
 | `sp_SaveFlow` | Flow Builder | tambah/ubah header `M_FLOW` |
 | `sp_SaveFlowStage` | Flow Builder | ADD / UPDATE / REMOVE / MOVE tahap dalam flow, bump `versi` |
 | `sp_CloneFlow` | Flow Builder | "simpan sebagai template baru" (salin + `id_flow_induk`, versi 1) |
 | `sp_SaveRemark` | Flow Builder | CRUD `M_REMARKS` (efek_status dijaga CHECK) |
 | `sp_InsertAdHocStage` | Flow Engine | sisip tahap ke 1 lamaran (`is_sisipan`, renumber `urutan` 1 transaksi) |
 | `sp_Dashboard` | Report | read-only; 4 result set (metrik / funnel / aging SLA / waktu) dengan 10 filter opsional |
-| `sp_VerifyDocument` | Dokumen | `CANDIDATE_DOCUMENTS` Proses → Done/Ditolak + history |
+| `sp_VerifyDocument` | Dokumen | `CANDIDATE_DOCUMENTS` Proses → Done/Ditolak + history + `AUDIT_LOG` |
 | `sp_AuditLog` | Kepatuhan | helper 1 INSERT ke `AUDIT_LOG`; tanpa transaksi sendiri |
 | `sp_LogAksesSensitif` | Kepatuhan | helper 1 INSERT ke `ACCESS_LOG_SENSITIF` (DOK_IDENTITAS/FINANSIAL/GAJI/KESEHATAN); dipakai helper `gate_sensitif()` |
 | `sp_SetRetensi` | Kepatuhan | hitung ulang `CANDIDATES.retensi_sampai` (12/24 bln; NULL jika Hired); dipanggil dari `sp_AdvanceStage` & `sp_LogContact` |

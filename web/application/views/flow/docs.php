@@ -13,9 +13,14 @@ foreach ($rows as $r) {
 ?>
 <main class="card">
 	<h1>Dokumen wajib per tahap</h1>
+	<p class="muted" style="margin-top:0">
+		<a href="<?= site_url('flowbuilder') ?>">&larr; Flow Builder</a> &middot;
+		<a href="<?= site_url('flowbuilder/stages') ?>">Kelola tahap seleksi &rarr;</a>
+	</p>
+
 	<form method="get" action="" style="margin:0 0 12px">
 		Flow:
-		<select name="_f" onchange="location.href='<?= site_url('documents/flow_docs') ?>/'+this.value" style="width:auto; padding:4px">
+		<select name="_f" onchange="location.href='<?= site_url('flowbuilder/flow_docs') ?>/'+this.value" style="width:auto; padding:4px">
 			<?php foreach ($flows as $fl): ?>
 				<option value="<?= (int) $fl['id_flow'] ?>" <?= $fl['id_flow'] == $id_flow ? 'selected' : '' ?>><?= html_escape($fl['kode_flow']) ?></option>
 			<?php endforeach; ?>
@@ -32,7 +37,7 @@ foreach ($rows as $r) {
 				<td><?= html_escape($dk['nama_dokumen']) ?></td>
 				<td><?php if ($cur === NULL): ?>-<?php elseif ($cur['wajib']): ?><span class="tag off">wajib</span><?php else: ?><span class="tag">opsional</span><?php endif; ?></td>
 				<td>
-					<?= form_open(site_url('documents/set_flow_doc/' . (int) $id_flow), array('class' => 'inline')) ?>
+					<?= form_open(site_url('flowbuilder/set_flow_doc/' . (int) $id_flow), array('class' => 'inline')) ?>
 						<input type="hidden" name="id_flow_stage" value="<?= (int) $idfs ?>">
 						<input type="hidden" name="id_dokumen" value="<?= (int) $dk['id_dokumen'] ?>">
 						<button name="wajib" value="1" class="btn-sm">wajib</button>

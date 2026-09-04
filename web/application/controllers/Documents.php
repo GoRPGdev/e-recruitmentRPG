@@ -2,9 +2,10 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Verifikasi berkas kandidat + konfigurasi dokumen wajib per tahap.
- * Lihat: LIHAT_CV. Buka dokumen IDENTITAS/FINANSIAL butuh permission khusus
- * dan dicatat ke ACCESS_LOG_SENSITIF.
+ * Verifikasi berkas kandidat. Lihat: LIHAT_CV. Buka dokumen IDENTITAS/
+ * FINANSIAL butuh permission khusus dan dicatat ke ACCESS_LOG_SENSITIF.
+ * Konfigurasi "dokumen wajib per tahap" pindah ke Flow Builder
+ * (flowbuilder/flow_docs, permission EDIT_FLOW_TEMPLATE).
  */
 class Documents extends Secured_Controller
 {
@@ -12,7 +13,7 @@ class Documents extends Secured_Controller
 	{
 		parent::__construct();
 		$this->require_permission('LIHAT_CV');
-		$this->load->model(array('document_model', 'master_model'));
+		$this->load->model('document_model');
 		$this->load->helper(array('form', 'url'));
 	}
 
@@ -91,40 +92,5 @@ class Documents extends Secured_Controller
 			->set_header('Content-Disposition: inline; filename="' . basename($path) . '"')
 			->set_header('Content-Length: ' . filesize($path))
 			->set_output(file_get_contents($path));
-	}
-
-	/* ---- konfigurasi dokumen wajib per tahap (M_FLOW_STAGE_DOKUMEN) ---- */
-
-	public function flow_docs($id_flow = NULL)
-	{
-		$this->require_permission('EDIT_FLOW_TEMPLATE');
-		$flows = $this->master_model->list_flow();
-		if ( ! $id_flow && $flows) {
-			$id_flow = $flows[0]['id_flow'];
-		}
-		$this->load->view('layouts/main', array(
-			'title'    => 'Dokumen wajib per tahap',
-			'_content' => 'documents/flow_docs',
-			'wide'     => TRUE,
-			'flows'    => $flows,
-			'id_flow'  => (int) $id_flow,
-			'rows'     => $id_flow ? $this->document_model->flow_required_docs($id_flow) : array(),
-			'dokumen'  => $this->master_model->list_dokumen(),
-		));
-	}
-
-	public function set_flow_doc($id_flow = NULL)
-	{
-		$this->require_permission('EDIT_FLOW_TEMPLATE');
-		if ( ! $id_flow || $this->input->method() !== 'post') {
-			show_404();
-		}
-		$this->document_model->set_flow_doc(
-			(int) $this->input->post('id_flow_stage'),
-			(int) $this->input->post('id_dokumen'),
-			$this->input->post('wajib')   // '1' | '0' | 'remove'
-		);
-		$this->session->set_flashdata('ok', 'Dokumen tahap diperbarui.');
-		redirect('documents/flow_docs/' . (int) $id_flow);
 	}
 }

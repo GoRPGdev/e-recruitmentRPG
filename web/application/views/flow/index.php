@@ -3,7 +3,8 @@
 	<h1>Flow Builder</h1>
 	<p class="muted" style="margin-top:0">
 		<a href="<?= site_url('flowbuilder/stages') ?>">Kelola tahap seleksi &rarr;</a> &middot;
-		<a href="<?= site_url('flowbuilder/remarks') ?>">Kelola remark &rarr;</a>
+		<a href="<?= site_url('flowbuilder/remarks') ?>">Kelola remark &rarr;</a> &middot;
+		<a href="<?= site_url('flowbuilder/flow_docs') ?>">Dokumen wajib per tahap &rarr;</a>
 	</p>
 
 	<div style="overflow-x:auto"><table>

@@ -13,6 +13,7 @@ class Flowbuilder extends Secured_Controller
 		parent::__construct();
 		$this->require_permission('EDIT_FLOW_TEMPLATE');
 		$this->load->model('master_model', 'mm');
+		$this->load->model('document_model');
 		$this->load->helper(array('form', 'url'));
 	}
 
@@ -131,6 +132,39 @@ class Flowbuilder extends Secured_Controller
 			$this->session->set_flashdata('error', $e->getMessage());
 		}
 		redirect('flowbuilder/stages');
+	}
+
+	/* ---- dokumen wajib per tahap (M_FLOW_STAGE_DOKUMEN) ---- */
+
+	public function flow_docs($id_flow = NULL)
+	{
+		$flows = $this->mm->list_flow();
+		if ( ! $id_flow && $flows) {
+			$id_flow = $flows[0]['id_flow'];
+		}
+		$this->load->view('layouts/main', array(
+			'title'    => 'Dokumen wajib per tahap',
+			'_content' => 'flow/docs',
+			'wide'     => TRUE,
+			'flows'    => $flows,
+			'id_flow'  => (int) $id_flow,
+			'rows'     => $id_flow ? $this->document_model->flow_required_docs($id_flow) : array(),
+			'dokumen'  => $this->mm->list_dokumen(),
+		));
+	}
+
+	public function set_flow_doc($id_flow = NULL)
+	{
+		if ( ! $id_flow || $this->input->method() !== 'post') {
+			show_404();
+		}
+		$this->document_model->set_flow_doc(
+			(int) $this->input->post('id_flow_stage'),
+			(int) $this->input->post('id_dokumen'),
+			$this->input->post('wajib')   // '1' | '0' | 'remove'
+		);
+		$this->session->set_flashdata('ok', 'Dokumen tahap diperbarui.');
+		redirect('flowbuilder/flow_docs/' . (int) $id_flow);
 	}
 
 	/* ---- remarks ---- */
