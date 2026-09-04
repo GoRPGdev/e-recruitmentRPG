@@ -25,6 +25,11 @@ $DIR_MG = $ROOT . '/database/migrations';
 $DIR_SP = $ROOT . '/database/procedures';
 $aksi   = isset($argv[1]) ? $argv[1] : 'status';
 
+// SQL Server "deferred name resolution": sebuah SP boleh memanggil SP lain yang
+// belum ada saat CREATE (mis. sp_AdvanceStage -> sp_SetRetensi, urutan alfabet).
+// Itu warning severity 10, bukan error -- jangan hentikan deploy karenanya.
+sqlsrv_configure('WarningsReturnAsErrors', 0);
+
 $conn = sqlsrv_connect($cfg['host'], array(
     'Database' => $cfg['database'], 'UID' => $cfg['user'], 'PWD' => $cfg['password'],
     'CharacterSet' => 'UTF-8', 'ReturnDatesAsStrings' => true,

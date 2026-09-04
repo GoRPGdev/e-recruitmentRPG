@@ -374,14 +374,14 @@ Pembagian di bawah bisa ditukar sesuai preferensi — yang penting jangan dua or
 
 ---
 
-### FASE 4 — Keamanan & Kepatuhan · ± 1 minggu · **BARENG**
-- [ ] RBAC tiga tingkat: umum / dokumen identitas / finansial
-- [ ] `ACCESS_LOG_SENSITIF` — catat setiap buka KTP, rekening, gaji, data kesehatan
-- [ ] `AUDIT_LOG` untuk perubahan master & data lamaran
-- [ ] Consent: versi teks tersimpan, checkbox talent pool terpisah, consent kesehatan terpisah
-- [ ] `retensi_sampai` otomatis (12 bulan sejak ditolak, 24 bulan jika setuju talent pool)
-- [ ] Job penghapusan/anonimisasi lewat Task Scheduler
-- [ ] Matriks hak akses diuji per peran, satu per satu
+### FASE 4 — Keamanan & Kepatuhan · ± 1 minggu · **BARENG** _(dipecah per concern: retensi/audit-lamaran = Kiki, RBAC/access-log = Kahfi)_
+- [ ] RBAC tiga tingkat: umum / dokumen identitas / finansial _(Kahfi)_
+- [ ] `ACCESS_LOG_SENSITIF` — catat setiap buka KTP, rekening, gaji, data kesehatan _(Kahfi; buka dok sensitif sudah dicatat sejak Fase 3)_
+- [~] `AUDIT_LOG` untuk perubahan master & data lamaran — data lamaran ✅ (`sp_AuditLog` + hook retensi di `sp_AdvanceStage`/`sp_LogContact`); perubahan master belum _(Kahfi)_
+- [x] Consent: versi teks tersimpan, checkbox talent pool terpisah, consent kesehatan terpisah _(sejak Fase 2; `consent_versi`/`consent_pada`/`setuju_talent_pool` + `CANDIDATE_HEALTH.consent_khusus`)_
+- [x] `retensi_sampai` otomatis (12 bulan sejak ditolak, 24 bulan jika setuju talent pool) _(`sp_SetRetensi`, dipanggil dari `sp_AdvanceStage` & `sp_LogContact`)_
+- [x] Job penghapusan/anonimisasi lewat Task Scheduler _(`sp_AnonimisasiRetensi` + `tools/run-retensi.php`; penjadwalan = langkah ops)_
+- [ ] Matriks hak akses diuji per peran, satu per satu _(Kahfi)_
 
 ---
 
