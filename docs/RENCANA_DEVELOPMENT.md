@@ -381,7 +381,7 @@ Pembagian di bawah bisa ditukar sesuai preferensi — yang penting jangan dua or
 - [x] Consent: versi teks tersimpan, checkbox talent pool terpisah, consent kesehatan terpisah _(sejak Fase 2; `consent_versi`/`consent_pada`/`setuju_talent_pool` + `CANDIDATE_HEALTH.consent_khusus`)_
 - [x] `retensi_sampai` otomatis (12 bulan sejak ditolak, 24 bulan jika setuju talent pool) _(`sp_SetRetensi`, dipanggil dari `sp_AdvanceStage` & `sp_LogContact`)_
 - [x] Job penghapusan/anonimisasi lewat Task Scheduler _(`sp_AnonimisasiRetensi` + `tools/run-retensi.php`; penjadwalan = langkah ops)_
-- [ ] Matriks hak akses diuji per peran, satu per satu _(Kahfi)_
+- [~] Matriks hak akses diuji per peran, satu per satu — probe otomatis 6 peran ✅ (`tools/rbac-probe.sh`, hasil di `docs/MATRIKS_HAK_AKSES.md §3b`); temuan G1/G4/G5/G6/G7 belum ditambal, checklist manual (isi kolom/log/scoping) belum dijalankan
 
 ---
 
