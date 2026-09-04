@@ -25,12 +25,7 @@ Sumber: `M_ROLE_PERMISSIONS` (seed `20260908_1200` + `20260909_1000`).
 | `APPROVE` (keputusan BOD) | – | – | – | – | ✅ | – |
 | `BUAT_MPR` (buat & submit requisition) | – | ✅ | ✅ | ✅ | – | – |
 | `EXPORT` | – | ✅ | ✅ | – | – | – |
-<<<<<<< HEAD
-| `KELOLA_REKRUTMEN` (link form, token, entry, import, pipeline) | – | ✅ | ✅ | – | – | – |
-| `BUAT_MPR` (buat & ajukan requisition) | – | ✅ | ✅ | ✅ | – | – |
-=======
 | `KELOLA_REKRUTMEN` (link form, token, entry, import, pipeline, MPR, seleksi) | – | ✅ | ✅ | – | – | – |
->>>>>>> a6ff8ce (feat(seleksi-audit): integrasi seleksi interview-psikotes-offer, audit log flow, rbac G1/G2/G6, dan design system preview)
 | `EDIT_FLOW_TEMPLATE` (flow/stage/remark/dok wajib) | ✅ | – | –¹ | – | – | – |
 
 ¹ `EDIT_FLOW_TEMPLATE` untuk HR_SPV **sengaja belum di-grant** — dibuka setelah 2 siklus / 2 bulan (ERD §10.1). Cukup 1 INSERT ke `M_ROLE_PERMISSIONS` nanti.
