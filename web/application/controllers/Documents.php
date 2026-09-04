@@ -76,20 +76,10 @@ class Documents extends Secured_Controller
 			show_404();
 		}
 
-		// RBAC dokumen sensitif
-		if ($doc['tingkat_sensitif'] === 'IDENTITAS' && ! has_permission('LIHAT_DOK_IDENTITAS')) {
-			show_error('Butuh permission LIHAT_DOK_IDENTITAS.', 403, 'Akses ditolak');
-		}
-		if ($doc['tingkat_sensitif'] === 'FINANSIAL' && ! has_permission('LIHAT_FINANSIAL')) {
-			show_error('Butuh permission LIHAT_FINANSIAL.', 403, 'Akses ditolak');
-		}
-		if (in_array($doc['tingkat_sensitif'], array('IDENTITAS', 'FINANSIAL'), TRUE)) {
-			$this->document_model->log_sensitive(
-				(int) $this->auth_user['id_user'],
-				$doc['tingkat_sensitif'] === 'IDENTITAS' ? 'DOK_IDENTITAS' : 'FINANSIAL',
-				(int) $doc['id_cand_doc'],
-				$this->input->ip_address()
-			);
+		// RBAC dokumen sensitif -- cek permission + catat ke ACCESS_LOG_SENSITIF
+		$peta = array('IDENTITAS' => 'DOK_IDENTITAS', 'FINANSIAL' => 'FINANSIAL');
+		if (isset($peta[$doc['tingkat_sensitif']])) {
+			gate_sensitif($peta[$doc['tingkat_sensitif']], (int) $doc['id_cand_doc']);
 		}
 
 		$path = $doc['path_file'];

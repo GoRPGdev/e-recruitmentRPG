@@ -84,5 +84,6 @@ menolak INSERT/UPDATE kalau sesi `SET QUOTED_IDENTIFIER OFF`.
 | `sp_Dashboard` | Report | read-only; 4 result set (metrik / funnel / aging SLA / waktu) dengan 10 filter opsional |
 | `sp_VerifyDocument` | Dokumen | `CANDIDATE_DOCUMENTS` Proses → Done/Ditolak + history |
 | `sp_AuditLog` | Kepatuhan | helper 1 INSERT ke `AUDIT_LOG`; tanpa transaksi sendiri |
+| `sp_LogAksesSensitif` | Kepatuhan | helper 1 INSERT ke `ACCESS_LOG_SENSITIF` (DOK_IDENTITAS/FINANSIAL/GAJI/KESEHATAN); dipakai helper `gate_sensitif()` |
 | `sp_SetRetensi` | Kepatuhan | hitung ulang `CANDIDATES.retensi_sampai` (12/24 bln; NULL jika Hired); dipanggil dari `sp_AdvanceStage` & `sp_LogContact` |
 | `sp_AnonimisasiRetensi` | Kepatuhan | scrub PII kandidat yang retensinya habis; result set 1 = file untuk dihapus runner, 2 = jumlah; `@simulasi=1` = dry-run |

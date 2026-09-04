@@ -375,8 +375,8 @@ Pembagian di bawah bisa ditukar sesuai preferensi — yang penting jangan dua or
 ---
 
 ### FASE 4 — Keamanan & Kepatuhan · ± 1 minggu · **BARENG** _(dipecah per concern: retensi/audit-lamaran = Kiki, RBAC/access-log = Kahfi)_
-- [ ] RBAC tiga tingkat: umum / dokumen identitas / finansial _(Kahfi)_
-- [ ] `ACCESS_LOG_SENSITIF` — catat setiap buka KTP, rekening, gaji, data kesehatan _(Kahfi; buka dok sensitif sudah dicatat sejak Fase 3)_
+- [~] RBAC tiga tingkat: umum / dokumen identitas / finansial — mekanisme + matriks + checklist uji per peran ✅ (`docs/MATRIKS_HAK_AKSES.md`, helper `gate_sensitif`/`require_any`/`require_all`); eksekusi uji per peran & tambal gap G1–G5 belum
+- [~] `ACCESS_LOG_SENSITIF` — buka dokumen IDENTITAS/FINANSIAL ✅ (`gate_sensitif`), export kolom gaji/rekening ✅; layar riwayat kesehatan belum ada (gap G3)
 - [~] `AUDIT_LOG` untuk perubahan master & data lamaran — data lamaran ✅ (`sp_AuditLog` + hook retensi di `sp_AdvanceStage`/`sp_LogContact`); perubahan master belum _(Kahfi)_
 - [x] Consent: versi teks tersimpan, checkbox talent pool terpisah, consent kesehatan terpisah _(sejak Fase 2; `consent_versi`/`consent_pada`/`setuju_talent_pool` + `CANDIDATE_HEALTH.consent_khusus`)_
 - [x] `retensi_sampai` otomatis (12 bulan sejak ditolak, 24 bulan jika setuju talent pool) _(`sp_SetRetensi`, dipanggil dari `sp_AdvanceStage` & `sp_LogContact`)_
