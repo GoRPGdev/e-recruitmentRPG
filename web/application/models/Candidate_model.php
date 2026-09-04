@@ -1,0 +1,192 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+/**
+ * Candidate_model -- layar detail kandidat, profil lamaran, riwayat seleksi,
+ * serta pembacaan data pribadi spesifik (kesehatan, gaji pelamar, perbankan).
+ */
+class Candidate_model extends CI_Model
+{
+	public function get_detail($id_lamaran)
+	{
+		$sql = 'SELECT a.id_lamaran, a.id_kandidat, a.id_req, a.id_flow, a.status_global, a.tanggal_lamar,
+		               a.intake_method, a.screening_score, a.id_stage_sekarang,
+		               c.nama_lengkap, c.no_wa_normal, c.email, c.tempat_lahir, c.tanggal_lahir,
+		               c.jenis_kelamin, c.pendidikan_terakhir, c.nama_sekolah, c.jurusan,
+		               c.kota_domisili, c.alamat_lengkap, c.status_pernikahan,
+		               c.kontak_darurat_nama, c.kontak_darurat_telp, c.kontak_darurat_hub,
+		               c.is_blacklist, c.retensi_sampai, c.created_at AS kandidat_dibuat,
+		               r.no_mpr, r.tipe_penempatan, r.status_req,
+		               p.id_posisi, p.nama_posisi, p.id_departemen,
+		               d.nama AS nama_departemen,
+		               o.nama_outlet,
+		               f.nama_flow, f.kode_flow,
+		               st.nama_tahap AS nama_tahap_kini, st.tipe_tahap AS tipe_tahap_kini,
+		               ch.nama_channel
+		        FROM dbo.APPLICATIONS a
+		        JOIN dbo.CANDIDATES c         ON c.id_kandidat = a.id_kandidat
+		        JOIN dbo.REQUISITIONS r       ON r.id_req = a.id_req
+		        JOIN dbo.M_POSISI p           ON p.id_posisi = r.id_posisi
+		        LEFT JOIN dbo.M_DEPARTEMEN d  ON d.id_departemen = p.id_departemen
+		        LEFT JOIN dbo.M_OUTLET o      ON o.id_outlet = r.id_outlet
+		        LEFT JOIN dbo.M_FLOW f        ON f.id_flow = a.id_flow
+		        LEFT JOIN dbo.M_STAGE st      ON st.id_stage = a.id_stage_sekarang
+		        LEFT JOIN dbo.M_CHANNEL ch    ON ch.id_channel = a.id_channel
+		        WHERE a.id_lamaran = ?';
+		$q = $this->db->query($sql, array((int) $id_lamaran));
+		$row = $q->row_array();
+		$q->free_result();
+		return $row ? $row : NULL;
+	}
+
+	public function get_profile($id_lamaran)
+	{
+		$q = $this->db->query(
+			'SELECT id_lamaran, perusahaan_terakhir, jabatan_terakhir, periode_kerja, gaji_terakhir, gaji_diharapkan, diisi_pada
+			 FROM dbo.APPLICATION_PROFILE
+			 WHERE id_lamaran = ?', array((int) $id_lamaran));
+		$row = $q->row_array();
+		$q->free_result();
+		return $row ? $row : NULL;
+	}
+
+	public function get_health($id_kandidat)
+	{
+		$q = $this->db->query(
+			'SELECT id_kandidat, riwayat_penyakit, consent_khusus, consent_pada
+			 FROM dbo.CANDIDATE_HEALTH
+			 WHERE id_kandidat = ?', array((int) $id_kandidat));
+		$row = $q->row_array();
+		$q->free_result();
+		return $row ? $row : NULL;
+	}
+
+	public function get_bank($id_lamaran)
+	{
+		$q = $this->db->query(
+			'SELECT id_bank, id_lamaran, nama_bank, no_rekening, nama_pemilik, diinput_pada
+			 FROM dbo.CANDIDATE_BANK
+			 WHERE id_lamaran = ?', array((int) $id_lamaran));
+		$row = $q->row_array();
+		$q->free_result();
+		return $row ? $row : NULL;
+	}
+
+	public function get_stages($id_lamaran)
+	{
+		$q = $this->db->query(
+			'SELECT aps.id_app_stage, aps.id_stage, aps.urutan, aps.status_tahap, aps.tanggal_mulai, aps.tanggal_selesai,
+			        s.kode_stage, s.nama_tahap, s.tipe_tahap,
+			        r.label AS label_remark, r.efek_status,
+			        u.nama_snapshot AS diproses_oleh_nama
+			 FROM dbo.APPLICATION_STAGES aps
+			 JOIN dbo.M_STAGE s ON s.id_stage = aps.id_stage
+			 LEFT JOIN dbo.M_REMARKS r ON r.id_remark = aps.id_remark
+			 LEFT JOIN dbo.M_USERS u ON u.id_user = aps.pic_user
+			 WHERE aps.id_lamaran = ?
+			 ORDER BY aps.urutan', array((int) $id_lamaran));
+		$rows = $q->result_array();
+		$q->free_result();
+		return $rows;
+	}
+
+	public function get_documents($id_lamaran)
+	{
+		$q = $this->db->query(
+			'SELECT cd.id_cand_doc, cd.id_dokumen, cd.status_verifikasi, cd.nama_file_asli, cd.ukuran_byte, cd.mime_type,
+			        cd.diunggah_pada, cd.catatan_verifikasi, cd.diverifikasi_pada,
+			        dk.nama_dokumen, dk.kategori, dk.tingkat_sensitif,
+			        u.nama_snapshot AS diverifikasi_oleh_nama
+			 FROM dbo.CANDIDATE_DOCUMENTS cd
+			 JOIN dbo.M_DOKUMEN dk ON dk.id_dokumen = cd.id_dokumen
+			 LEFT JOIN dbo.M_USERS u ON u.id_user = cd.diverifikasi_oleh
+			 WHERE cd.id_lamaran = ?
+			 ORDER BY cd.diunggah_pada DESC', array((int) $id_lamaran));
+		$rows = $q->result_array();
+		$q->free_result();
+		return $rows;
+	}
+
+	public function get_history($id_lamaran)
+	{
+		$q = $this->db->query(
+			'SELECT h.id_history, h.jenis_event, h.waktu, h.status_dari, h.status_ke,
+			        h.deskripsi,
+			        s_dari.nama_tahap AS tahap_asal,
+			        s_ke.nama_tahap AS tahap_tujuan,
+			        r.label AS remark_label,
+			        u.nama_snapshot AS oleh_nama
+			 FROM dbo.APPLICATION_HISTORY h
+			 LEFT JOIN dbo.M_STAGE s_dari ON s_dari.id_stage = h.id_stage_dari
+			 LEFT JOIN dbo.M_STAGE s_ke   ON s_ke.id_stage = h.id_stage_ke
+			 LEFT JOIN dbo.M_REMARKS r    ON r.id_remark = h.id_remark
+			 LEFT JOIN dbo.M_USERS u      ON u.id_user = h.oleh_user
+			 WHERE h.id_lamaran = ?
+			 ORDER BY h.id_history DESC', array((int) $id_lamaran));
+		$rows = $q->result_array();
+		$q->free_result();
+		return $rows;
+	}
+
+	public function get_contacts($id_lamaran)
+	{
+		$q = $this->db->query(
+			'SELECT ac.id_kontak, ac.upaya_ke, ac.metode, ac.hasil, ac.catatan, ac.waktu_kontak,
+			        u.nama_snapshot AS oleh_nama
+			 FROM dbo.APPLICATION_CONTACTS ac
+			 LEFT JOIN dbo.M_USERS u ON u.id_user = ac.oleh_user
+			 WHERE ac.id_lamaran = ?
+			 ORDER BY ac.upaya_ke DESC', array((int) $id_lamaran));
+		$rows = $q->result_array();
+		$q->free_result();
+		return $rows;
+	}
+
+	public function get_interviews($id_lamaran)
+	{
+		$q = $this->db->query(
+			'SELECT i.id_interview, i.tipe, i.jadwal, i.lokasi_atau_link, i.hasil, i.skor, i.catatan,
+			        s.nama_tahap,
+			        ip.peran AS peran_interviewer, u.nama_snapshot AS nama_interviewer
+			 FROM dbo.INTERVIEWS i
+			 JOIN dbo.APPLICATION_STAGES aps ON aps.id_app_stage = i.id_app_stage
+			 JOIN dbo.M_STAGE s ON s.id_stage = aps.id_stage
+			 LEFT JOIN dbo.INTERVIEW_PARTICIPANTS ip ON ip.id_interview = i.id_interview
+			 LEFT JOIN dbo.M_USERS u ON u.id_user = ip.id_user
+			 WHERE aps.id_lamaran = ?
+			 ORDER BY i.id_interview DESC', array((int) $id_lamaran));
+		$rows = $q->result_array();
+		$q->free_result();
+		return $rows;
+	}
+
+	public function get_psikotes($id_lamaran)
+	{
+		$q = $this->db->query(
+			'SELECT p.id_psikotes, p.vendor_tes, p.tanggal_tes, p.skor_total, p.hasil, p.rekomendasi,
+			        s.nama_tahap,
+			        u.nama_snapshot AS dilakukan_oleh_nama
+			 FROM dbo.PSIKOTES_RESULTS p
+			 JOIN dbo.APPLICATION_STAGES aps ON aps.id_app_stage = p.id_app_stage
+			 JOIN dbo.M_STAGE s ON s.id_stage = aps.id_stage
+			 LEFT JOIN dbo.M_USERS u ON u.id_user = p.dilakukan_oleh
+			 WHERE aps.id_lamaran = ?
+			 ORDER BY p.id_psikotes DESC', array((int) $id_lamaran));
+		$rows = $q->result_array();
+		$q->free_result();
+		return $rows;
+	}
+
+	public function get_offer($id_lamaran)
+	{
+		$q = $this->db->query(
+			'SELECT o.id_offer, o.gaji_ditawarkan, o.tanggal_penawaran, o.tanggal_join_disepakati, o.tanggal_join_aktual,
+			        o.status_offer, o.alasan, u.nama_snapshot AS dibuat_oleh_nama
+			 FROM dbo.OFFERS o
+			 LEFT JOIN dbo.M_USERS u ON u.id_user = o.dibuat_oleh
+			 WHERE o.id_lamaran = ?', array((int) $id_lamaran));
+		$row = $q->row_array();
+		$q->free_result();
+		return $row ? $row : NULL;
+	}
+}

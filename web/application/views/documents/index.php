@@ -26,7 +26,11 @@
 		<tr><th>Kandidat</th><th>Posisi</th><th>Dokumen</th><th>Kategori</th><th>File</th><th>Status</th><th>Verifikasi</th></tr>
 		<?php foreach ($rows as $r): ?>
 		<tr>
-			<td><?= html_escape($r['nama_lengkap']) ?></td>
+			<td>
+				<a href="<?= site_url('candidates/detail/' . (int) $r['id_lamaran']) ?>" style="color:var(--text); font-weight:600; text-decoration:none; border-bottom:1px dashed var(--accent)" title="Lihat Profil Lengkap">
+					<?= html_escape($r['nama_lengkap']) ?>
+				</a>
+			</td>
 			<td><?= html_escape($r['nama_posisi']) ?> <span class="muted" style="font-size:12px">(<a href="<?= site_url('documents/checklist/' . (int) $r['id_lamaran']) ?>">checklist</a>)</span></td>
 			<td><?= html_escape($r['nama_dokumen']) ?></td>
 			<td><?= html_escape($r['kategori']) ?> <?= $r['tingkat_sensitif'] !== 'UMUM' ? '&#128274;' : '' ?></td>

@@ -29,6 +29,13 @@ class Requisition_model extends CI_Model
 		if ( ! empty($f['dept']))    { $w[] = 'p.id_departemen = ?'; $b[] = (int) $f['dept']; }
 		if ( ! empty($f['dari']))    { $w[] = 'r.created_at >= ?';   $b[] = $f['dari']; }
 		if ( ! empty($f['sampai']))  { $w[] = 'r.created_at < DATEADD(DAY,1,?)'; $b[] = $f['sampai']; }
+
+		$dept = current_user_dept();
+		if ($dept !== NULL) {
+			$w[] = 'p.id_departemen = ?';
+			$b[] = (int) $dept;
+		}
+
 		return $w ? 'WHERE ' . implode(' AND ', $w) : '';
 	}
 
@@ -338,7 +345,8 @@ class Requisition_model extends CI_Model
 	public function get_interviews_for_stages(array $app_stage_ids)
 	{
 		if (empty($app_stage_ids)) return array();
-		$placeholders = implode(',', array_map('intval', $app_stage_ids));
+		$app_stage_ids = array_values(array_map('intval', $app_stage_ids));
+		$placeholders = implode(',', array_fill(0, count($app_stage_ids), '?'));
 		$sql = "SELECT i.id_interview, i.id_app_stage, i.tipe, i.jadwal, i.lokasi_atau_link, i.hasil, i.skor, i.catatan,
 		               ip.id_user AS id_interviewer, ip.peran AS peran_interviewer, u.nama_snapshot AS nama_interviewer
 		        FROM dbo.INTERVIEWS i
@@ -346,7 +354,7 @@ class Requisition_model extends CI_Model
 		        LEFT JOIN dbo.M_USERS u ON u.id_user = ip.id_user
 		        WHERE i.id_app_stage IN ($placeholders)
 		        ORDER BY i.id_interview DESC";
-		$q = $this->db->query($sql);
+		$q = $this->db->query($sql, $app_stage_ids);
 		$rows = $q->result_array();
 		$q->free_result();
 		$by_stage = array();
@@ -365,14 +373,15 @@ class Requisition_model extends CI_Model
 	public function get_psikotes_for_stages(array $app_stage_ids)
 	{
 		if (empty($app_stage_ids)) return array();
-		$placeholders = implode(',', array_map('intval', $app_stage_ids));
+		$app_stage_ids = array_values(array_map('intval', $app_stage_ids));
+		$placeholders = implode(',', array_fill(0, count($app_stage_ids), '?'));
 		$sql = "SELECT p.id_psikotes, p.id_app_stage, p.vendor_tes, p.tanggal_tes, p.skor_total, p.hasil, p.rekomendasi,
 		               u.nama_snapshot AS dilakukan_oleh_nama
 		        FROM dbo.PSIKOTES_RESULTS p
 		        LEFT JOIN dbo.M_USERS u ON u.id_user = p.dilakukan_oleh
 		        WHERE p.id_app_stage IN ($placeholders)
 		        ORDER BY p.id_psikotes DESC";
-		$q = $this->db->query($sql);
+		$q = $this->db->query($sql, $app_stage_ids);
 		$rows = $q->result_array();
 		$q->free_result();
 		$by_stage = array();
@@ -391,13 +400,14 @@ class Requisition_model extends CI_Model
 	public function get_offers_for_lamaran(array $lamaran_ids)
 	{
 		if (empty($lamaran_ids)) return array();
-		$placeholders = implode(',', array_map('intval', $lamaran_ids));
+		$lamaran_ids = array_values(array_map('intval', $lamaran_ids));
+		$placeholders = implode(',', array_fill(0, count($lamaran_ids), '?'));
 		$sql = "SELECT o.id_offer, o.id_lamaran, o.gaji_ditawarkan, o.tanggal_penawaran, o.tanggal_join_disepakati,
 		               o.tanggal_join_aktual, o.status_offer, o.alasan, u.nama_snapshot AS dibuat_oleh_nama
 		        FROM dbo.OFFERS o
 		        LEFT JOIN dbo.M_USERS u ON u.id_user = o.dibuat_oleh
 		        WHERE o.id_lamaran IN ($placeholders)";
-		$q = $this->db->query($sql);
+		$q = $this->db->query($sql, $lamaran_ids);
 		$rows = $q->result_array();
 		$q->free_result();
 		$by_lamaran = array();
