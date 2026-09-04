@@ -76,10 +76,11 @@ $chPortal = scalar($conn, "SELECT id_channel FROM dbo.M_CHANNEL WHERE nama_chann
 $chJobstreet = scalar($conn, "SELECT id_channel FROM dbo.M_CHANNEL WHERE nama_channel=N'JobStreet'");
 $chGlints = scalar($conn, "SELECT id_channel FROM dbo.M_CHANNEL WHERE nama_channel=N'Glints'");
 
-$uHrAdmin = scalar($conn, "SELECT id_user FROM dbo.M_USERS WHERE username='demo_hr_admin'");
-$uHrSpv   = scalar($conn, "SELECT id_user FROM dbo.M_USERS WHERE username='demo_hr_spv'");
-$uUserDept= scalar($conn, "SELECT id_user FROM dbo.M_USERS WHERE username='demo_user_dept'");
-$uBod     = scalar($conn, "SELECT id_user FROM dbo.M_USERS WHERE username='demo_bod'");
+$uSuperAdmin = scalar($conn, "SELECT id_user FROM dbo.M_USERS WHERE username='demo_super_admin'");
+$uUserDept   = scalar($conn, "SELECT id_user FROM dbo.M_USERS WHERE username='demo_user_dept'");
+$uHrAdmin    = $uSuperAdmin;
+$uHrSpv      = $uSuperAdmin;
+$uBod        = $uSuperAdmin;
 
 // 2. Buat Requisitions Realistis
 $reqMgr = scalar($conn, "SELECT id_req FROM dbo.REQUISITIONS WHERE no_mpr='MPR/2026/08/001'");

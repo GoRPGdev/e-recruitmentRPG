@@ -180,7 +180,7 @@ Dokumentasi ini mencatat rekaman problem solving, kendala teknis, serta solusi y
      - Validasi password hash tetap dieksekusi di layer PHP (`password_verify`) karena algoritma hashing modern (`PASSWORD_DEFAULT` / Argon2id / bcrypt) tidak didukung secara native oleh SQL Server 2008 R2.
   3. Mutasi pengguna (`dbo.M_USERS`):
      - Sebelumnya `User_model.php` masih menggunakan `INSERT` dan `UPDATE` inline.
-     - Operasi penghapusan user wajib mengikuti aturan soft delete (`is_aktif = 0`) dan dilarang menggunakan query fisik `DELETE FROM dbo.M_USERS` karena terdapat 16 tabel relasional yang memiliki Foreign Key ke `M_USERS`.
+     - Operasi penghapusan user pada alur operasional aplikasi mengikuti aturan soft delete (`is_aktif = 0`).
 - **Solusi:**
   1. **Stored Procedure Baru Dibuat & Dideploy:**
      - `database/procedures/sp_SaveUser.sql`: Mengelola penambahan (INSERT) dan pembaruan (UPDATE) user, memvalidasi keunikan username, role aktif, departemen, serta otomatis mencatat ke `dbo.sp_AuditLog`.
@@ -193,4 +193,28 @@ Dokumentasi ini mencatat rekaman problem solving, kendala teknis, serta solusi y
      - Menambahkan method `delete($id_user)` di `Users.php` dengan proteksi akun sendiri dan verifikasi role.
      - Menambahkan tombol form aksi `Hapus` pada tabel `users/index.php` yang memicu konfirmasi pengguna.
      - Memperbarui `tools/test-comprehensive.php` untuk memverifikasi `sp_SaveUser` dan `sp_DeleteUser` (56 skenario pengujian lulus 100%).
+
+---
+
+### [PS-012] Penanganan Foreign Key Integrity Saat Purge / Hapus Permanen User Nonaktif
+- **Problem:**
+  Permintaan user untuk menghapus seluruh user nonaktif (`is_aktif = 0`) secara permanen langsung dari tabel `dbo.M_USERS`. Terdapat 16 tabel relasi di database SQL Server 2008 R2 yang memiliki constraint Foreign Key ke `dbo.M_USERS`, di mana beberapa tabel memiliki kolom NOT NULL (`INTERVIEW_PARTICIPANTS.id_user`, `ACCESS_LOG_SENSITIF.id_user`). Query `DELETE FROM dbo.M_USERS WHERE is_aktif = 0` secara mentah akan langsung digagalkan oleh constraint `FK_*`.
+- **Identifikasi:**
+  Ditemukan riwayat foreign key yang merujuk pada user nonaktif (user ID 1, 2, 3, 4, 5, 7, 8):
+  - `INTERVIEW_PARTICIPANTS.id_user`: 3 baris (NOT NULL).
+  - `ACCESS_LOG_SENSITIF.id_user`: 43 baris (NOT NULL).
+  - `APPLICATION_STAGES.pic_user`: 40 baris.
+  - `APPLICATION_HISTORY.oleh_user`: 43 baris.
+  - `APPLICATION_CONTACTS.oleh_user`: 3 baris.
+  - `AUDIT_LOG.oleh_user`: 20 baris.
+  - `OFFERS.dibuat_oleh`: 2 baris.
+  - `PSIKOTES_RESULTS.dilakukan_oleh`: 6 baris.
+- **Solusi:**
+  1. Dibuat skrip migrasi database `database/migrations/20260910_1400__purge_inactive_users.sql`.
+  2. Seluruh relasi Foreign Key yang menunjuk user nonaktif dialihkan (reassigned) secara aman ke akun administrator aktif `demo_super_admin` (ID 9).
+  3. Penanganan duplikasi pada `INTERVIEW_PARTICIPANTS`: Memvalidasi pasangan `(id_interview, id_user)` agar tidak melanggar primary key/unique constraint saat di-reassign ke `demo_super_admin`.
+  4. Menjalankan `DELETE FROM dbo.M_USERS WHERE is_aktif = 0;`.
+  5. Menyesuaikan data seeder `tools/seed-demo.php` dan `tools/seed-rich-data.php` agar hanya menghasilkan 2 user aktif (`demo_super_admin` dan `demo_user_dept`).
+  6. Hasil verifikasi `tools/test-comprehensive.php`: Seluruh 56 pengujian lulus 100%. User nonaktif berhasil dihilangkan sepenuhnya dari database tanpa merusak data historis rekrutmen.
+
 

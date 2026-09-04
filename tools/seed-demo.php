@@ -107,7 +107,8 @@ foreach (preg_split('/^\s*GO\s*$/mi', file_get_contents($ROOT . '/database/seed/
 echo "- organisasi (dev_organisasi.sql) OK\n";
 
 /* ------------------------------------------------------------------ user -- */
-$roles = array('IT_ADMIN','HR_ADMIN','HR_SPV','USER_DEPT','BOD','VIEWER');
+// Sistem aktif hanya menggunakan SUPER_ADMIN dan USER_DEPT
+$roles = array('SUPER_ADMIN', 'USER_DEPT');
 // USER_DEPT di-scope ke Marketing (posisi demo = Marketing Staff) untuk uji G4b
 $deptMkt = scalar($conn, "SELECT id_departemen FROM dbo.M_DEPARTEMEN WHERE kode = 'MKT'");
 $uid = array();
@@ -115,20 +116,21 @@ foreach ($roles as $r) {
     $u = 'demo_' . strtolower($r);
     $row = array(
         'username' => $u, 'password_hash' => password_hash('demo123', PASSWORD_DEFAULT),
-        'nama_snapshot' => 'Demo ' . $r, 'is_aktif' => 1,
+        'nama_snapshot' => ($r === 'SUPER_ADMIN') ? 'Super Administrator Demo' : 'Demo ' . $r,
+        'is_aktif' => 1,
         'id_role' => scalar($conn, "SELECT id_role FROM dbo.M_ROLES WHERE kode_role=?", array($r)),
         'id_departemen' => ($r === 'USER_DEPT') ? $deptMkt : NULL,
     );
     $id = scalar($conn, "SELECT id_user FROM dbo.M_USERS WHERE username=?", array($u));
     if ($id) {
-        q($conn, "UPDATE dbo.M_USERS SET id_departemen = ? WHERE id_user = ?",
+        q($conn, "UPDATE dbo.M_USERS SET id_departemen = ?, is_aktif = 1 WHERE id_user = ?",
           array($row['id_departemen'], (int) $id));
     } else {
         $id = insert_row($conn, 'M_USERS', $row, 'id_user');
     }
     $uid[$r] = (int) $id;
 }
-echo "- 6 user demo (demo_<role> / demo123; demo_user_dept -> dept Marketing)\n";
+echo "- 2 user demo aktif (demo_super_admin, demo_user_dept)\n";
 
 if (scalar($conn, "SELECT COUNT(*) FROM dbo.CANDIDATES WHERE email LIKE '%@demo.local'") > 0) {
     echo "- data demo sudah ada. 'php tools/seed-demo.php --reset' dulu kalau mau ulang.\n";
