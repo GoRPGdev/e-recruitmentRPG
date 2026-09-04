@@ -1,220 +1,78 @@
-# Dokumentasi Problem Solving & Catatan Teknis E-Recruitment RPG
-
-Dokumentasi ini mencatat rekaman problem solving, kendala teknis, serta solusi yang diterapkan pada proyek E-Recruitment Ratu Pertiwi Group (RPG). Dokumen ini wajib dibaca dan diupdate setiap kali melakukan troubleshooting dan implementasi tugas untuk mencegah terjadinya error/kesalahan berulang.
+	  3. Skrip ini reusable untuk dokumen dokumentasi markdown lainnya di proyek E-Recruitment RPG.
 
 ---
 
-## 1. Lingkungan & Batasan Platform
-
-| Komponen | Versi / Batasan | Catatan Penting |
-|---|---|---|
-| **OS Developer** | Windows (PowerShell) | `&&` tidak didukung di PowerShell 5.1; gunakan `;` atau jalankan terpisah. |
-| **PHP** | 7.4.33 (CLI/Web) | Kompatibel dengan `sqlsrv` 5.9. |
-| **Database Engine** | SQL Server 2008 R2 (10.50) | Tidak ada `OFFSET/FETCH`, `THROW`, `TRY_CONVERT`, `CONCAT`, `STRING_SPLIT`, JSON. Logika transaksi wajib di Stored Procedure. |
-| **ODBC Driver** | Microsoft ODBC Driver 17 | **DILARANG** memakai ODBC Driver 18 karena tidak mendukung SQL Server 2008 R2. |
-
----
-
-## 2. Log Problem Solving & Solusi
-
-### [PS-001] Pembagian & Batasan T-SQL pada Stored Procedure SQL Server 2008 R2
+### [PS-014] Implementasi Enam Peningkatan Arsitektur & UI: CRUD Master (Remark & Departemen), Pipeline Downward Table, Penyatuan Form Publik, dan Flow Standar Tunggal
 - **Problem:**
-  Penerapan pagination atau fungsi bawaan baru (seperti `THROW`, `CONCAT`) akan memicu syntax error di SQL Server 2008 R2.
+  Kebutuhan untuk menyelesaikan enam item peningkatan yang diajukan dalam roadmap pengembangan sistem:
+  1. Master Remark Alur membutuhkan kemampuan CRUD lengkap (Insert, Update inline, Soft-delete `is_aktif`).
+  2. Master Departemen membutuhkan kemampuan CRUD lengkap terpusat dengan Stored Procedure dan audit logging.
+  3. Form Publik perlu terintegrasi harmonis dalam struktur sidebar navigasi ketika diakses pengguna sistem.
+  4. Tampilan Pipeline seleksi lamaran membutuhkan mode tabel ke bawah (downward table view) agar pelamar bervolume tinggi dapat dipantau dan diproses secara cepat.
+  5. Menu "Import Portal" perlu disembunyikan sementara waktu dari sidebar navigasi.
+  6. Flow Builder perlu difokuskan pada 1 Alur Standar Baku Rekrutmen RPG (Universal Standard Flow).
 - **Identifikasi:**
-  Driver SQL Server mengembalikan error fatal saat sintaks SQL Server 2012+ dijalankan.
+  1. Master data `M_DEPARTEMEN` dan `M_REMARKS` wajib mematuhi aturan CLAUDE.md: transaksi mutasi wajib di Stored Procedure T-SQL (kompatibel SQL Server 2008 R2), audit trail via `dbo.sp_AuditLog`, dan soft delete (`is_aktif = 0`).
+  2. Pada papan seleksi lamaran (`pipeline/board.php`), representasi kartu kanban horizontal sangat memakan ruang ketika jumlah pelamar puluhan orang. Diperlukan alternatif tabel ke bawah dengan filter dan tombol aksi langsung (geser remark, jadwalkan interview, catat psikotes, buat offering).
+  3. Navigasi sidebar perlu menyatukan menu "Form Publik" (`postings` & `lamar`) dan menyembunyikan item "Import Portal".
+  4. Flow Builder perlu menyorot alur standar perusahaan (`HQ_STAFF`) sebagai flow acuan baku, menyembunyikan kompleksitas multi-template bagi operasional HR harian.
 - **Solusi:**
-  1. Pengganti `THROW`: Gunakan `RAISERROR(@msg, 16, 1)`.
-  2. Pengganti pagination: Gunakan `ROW_NUMBER() OVER (...)` dalam CTE.
-  3. Transaksi bersarang di SP: Gunakan pola `DECLARE @outer INT = @@TRANCOUNT; IF @outer = 0 BEGIN TRANSACTION; ELSE SAVE TRANSACTION SavePoint;`.
+  1. **Stored Procedures T-SQL:**
+     - `dbo.sp_SaveRemark` & `dbo.sp_ToggleRemark`: Menangani insert/update remark alur beserta audit logging.
+     - `dbo.sp_SaveDepartemen` & `dbo.sp_ToggleDepartemen`: Menangani validasi keunikan kode departemen, mutasi, dan pencatatan audit.
+  2. **Model & Controller:**
+     - `Master_model.php`: Menambahkan wrapper `save_departemen()`, `toggle_departemen()`, `save_remark()`, `toggle_remark()`.
+     - `Master.php`: Menangani parameter `edit_id` untuk form edit departemen dan remark serta routing aksi save/toggle.
+  3. **Tampilan Pipeline ke Bawah (`pipeline/board.php`):**
+     - Menambahkan View Switcher cepat di header: "Papan Kartu" dan "Tabel ke Bawah".
+     - Menyimpan preferensi tampilan user di browser via `localStorage` (`rpg_pipeline_view_mode`).
+     - Render tabel ke bawah lengkap dengan kolom nomor, nama, kontak WA, aging SLA (lama hari di tahap), status global, hasil asesmen, dan dropdown eksekusi alur langsung.
+  4. **Penyatuan Menu & Sidebar (`layouts/main.php`):**
+     - Menu "Import Portal" disembunyikan secara aman.
+     - Menu "Form Publik" disatukan dengan pencocokan segment URI `postings` dan `lamar`.
+  5. **Simplifikasi Flow Builder (`flow/index.php`):**
+     - Halaman muka menampilkan kartu sorotan khusus "1 Flow Standar Resmi RPG" dengan akses langsung kelola tahapan.
+     - Template tambahan dan duplikasi alur dilipat rapi ke dalam opsi accordion arsip.
 
 ---
 
-### [PS-002] CLI Command Chaining di Windows PowerShell
+### [PS-015] Konfigurasi Otomatisasi Perizinan Command Claude Code Auto Mode untuk E-Recruitment RPG
 - **Problem:**
-  Saat menjalankan multiple command seperti `php -l file1.php && php -l file2.php`, PowerShell menampilkan error:
-  `ParserError: The token '&&' is not a valid statement separator in this version.`
+  Saat menjalankan Claude Code dalam mode auto (`autoMode`) pada proyek `e-rekruitmenRPG`, eksekusi skrip internal (seperti `php tools/migrate.php`, `php tools/test-koneksi.php`, utilitas Python, dan Git) sering memicu dialog konfirmasi manual keselamatan (*safety confirmation prompt*).
 - **Identifikasi:**
-  PowerShell versi default di Windows (5.1) tidak mengenal token bash `&&`.
+  Safety classifier bawaan Claude Code v2.1+ membatasi eksekusi CLI yang berpotensi memodifikasi state kecuali jika tool/CLI tersebut dideklarasikan dalam `autoMode.environment` dan diberikan izin eksplisit dalam `autoMode.allow` serta `permissions.allow`.
 - **Solusi:**
-  Gunakan separator titik koma `;` (misal: `php -l file1.php; php -l file2.php`) atau eksekusi perintah satu per satu.
+  1. Dibuat file konfigurasi lokal [settings.local.json](file:///D:/KAHFI-RPG/e-rekruitmenRPG/.claude/settings.local.json) (yang telah di-ignore di `.gitignore`).
+  2. Dikonfigurasikan pattern allowlist deterministik untuk shell Windows (`Bash` dan `PowerShell`):
+     - `php *` (mencakup `tools/migrate.php`, `tools/test-koneksi.php`, `tools/seed-*.php`, `tools/build-funnel.php`, dll.)
+     - `python *` (mencakup `tools/generate_pdf.py`)
+     - `git *` (status, diff, commit, push, checkout)
+     - `composer *`, `sqlcmd *`
+  3. Didaftarkan aturan classifier `autoMode`:
+     - `Org-specific CLIs`: `php`, `python`, `git`, `composer`, `sqlcmd`, `powershell`.
+     - `allow`: Aturan bahasa natural yang mengizinkan eksekusi skrip developer di `tools/` dan git commands.
+  4. Konfigurasi serupa disinkronkan ke level global `C:\Users\kahfi\.claude\settings.json` dan direktori induk `D:\KAHFI-RPG\.claude\settings.local.json`.
+- **Status:** Resolved & Verified via `claude auto-mode config`.
 
 ---
 
-### [PS-003] Proteksi Integritas Master Stage (`M_STAGE`) & Sumbu Report
+### [PS-016] Perbaikan PHP ParseError (T_ENDIF) pada Pipeline Board & Penguatan Desain Tabel Fit-to-Screen Responsif
 - **Problem:**
-  Admin HR dapat membuat tahap seleksi baru secara fleksibel. Namun jika HR membuat nama atau tipe tahap sembarangan, agregasi laporan funnel dan dashboard (`RPT_FUNNEL_HARIAN`) akan rusak karena join dan sumbu report membutuhkan kategori tahap yang pasti.
+  Muncul galat `Type: ParseError, Message: syntax error, unexpected 'endif' (T_ENDIF)` di file `web/application/views/pipeline/board.php` baris 455 saat pengguna membuka halaman detail pipeline seleksi lamaran. Selain itu, seluruh tabel pada sistem wajib tampil fit 1 layar tanpa scroll menyamping (`no horizontal scrolling`) serta responsif untuk perangkat bergerak.
 - **Identifikasi:**
-  Aturan sistem menetapkan sumbu fleksibel (`id_stage`) untuk papan pipeline, dan sumbu tetap (`tipe_tahap`) untuk modul report.
+  1. Terjadi duplikasi blok render tombol evaluasi dan penutup alur baris kandidat saat refactoring sebelumnya. Potongan baris 396–455 meninggalkan elemen `<?php endif; ?>` yatim tanpa pasangan `<?php if ($can_aksi): ?>` di dalam iterasi tahap alur.
+  2. Tabel dengan konten data pelamar dan formulir inline perlu proporsi kolom persentase yang presisi, `table-layout: fixed`, dan pembatasan pembungkusan kata (`word-break: break-word`) agar tidak memaksa kontainer meluap ke luar lebar layar.
 - **Solusi:**
-  1. Pada SP `sp_SaveStage`: Kolom `tipe_tahap` divalidasi ketat hanya boleh salah satu dari 7 nilai tetap:
-     `('SCREENING', 'KONTAK', 'FORM', 'TEST', 'INTERVIEW', 'OFFER', 'ONBOARD')`.
-  2. Jika tahap adalah tahap bawaan sistem (`is_sistem = 1`), `kode_stage` dan `tipe_tahap` dikunci (read-only) agar tidak diubah sembarangan, sementara nama tahap dan status terminal/aktif tetap boleh disesuaikan.
-  3. Soft delete (`sp_ToggleStage`): Data lama tidak pernah di-`DELETE`. Jika dinonaktifkan (`is_aktif = 0`), sistem memvalidasi dan memberi peringatan bila tahap masih dipakai oleh template flow aktif (`M_FLOW_STAGE`).
-
----
-
-### [PS-004] Tampilan Pipeline Board Kandidat Menumpuk Saat Volume Besar
-- **Problem:**
-  Pada pipeline vertikal, jika satu lowongan memiliki puluhan pelamar di satu tahap (misalnya 50 kandidat di tahap Screening atau Kontak), merender semua kartu secara vertikal/horizontal tanpa batas akan menyebabkan halaman terlalu panjang, lambat di-scroll, dan membingungkan pengguna.
-- **Identifikasi:**
-  Item Fase 3 mensyaratkan: *"Batas 12 kartu per baris + lihat semua kalau kandidat banyak"*.
-- **Solusi:**
-  1. Pada `web/application/views/pipeline/board.php`, deretan kartu dialirkan secara horizontal (`display: flex; overflow-x: auto; gap: 12px;`) per tahap.
-  2. Hanya 12 kartu pertama yang langsung dirender secara default (`array_slice($s['cards'], 0, 12)`).
-  3. Jika total kandidat > 12, sistem menampilkan kartu ringkasan `+N kandidat lagi` beserta tombol *"Lihat Semua (Total)"*.
-  4. Kartu ke-13 dan seterusnya ditempatkan pada container tersembunyi (`display: none`) yang dapat di-toggle buka/tutup secara instan via fungsi JavaScript `toggleStageCards(urut)`.
-
----
-
-### [PS-005] Kelengkapan CRUD Master Remarks
-- **Problem:**
-  Sebelumnya `M_REMARKS` sudah memiliki SP `sp_SaveRemark` dan toggle soft-delete, namun antarmuka belum menyediakan mekanisme pengeditan label/kode/urutan untuk remark yang sudah tersimpan tanpa harus memasukkan ulang.
-- **Identifikasi:**
-  Formulir di `web/application/views/flow/remarks.php` hanya mendukung aksi tambah (insert).
-- **Solusi:**
-  1. Di `web/application/controllers/Flowbuilder.php`, tangkap parameter `?edit_remark={id}` dan ambil data baris remark yang bersangkutan.
-  2. Di view `web/application/views/flow/remarks.php`, sediakan tombol `edit` pada setiap baris tabel, serta ubah judul formulir menjadi *"Edit Remark #ID"* dengan nilai form terisi otomatis dan tombol *"Batal edit / tambah baru"*.
-
----
-
-### [PS-006] Penanganan Nilai 0 / NULL pada Parameter OUTPUT Stored Procedure T-SQL
-- **Problem:**
-  Saat memanggil Stored Procedure yang memiliki parameter `@id_x INT = NULL OUTPUT` dari driver PHP `sqlsrv`, jika variabel output diinisialisasi dengan angka 0 (`$id = 0`), kondisi T-SQL `IF @id_x IS NULL` bernilai FALSE. Hal ini menyebabkan SP menganggap nilai 0 sebagai primary key yang sudah ada dan masuk ke blok `UPDATE`, sehingga memicu Foreign Key violation (misalnya `FK_IP_interview` pada tabel `INTERVIEW_PARTICIPANTS`) atau data tidak ditemukan.
-- **Identifikasi:**
-  Di PHP, binding parameter output sering menggunakan referensi variabel bertipe integer (`$id = 0`), yang dikirimkan ke SQL Server sebagai nilai literal `0`, bukan `NULL`.
-- **Solusi:**
-  Pada seluruh Stored Procedure yang menangani dual-action INSERT / UPDATE (seperti `sp_SaveInterview`, `sp_SavePsikotes`, `sp_SaveOffer`), ubah pengecekan parameter ID menjadi:
-  `IF @id_x IS NULL OR @id_x <= 0`
-  Dengan demikian, baik nilai `NULL` maupun integer `<= 0` akan secara konsisten memicu logika `INSERT` dan mengembalikan ID baru via `SCOPE_IDENTITY()`.
-
----
-
-### [PS-007] Penyesuaian Kolom Nama Snapshot User pada Skema `M_USERS`
-- **Problem:**
-  Query yang memanggil `u.nama_lengkap` atau `u.role` langsung dari tabel `dbo.M_USERS` menghasilkan error SQL Server:
-  `Invalid column name 'nama_lengkap'.`
-- **Identifikasi:**
-  Berdasarkan migrasi `20260908_1000__master_referensi.sql`, tabel `M_USERS` menyimpan nama pengguna dalam kolom `nama_snapshot NVARCHAR(150)`, sedangkan kode peran berada pada tabel relasi `dbo.M_ROLES` via foreign key `id_role`.
-- **Solusi:**
-  Pada query join di model (seperti `Requisition_model` untuk pewawancara, pembuat offer, dan evaluator psikotes), gunakan alias eksplisit:
-  `SELECT u.id_user, u.nama_snapshot AS nama_lengkap, r.kode_role AS role FROM dbo.M_USERS u JOIN dbo.M_ROLES r ON r.id_role = u.id_role`.
-
----
-
-### [PS-008] Ketersediaan Guard Method `require_any_permission` pada `Secured_Controller`
-- **Problem:**
-  Pemanggilan `$this->require_any_permission(['APPROVE', 'KELOLA_REKRUTMEN'])` pada controller menghasilkan HTTP 500 (Fatal error: Call to undefined method `Requisitions::require_any_permission()`).
-- **Identifikasi:**
-  Fungsi `require_any_permission` awalnya hanya didefinisikan sebagai fungsi helper prosedural di `rbac_helper.php`, sementara kelas basis `Secured_Controller` di `MY_Controller.php` hanya mendefinisikan method instance tunggal `require_permission($kode)`.
-- **Solusi:**
-  Tambahkan method pembungkus di `Secured_Controller` (`web/application/core/MY_Controller.php`):
-  1. `protected function require_any_permission(array $kode_list) { require_any_permission($kode_list); }`
-  2. `protected function require_all_permissions(array $kode_list) { require_all_permissions($kode_list); }`
-  Dengan demikian, pemanggilan method `$this->require_any_permission(...)` dari dalam controller berjalan mulus dan mengembalikan status HTTP 403 yang sah ketika akses ditolak.
-
----
-
-### [PS-009] Scoping Data Kandidat & Pipeline Multi-Departemen (G4b)
-- **Problem:**
-  Berdasarkan keputusan HR (2026-09-04), user dengan peran `USER_DEPT` hanya boleh melihat dan memproses kandidat yang melamar pada lowongan (MPR) di departemen miliknya sendiri. Tanpa scoping yang ketat, user departemen yang memiliki izin `LIHAT_KANDIDAT` dan `LIHAT_CV` berpotensi membuka data kandidat, berkas/dokumen, pipeline seleksi, dan data agregat dashboard dari departemen lain (misal user Marketing melihat pelamar Operasional/Outlet atau Accounting).
-- **Identifikasi:**
-  Entitas `REQUISITIONS` tidak menyimpan kolom `id_departemen` langsung, melainkan berelasi ke `M_POSISI` yang memiliki `id_departemen`. Skema user telah dilengkapi kolom `M_USERS.id_departemen` (migrasi `20260910_1100`) dan helper `current_user_dept()`. Namun controller dan query model belum menerapkan filter scoping ini.
-- **Solusi:**
-  1. **Pipeline (`Pipeline.php`):**
-     Dibuat method helper privat `_get_req_scoped($id_req)` yang memeriksa apakah `current_user_dept() !== NULL && (int)$req['id_departemen'] !== (int)current_user_dept()`. Jika tidak cocok, request langsung ditolak dengan `show_error(..., 403)`. Helper ini dipanggil di `index()` serta seluruh endpoint POST aksi pipeline (`advance`, `contact`, `insert_stage`, `save_interview`, `save_psikotes`, `save_offer`).
-  2. **Daftar Requisition (`requisitions/index.php`):**
-     Daftar MPR tetap terbuka untuk seluruh peran sesuai kesepakatan G4, namun tautan aksi `[pipeline]` hanya ditampilkan jika requisition berasal dari departemen pemohon (`$can_view_pipeline`).
-  3. **Pengajuan MPR (`Requisitions::create`):**
-     Daftar dropdown posisi difilter hanya menampilkan posisi di departemen pemohon (`positions($dept)`), dan validasi POST menolak pemilihan posisi dari departemen lain.
-  4. **Verifikasi & Checklist Dokumen (`Documents.php` & `Document_model.php`):**
-     - `list_docs()` menambahkan klausa `AND pos.id_departemen = ?` saat `current_user_dept()` terisi.
-     - `verify()`, `checklist()`, dan `open()` memvalidasi bahwa dokumen/lamaran yang dibuka berasal dari departemen pengguna.
-  5. **Dashboard & Trend Funnel (`Dashboard.php` & `Dashboard_model.php`):**
-     - Parameter filter `dept` dikunci ke `current_user_dept()` untuk peran departemen.
-     - Opsi filter departemen dan posisi di view dikunci hanya untuk departemen user.
-     - Agregasi tren historis `funnel_trend(14, $dept)` difilter via join ke `dbo.M_POSISI pos WHERE pos.id_departemen = ?`.
-     - Ekspor Excel kandidat (`candidates_export()`) membatasi baris ke departemen user.
-
----
-
-### [PS-010] Proteksi Data Sensitif PDP & Finansial pada Layar Detail Kandidat (G3) serta Penyesuaian Skema Kolom
-- **Problem:**
-  1. Pada penggabungan fitur G3 (layar detail kandidat), terdapat data-data pribadi spesifik kandidat:
-     - Riwayat Penyakit (UU PDP No. 27/2022 Pasal 4 ayat 2, kategori data spesifik) hanya boleh dilihat oleh pemegang izin `LIHAT_KESEHATAN` (HR Supervisor) dan wajib dicatat di `ACCESS_LOG_SENSITIF`.
-     - Gaji Pelamar (`gaji_terakhir`, `gaji_diharapkan`) dan Penawaran Kerja (`gaji_ditawarkan`) memerlukan izin `LIHAT_GAJI` dan wajib dicatat di `ACCESS_LOG_SENSITIF`.
-     - Nomor rekening bank kandidat memerlukan izin `LIHAT_FINANSIAL` dan wajib dicatat di `ACCESS_LOG_SENSITIF`.
-     - Kandidat yang melamar pada lowongan departemen lain tidak boleh dibuka oleh `USER_DEPT` (HTTP 403 Scoping G4b).
-  2. Terjadi ketidaksesuaian nama kolom pada skema basis data:
-     - `APPLICATION_STAGES`: kolom PIC adalah `pic_user` (bukan `diproses_oleh`).
-     - `APPLICATION_CONTACTS`: kolom PIC user adalah `oleh_user` (bukan `dilakukan_oleh`).
-     - `APPLICATION_HISTORY`: kolom waktu adalah `waktu` (bukan `waktu_event`), dan transisi tahap disimpan sebagai `id_stage_dari` & `id_stage_ke` (bukan `tahap_asal` & `tahap_tujuan`), status tersimpan di `status_dari` & `status_ke`.
-     - `CANDIDATES`: kolom retensi adalah `c.retensi_sampai` (bukan di tabel `APPLICATIONS`), dan kolom blacklist adalah `is_blacklist` (bukan `is_blacklisted`).
-- **Identifikasi:**
-  Pengujian runtime dan verifikasi skema DDL terhadap migrasi SQL (`20260908_1100__kandidat_lamaran.sql` & `20260908_1130__import_dokumen_audit.sql`) mengungkap perbedaan penamaan kolom tersebut saat query dieksekusi.
-- **Solusi:**
-  1. **Controller `Candidates.php`:**
-     - Mengimplementasikan guard `require_permission('LIHAT_KANDIDAT')`.
-     - Menerapkan scoping G4b: memverifikasi apakah `current_user_dept() !== NULL && $cand['id_departemen'] != current_user_dept()`. Bila melanggar, memicu `show_error(..., 403)`.
-     - Melakukan pengecekan granular menggunakan `can_sensitif('KESEHATAN')`, `can_sensitif('GAJI')`, dan `can_sensitif('FINANSIAL')`.
-     - Mencatat audit log sensitif secara otomatis via `log_akses_sensitif($jenis, 'DETAIL_KANDIDAT', $id_lamaran, ...)` yang memanggil SP `sp_LogAksesSensitif` dan tabel `ACCESS_LOG_SENSITIF`.
-  2. **Model `Candidate_model.php`:**
-     - Menyelaraskan seluruh nama kolom dan relasi join:
-       - `APPLICATION_STAGES`: `LEFT JOIN dbo.M_USERS u ON u.id_user = aps.pic_user` dengan alias `u.nama_snapshot AS diproses_oleh_nama`.
-       - `APPLICATION_CONTACTS`: `LEFT JOIN dbo.M_USERS u ON u.id_user = ac.oleh_user`.
-       - `APPLICATION_HISTORY`: Join ke `dbo.M_STAGE s_dari` dan `s_ke`, serta `dbo.M_REMARKS r` untuk menyajikan kronologi pergerakan tahap yang informatif.
-  3. **View `views/candidates/detail.php`:**
-     - Layout 2 kolom yang informatif: profil personal, status blacklist, tanggal retensi PDP, riwayat karir/gaji, data kesehatan bertanda proteksi gembok, rekening perbankan, berkas dokumen dengan status verifikasi, rekap wawancara & psikotes, status offering, tahapan flow seleksi, dan jejak aktivitas audit trail.
-  4. **Tautan Integrasi:**
-     - Nama kandidat pada board pipeline vertikal (`pipeline/board.php`) dan daftar dokumen (`documents/index.php`) kini menjadi tautan aktif menuju `candidates/detail/<id_lamaran>`.
-
----
-
-### [PS-011] Standarisasi Backend & Logika Transaksi Menggunakan Stored Procedure (Database-First)
-- **Problem:**
-  Muncul pertanyaan mengenai konsistensi pemanggilan logika backend: apakah semua proses autentikasi (login), mutasi data, dan manajemen pengguna sudah terstandarisasi menggunakan Stored Procedure (SP) di database, dan bagaimana implementasi penghapusan pengguna (user deletion) dijalankan.
-- **Identifikasi:**
-  1. Arsitektur RPG adalah **Database-First** (CLAUDE.md aturan 3 & 4): Logika bisnis, validasi integritas relasional, snapshot data, dan audit trail diletakkan di T-SQL Stored Procedure, dengan CodeIgniter Model sebagai wrapper tipis.
-  2. Autentikasi sistem:
-     - Login dijalankan via `dbo.sp_Login` yang mengambil kredensial user aktif (`is_aktif = 1` dan `r.is_aktif = 1`).
-     - Hak akses diambil via `dbo.sp_GetUserPermissions`.
-     - Validasi password hash tetap dieksekusi di layer PHP (`password_verify`) karena algoritma hashing modern (`PASSWORD_DEFAULT` / Argon2id / bcrypt) tidak didukung secara native oleh SQL Server 2008 R2.
-  3. Mutasi pengguna (`dbo.M_USERS`):
-     - Sebelumnya `User_model.php` masih menggunakan `INSERT` dan `UPDATE` inline.
-     - Operasi penghapusan user pada alur operasional aplikasi mengikuti aturan soft delete (`is_aktif = 0`).
-- **Solusi:**
-  1. **Stored Procedure Baru Dibuat & Dideploy:**
-     - `database/procedures/sp_SaveUser.sql`: Mengelola penambahan (INSERT) dan pembaruan (UPDATE) user, memvalidasi keunikan username, role aktif, departemen, serta otomatis mencatat ke `dbo.sp_AuditLog`.
-     - `database/procedures/sp_DeleteUser.sql`: Menjalankan soft delete (`is_aktif = 0`), memvalidasi bahwa user ada, mencegah penghapusan akun `SUPER_ADMIN` terakhir yang aktif, dan mencatat aksi ke `dbo.sp_AuditLog`.
-  2. **Refactoring `User_model.php`:**
-     - Menghapus raw query `INSERT`/`UPDATE` untuk manipulasi user.
-     - Mengarahkan `create_user()`, `update_user()`, dan `toggle_status()` ke `dbo.sp_SaveUser`.
-     - Menambahkan fungsi `delete_user($id_user, $oleh_user)` yang memanggil `dbo.sp_DeleteUser`.
-  3. **Controller & Antarmuka UI:**
-     - Menambahkan method `delete($id_user)` di `Users.php` dengan proteksi akun sendiri dan verifikasi role.
-     - Menambahkan tombol form aksi `Hapus` pada tabel `users/index.php` yang memicu konfirmasi pengguna.
-     - Memperbarui `tools/test-comprehensive.php` untuk memverifikasi `sp_SaveUser` dan `sp_DeleteUser` (56 skenario pengujian lulus 100%).
-
----
-
-### [PS-012] Penanganan Foreign Key Integrity Saat Purge / Hapus Permanen User Nonaktif
-- **Problem:**
-  Permintaan user untuk menghapus seluruh user nonaktif (`is_aktif = 0`) secara permanen langsung dari tabel `dbo.M_USERS`. Terdapat 16 tabel relasi di database SQL Server 2008 R2 yang memiliki constraint Foreign Key ke `dbo.M_USERS`, di mana beberapa tabel memiliki kolom NOT NULL (`INTERVIEW_PARTICIPANTS.id_user`, `ACCESS_LOG_SENSITIF.id_user`). Query `DELETE FROM dbo.M_USERS WHERE is_aktif = 0` secara mentah akan langsung digagalkan oleh constraint `FK_*`.
-- **Identifikasi:**
-  Ditemukan riwayat foreign key yang merujuk pada user nonaktif (user ID 1, 2, 3, 4, 5, 7, 8):
-  - `INTERVIEW_PARTICIPANTS.id_user`: 3 baris (NOT NULL).
-  - `ACCESS_LOG_SENSITIF.id_user`: 43 baris (NOT NULL).
-  - `APPLICATION_STAGES.pic_user`: 40 baris.
-  - `APPLICATION_HISTORY.oleh_user`: 43 baris.
-  - `APPLICATION_CONTACTS.oleh_user`: 3 baris.
-  - `AUDIT_LOG.oleh_user`: 20 baris.
-  - `OFFERS.dibuat_oleh`: 2 baris.
-  - `PSIKOTES_RESULTS.dilakukan_oleh`: 6 baris.
-- **Solusi:**
-  1. Dibuat skrip migrasi database `database/migrations/20260910_1400__purge_inactive_users.sql`.
-  2. Seluruh relasi Foreign Key yang menunjuk user nonaktif dialihkan (reassigned) secara aman ke akun administrator aktif `demo_super_admin` (ID 9).
-  3. Penanganan duplikasi pada `INTERVIEW_PARTICIPANTS`: Memvalidasi pasangan `(id_interview, id_user)` agar tidak melanggar primary key/unique constraint saat di-reassign ke `demo_super_admin`.
-  4. Menjalankan `DELETE FROM dbo.M_USERS WHERE is_aktif = 0;`.
-  5. Menyesuaikan data seeder `tools/seed-demo.php` dan `tools/seed-rich-data.php` agar hanya menghasilkan 2 user aktif (`demo_super_admin` dan `demo_user_dept`).
-  6. Hasil verifikasi `tools/test-comprehensive.php`: Seluruh 56 pengujian lulus 100%. User nonaktif berhasil dihilangkan sepenuhnya dari database tanpa merusak data historis rekrutmen.
-
+  1. Membersihkan struktur sintaks PHP pada `web/application/views/pipeline/board.php`:
+     - Menghapus blok ganda yang tertinggal pada baris kandidat.
+     - Memastikan seluruh pasangan struktur kontrol CI3 (`foreach : endforeach;`, `if : endif;`) tertutup secara simetris dan valid.
+  2. Memastikan layout tabel fit 1 layar dan responsif:
+     - Menggunakan kelas `.table-responsive-fit` yang dikombinasikan dengan aturan CSS global anti-overflow `div[style*="overflow-x:auto"] { overflow-x: hidden !important; width: 100% !important; }`.
+     - Menyediakan mode responsive stacking pada mobile breakpoint `@media (max-width: 768px)` agar baris tabel berubah menjadi kartu vertikal yang ergonomis.
+  3. Mempertahankan seluruh fitur operasional papan pipeline:
+     - Real-time instant search kandidat.
+     - Filter SLA aging (>7 hari tertahan).
+     - Stage Jump Navigator.
+     - Modal dialog evaluasi (Interview, Psikotes, Offering Letter, Log Respon WA).
+- **Status:** Resolved & Verified.
 

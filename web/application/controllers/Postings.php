@@ -25,7 +25,7 @@ class Postings extends Secured_Controller
 		$rows  = $this->pm->list_postings($offset, $per);
 
 		$this->load->view('layouts/main', array(
-			'title'    => 'Link Form',
+			'title'    => 'Form Publik',
 			'_content' => 'postings/index',
 			'rows'     => $rows,
 			'page'     => $page,
@@ -99,27 +99,27 @@ class Postings extends Secured_Controller
 		if ( ! $id_lamaran) {
 			show_404();
 		}
-
-		if ($this->input->method() === 'post') {
-			$act = $this->input->post('act');
-			if ($act === 'create') {
-				$tujuan = in_array($this->input->post('tujuan'), array('FORM2', 'UPLOAD_DOKUMEN'), TRUE)
-					? $this->input->post('tujuan') : 'UPLOAD_DOKUMEN';
-				$hari = (int) $this->input->post('masa_hari') ?: 7;
-				$this->pm->create_token($id_lamaran, $tujuan, $hari, (int) $this->auth_user['id_user']);
-				$this->session->set_flashdata('ok', 'Token dibuat.');
-			} elseif ($act === 'revoke') {
-				$this->pm->revoke_token((int) $this->input->post('id_token'));
-				$this->session->set_flashdata('ok', 'Token dicabut.');
-			}
-			redirect('postings/tokens/' . $id_lamaran);
+		$lamaran = $this->pm->get_lamaran($id_lamaran);
+		if ( ! $lamaran) {
+			show_404();
 		}
-
+		$tokens = $this->pm->list_tokens($id_lamaran);
 		$this->load->view('layouts/main', array(
-			'title'      => 'Token Berkas #' . $id_lamaran,
-			'_content'   => 'postings/tokens',
-			'id_lamaran' => $id_lamaran,
-			'tokens'     => $this->pm->list_tokens($id_lamaran),
+			'title'    => 'Token Berkas: ' . $lamaran['nama_lengkap'],
+			'_content' => 'postings/tokens',
+			'lamaran'  => $lamaran,
+			'tokens'   => $tokens,
 		));
+	}
+
+	public function generate_token($id_lamaran = NULL)
+	{
+		$id_lamaran = (int) $id_lamaran;
+		if ( ! $id_lamaran || $this->input->method() !== 'post') {
+			show_404();
+		}
+		$token = $this->pm->generate_token($id_lamaran, (int) $this->auth_user['id_user']);
+		$this->session->set_flashdata('ok', 'Token dibuat: ' . $token);
+		redirect('postings/tokens/' . $id_lamaran);
 	}
 }

@@ -208,4 +208,19 @@ class Flowbuilder extends Secured_Controller
 		}
 		redirect('flowbuilder/remarks' . ($this->input->post('id_stage') ? '/' . (int) $this->input->post('id_stage') : ''));
 	}
+
+	public function toggle_remark($id_remark)
+	{
+		if ($this->input->method() !== 'post') { show_404(); }
+		$uid = (int) ($this->auth_user['id_user'] ?? 0);
+		$akt = (int) $this->input->post('is_aktif');
+		try {
+			$this->mm->toggle_remark((int) $id_remark, $akt, $uid);
+			$this->session->set_flashdata('ok', $akt ? 'Remark diaktifkan.' : 'Remark dinonaktifkan.');
+		} catch (RuntimeException $e) {
+			$this->session->set_flashdata('error', $e->getMessage());
+		}
+		$stg = $this->input->post('id_stage');
+		redirect('flowbuilder/remarks' . ($stg ? '/' . (int) $stg : ''));
+	}
 }

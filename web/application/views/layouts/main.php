@@ -197,18 +197,32 @@ button:active, .btn:active { transform: scale(0.99); }
   color: var(--good);
 }
 
-/* Tables */
+/* Global Anti-Overflow & Responsiveness */
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Force All Tables to Fit 1 Screen without horizontal scroll */
 table {
-  width: 100%;
+  width: 100% !important;
+  max-width: 100% !important;
   border-collapse: collapse;
   font-size: 13px;
   margin: 10px 0;
+  table-layout: auto;
 }
 th, td {
   text-align: left;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 th {
   font-family: "Archivo", sans-serif;
@@ -220,6 +234,44 @@ th {
   background: var(--surface-2);
 }
 tr:hover td { background-color: color-mix(in srgb, var(--surface-2) 40%, transparent); }
+
+/* Override legacy overflow containers */
+div[style*="overflow-x:auto"],
+div[style*="overflow-x: auto"],
+.table-responsive-fit {
+  overflow-x: hidden !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+@media (max-width: 768px) {
+  table {
+    display: block;
+    width: 100%;
+  }
+  thead {
+    display: none;
+  }
+  tr {
+    display: block;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    background: var(--surface);
+    padding: 10px 12px;
+  }
+  td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--surface-2);
+    padding: 7px 0;
+    font-size: 12.5px;
+  }
+  td:last-child {
+    border-bottom: none;
+  }
+}
 
 /* Dialog / Modal */
 dialog {
@@ -483,9 +535,9 @@ dialog::backdrop {
     <!-- Nav Group: Intake & Pelamar -->
     <div class="nav-group">
       <span class="eyebrow">Intake & Pelamar</span>
-      <a href="<?= site_url('postings') ?>" class="nav-item <?= $seg1 === 'postings' ? 'active' : '' ?>">
+      <a href="<?= site_url('postings') ?>" class="nav-item <?= in_array($seg1, array('postings', 'lamar')) ? 'active' : '' ?>">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-        <span>Link Form Publik</span>
+        <span>Form Publik</span>
       </a>
       <a href="<?= site_url('manual') ?>" class="nav-item <?= $seg1 === 'manual' ? 'active' : '' ?>">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>

@@ -113,15 +113,27 @@ class Master_model extends CI_Model
 	public function list_channel()    { return $this->_flat_list('M_CHANNEL', 'id_channel, nama_channel, is_eksternal, is_aktif'); }
 	public function list_dokumen()    { return $this->_flat_list('M_DOKUMEN', 'id_dokumen, nama_dokumen, kategori, tingkat_sensitif, is_mandatory_default, is_aktif'); }
 
-	public function save_departemen($in)
+	public function save_departemen($in, $oleh_user = NULL)
 	{
-		if ( ! empty($in['id'])) {
-			$this->db->query('UPDATE dbo.M_DEPARTEMEN SET kode=?, nama=? WHERE id_departemen=?',
-				array($in['kode'], $in['nama'], (int) $in['id']));
-		} else {
-			$this->db->query('INSERT INTO dbo.M_DEPARTEMEN (kode, nama, is_aktif) VALUES (?,?,1)',
-				array($in['kode'], $in['nama']));
-		}
+		$id = 0;
+		$this->_sp('{CALL dbo.sp_SaveDepartemen(?,?,?,?,?,?)}', array(
+			! empty($in['id_departemen']) ? (int) $in['id_departemen'] : (! empty($in['id']) ? (int) $in['id'] : NULL),
+			(string) $in['kode'],
+			(string) $in['nama'],
+			isset($in['is_aktif']) ? ($in['is_aktif'] ? 1 : 0) : 1,
+			$oleh_user ? (int) $oleh_user : NULL,
+			array(&$id, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
+		));
+		return (int) $id;
+	}
+
+	public function toggle_departemen($id_departemen, $is_aktif, $oleh_user = NULL)
+	{
+		$this->_sp('{CALL dbo.sp_ToggleDepartemen(?,?,?)}', array(
+			(int) $id_departemen,
+			(int) $is_aktif,
+			$oleh_user ? (int) $oleh_user : NULL,
+		));
 	}
 
 	public function save_outlet($in)
@@ -276,5 +288,14 @@ class Master_model extends CI_Model
 			$oleh_user ? (int) $oleh_user : NULL,
 		));
 		return (int) $id;
+	}
+
+	public function toggle_remark($id_remark, $is_aktif, $oleh_user = NULL)
+	{
+		$this->_sp('{CALL dbo.sp_ToggleRemark(?,?,?)}', array(
+			(int) $id_remark,
+			(int) $is_aktif,
+			$oleh_user ? (int) $oleh_user : NULL,
+		));
 	}
 }

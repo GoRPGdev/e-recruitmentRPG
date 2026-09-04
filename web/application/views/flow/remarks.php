@@ -3,6 +3,13 @@
 	<h1>Remark <?= $id_stage ? '&mdash; tahap #' . (int) $id_stage : '(semua tahap)' ?></h1>
 	<p class="muted" style="margin-top:0"><a href="<?= site_url('flowbuilder') ?>">&larr; flow builder</a></p>
 
+	<?php if ($this->session->flashdata('ok')): ?>
+		<div class="flash ok" style="margin-bottom:14px"><?= html_escape($this->session->flashdata('ok')) ?></div>
+	<?php endif; ?>
+	<?php if ($this->session->flashdata('error')): ?>
+		<div class="flash err" style="margin-bottom:14px"><?= html_escape($this->session->flashdata('error')) ?></div>
+	<?php endif; ?>
+
 	<div style="overflow-x:auto"><table>
 		<tr><th>Tahap</th><th>Kode</th><th>Label</th><th>Efek status</th><th>Urut</th><th>Status</th><th></th></tr>
 		<?php foreach ($rows as $r): ?>
@@ -15,15 +22,10 @@
 			<td><span class="tag <?= $r['is_aktif'] ? 'on' : 'off' ?>"><?= $r['is_aktif'] ? 'aktif' : 'nonaktif' ?></span></td>
 			<td style="white-space:nowrap">
 				<a href="<?= site_url('flowbuilder/remarks' . ($id_stage ? '/' . (int) $id_stage : '') . '?edit_remark=' . (int) $r['id_remark']) ?>" class="btn-sm btn-ghost" style="text-decoration:none; display:inline-block">edit</a>
-				<?= form_open(site_url('flowbuilder/save_remark'), array('class' => 'inline')) ?>
-					<input type="hidden" name="id_remark" value="<?= (int) $r['id_remark'] ?>">
+				<?= form_open(site_url('flowbuilder/toggle_remark/' . (int) $r['id_remark']), array('class' => 'inline')) ?>
 					<input type="hidden" name="id_stage" value="<?= (int) $r['id_stage'] ?>">
-					<input type="hidden" name="kode_remark" value="<?= html_escape($r['kode_remark']) ?>">
-					<input type="hidden" name="label" value="<?= html_escape($r['label']) ?>">
-					<input type="hidden" name="efek_status" value="<?= html_escape($r['efek_status']) ?>">
-					<input type="hidden" name="urutan" value="<?= (int) $r['urutan'] ?>">
 					<input type="hidden" name="is_aktif" value="<?= $r['is_aktif'] ? 0 : 1 ?>">
-					<button class="btn-sm btn-ghost"><?= $r['is_aktif'] ? 'nonaktif' : 'aktif' ?></button>
+					<button class="btn-sm btn-ghost"><?= $r['is_aktif'] ? 'nonaktifkan' : 'aktifkan' ?></button>
 				<?= form_close() ?>
 			</td>
 		</tr>

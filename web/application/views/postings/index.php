@@ -1,6 +1,6 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
 <main class="card">
-	<h1>Link Form Publik</h1>
+	<h1>Form Publik</h1>
 	<p class="muted" style="margin-top:0"><?= (int) $total ?> posting</p>
 
 	<?php if ( ! $rows): ?>

@@ -68,7 +68,7 @@
 			<p class="muted" style="margin:0">Tidak ada data MPR yang sesuai dengan filter.</p>
 		</div>
 	<?php else: ?>
-	<div style="overflow-x:auto">
+	<div class="table-responsive-fit">
 		<table style="margin:0">
 			<thead>
 				<tr>

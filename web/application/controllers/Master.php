@@ -2,7 +2,7 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Master Data: posisi, departemen, outlet, channel, dokumen.
+ * Master Data: posisi, departemen, outlet, channel, dokumen, remark.
  * Wajib login + KELOLA_REKRUTMEN. Soft delete (toggle is_aktif), tanpa hard delete.
  */
 class Master extends Secured_Controller
@@ -13,6 +13,7 @@ class Master extends Secured_Controller
 		'outlet'     => array('label' => 'Outlet',     'pk' => 'id_outlet',     'tabel' => 'M_OUTLET'),
 		'channel'    => array('label' => 'Channel',    'pk' => 'id_channel',    'tabel' => 'M_CHANNEL'),
 		'dokumen'    => array('label' => 'Dokumen',    'pk' => 'id_dokumen',    'tabel' => 'M_DOKUMEN'),
+		'remark'     => array('label' => 'Remark Alur', 'pk' => 'id_remark',    'tabel' => 'M_REMARKS'),
 	);
 
 	public function __construct()
@@ -41,10 +42,29 @@ class Master extends Secured_Controller
 				$data['depts']   = $this->master_model->list_departemen();
 				$data['flows']   = $this->master_model->list_flow();
 				break;
-			case 'departemen': $data['rows'] = $this->master_model->list_departemen(); break;
+			case 'departemen':
+				$data['rows'] = $this->master_model->list_departemen();
+				$edit_id = (int) $this->input->get('edit_id');
+				$data['edit_row'] = NULL;
+				if ($edit_id) {
+					$q = $this->db->query('SELECT * FROM dbo.M_DEPARTEMEN WHERE id_departemen = ?', array($edit_id));
+					$data['edit_row'] = $q->row_array() ?: NULL;
+				}
+				break;
 			case 'outlet':     $data['rows'] = $this->master_model->list_outlet(); break;
 			case 'channel':    $data['rows'] = $this->master_model->list_channel(); break;
 			case 'dokumen':    $data['rows'] = $this->master_model->list_dokumen(); break;
+			case 'remark':
+				$data['rows']       = $this->master_model->remarks();
+				$data['all_stages'] = $this->master_model->all_stages();
+				$data['efek']       = array('LANJUT','TOLAK','ON_HOLD','UNREACHABLE','WITHDRAWN','OFFER_DECLINED','NO_SHOW','HIRED','TALENT_POOL');
+				$edit_id = (int) $this->input->get('edit_id');
+				$data['edit_row'] = NULL;
+				if ($edit_id) {
+					$q = $this->db->query('SELECT * FROM dbo.M_REMARKS WHERE id_remark = ?', array($edit_id));
+					$data['edit_row'] = $q->row_array() ?: NULL;
+				}
+				break;
 		}
 		$this->load->view('layouts/main', $data);
 	}
@@ -58,10 +78,11 @@ class Master extends Secured_Controller
 		try {
 			switch ($t) {
 				case 'posisi':     $this->master_model->save_posisi($p, $this->auth_user['id_user']); break;
-				case 'departemen': $this->master_model->save_departemen($p); break;
+				case 'departemen': $this->master_model->save_departemen($p, $this->auth_user['id_user']); break;
 				case 'outlet':     $this->master_model->save_outlet($p); break;
 				case 'channel':    $this->master_model->save_channel($p); break;
 				case 'dokumen':    $this->master_model->save_dokumen($p); break;
+				case 'remark':     $this->master_model->save_remark($p, $this->auth_user['id_user']); break;
 			}
 			$this->session->set_flashdata('ok', 'Tersimpan.');
 		} catch (RuntimeException $e) {
@@ -80,6 +101,10 @@ class Master extends Secured_Controller
 		try {
 			if ($t === 'posisi') {
 				$this->master_model->toggle_posisi($id, $akt, $this->auth_user['id_user']);
+			} elseif ($t === 'departemen') {
+				$this->master_model->toggle_departemen($id, $akt, $this->auth_user['id_user']);
+			} elseif ($t === 'remark') {
+				$this->master_model->toggle_remark($id, $akt, $this->auth_user['id_user']);
 			} else {
 				$this->master_model->toggle_flat($this->types[$t]['tabel'], $this->types[$t]['pk'], $id, $akt);
 			}
