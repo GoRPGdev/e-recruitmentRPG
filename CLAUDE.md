@@ -29,17 +29,18 @@ dipastikan saat Fase 5. Job terjadwal pakai **Windows Task Scheduler**
 ## Aturan wajib
 
 1. Semua query pakai **parameter binding**. Tidak pernah menyambung string ke SQL.
-2. Paginasi selalu pola `ROW_NUMBER()` — jangan andalkan `limit()` CI3 driver sqlsrv.
-3. Setiap perubahan status menulis `APPLICATION_HISTORY` **di transaksi yang sama**.
-4. Master data pakai **soft delete** (`is_aktif = 0`). Tidak pernah `DELETE`.
-5. Flow di-**snapshot** ke `APPLICATION_STAGES` saat lamaran dibuat.
+2. Seluruh logika mutasi bisnis, validasi integritas, transisi alur, dan manajemen master/user wajib dieksekusi melalui **Stored Procedure (SP)** T-SQL; model CodeIgniter hanya bertindak sebagai pemanggil SP tipis.
+3. Paginasi selalu pola `ROW_NUMBER()` — jangan andalkan `limit()` CI3 driver sqlsrv.
+4. Setiap perubahan status menulis `APPLICATION_HISTORY` **di transaksi yang sama**.
+5. Master data pakai **soft delete** (`is_aktif = 0`). Tidak pernah `DELETE`.
+6. Flow di-**snapshot** ke `APPLICATION_STAGES` saat lamaran dibuat.
    Perubahan `M_FLOW` sesudahnya tidak menyentuh lamaran yang sedang berjalan.
-6. Batas upaya kontak dibaca dari `M_FLOW.maks_upaya_kontak`, bukan angka tetap di SP.
-7. File fisik disimpan **di luar webroot**; DB hanya simpan path, hash SHA-256, metadata.
-8. `status_global` terkunci di 9 nilai. Jangan pernah menambah nilai baru.
-9. Tahap baru wajib punya `tipe_tahap` dari 7 nilai tetap
+7. Batas upaya kontak dibaca dari `M_FLOW.maks_upaya_kontak`, bukan angka tetap di SP.
+8. File fisik disimpan **di luar webroot**; DB hanya simpan path, hash SHA-256, metadata.
+9. `status_global` terkunci di 9 nilai. Jangan pernah menambah nilai baru.
+10. Tahap baru wajib punya `tipe_tahap` dari 7 nilai tetap
    (SCREENING/KONTAK/FORM/TEST/INTERVIEW/OFFER/ONBOARD) — ini sumbu report.
-10. Jangan bikin field dinamis / EAV. Yang perlu dihitung harus kolom bertipe jelas.
+11. Jangan bikin field dinamis / EAV. Yang perlu dihitung harus kolom bertipe jelas.
 
 ## Tingkat akses data
 

@@ -233,6 +233,7 @@ CodeIgniter 3 · PHP 7.4 · SQL Server 2008 R2 · Database-First (logika transak
 
 ## Aturan wajib
 - Semua query pakai **parameter binding**. Tidak pernah string concat ke SQL.
+- Seluruh logika mutasi bisnis, validasi integritas relasional, transisi tahapan, dan manipulasi master/user dijalankan melalui **Stored Procedure (SP)**; model CodeIgniter hanya berfungsi sebagai pemanggil SP tipis.
 - Paginasi selalu pola `ROW_NUMBER()` — jangan andalkan `limit()` CI3 driver sqlsrv.
 - Setiap perubahan status menulis `APPLICATION_HISTORY` di transaksi yang sama.
 - Master data pakai **soft delete** (`is_aktif = 0`). Tidak pernah `DELETE`.

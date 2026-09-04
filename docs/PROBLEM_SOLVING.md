@@ -166,3 +166,31 @@ Dokumentasi ini mencatat rekaman problem solving, kendala teknis, serta solusi y
      - Layout 2 kolom yang informatif: profil personal, status blacklist, tanggal retensi PDP, riwayat karir/gaji, data kesehatan bertanda proteksi gembok, rekening perbankan, berkas dokumen dengan status verifikasi, rekap wawancara & psikotes, status offering, tahapan flow seleksi, dan jejak aktivitas audit trail.
   4. **Tautan Integrasi:**
      - Nama kandidat pada board pipeline vertikal (`pipeline/board.php`) dan daftar dokumen (`documents/index.php`) kini menjadi tautan aktif menuju `candidates/detail/<id_lamaran>`.
+
+---
+
+### [PS-011] Standarisasi Backend & Logika Transaksi Menggunakan Stored Procedure (Database-First)
+- **Problem:**
+  Muncul pertanyaan mengenai konsistensi pemanggilan logika backend: apakah semua proses autentikasi (login), mutasi data, dan manajemen pengguna sudah terstandarisasi menggunakan Stored Procedure (SP) di database, dan bagaimana implementasi penghapusan pengguna (user deletion) dijalankan.
+- **Identifikasi:**
+  1. Arsitektur RPG adalah **Database-First** (CLAUDE.md aturan 3 & 4): Logika bisnis, validasi integritas relasional, snapshot data, dan audit trail diletakkan di T-SQL Stored Procedure, dengan CodeIgniter Model sebagai wrapper tipis.
+  2. Autentikasi sistem:
+     - Login dijalankan via `dbo.sp_Login` yang mengambil kredensial user aktif (`is_aktif = 1` dan `r.is_aktif = 1`).
+     - Hak akses diambil via `dbo.sp_GetUserPermissions`.
+     - Validasi password hash tetap dieksekusi di layer PHP (`password_verify`) karena algoritma hashing modern (`PASSWORD_DEFAULT` / Argon2id / bcrypt) tidak didukung secara native oleh SQL Server 2008 R2.
+  3. Mutasi pengguna (`dbo.M_USERS`):
+     - Sebelumnya `User_model.php` masih menggunakan `INSERT` dan `UPDATE` inline.
+     - Operasi penghapusan user wajib mengikuti aturan soft delete (`is_aktif = 0`) dan dilarang menggunakan query fisik `DELETE FROM dbo.M_USERS` karena terdapat 16 tabel relasional yang memiliki Foreign Key ke `M_USERS`.
+- **Solusi:**
+  1. **Stored Procedure Baru Dibuat & Dideploy:**
+     - `database/procedures/sp_SaveUser.sql`: Mengelola penambahan (INSERT) dan pembaruan (UPDATE) user, memvalidasi keunikan username, role aktif, departemen, serta otomatis mencatat ke `dbo.sp_AuditLog`.
+     - `database/procedures/sp_DeleteUser.sql`: Menjalankan soft delete (`is_aktif = 0`), memvalidasi bahwa user ada, mencegah penghapusan akun `SUPER_ADMIN` terakhir yang aktif, dan mencatat aksi ke `dbo.sp_AuditLog`.
+  2. **Refactoring `User_model.php`:**
+     - Menghapus raw query `INSERT`/`UPDATE` untuk manipulasi user.
+     - Mengarahkan `create_user()`, `update_user()`, dan `toggle_status()` ke `dbo.sp_SaveUser`.
+     - Menambahkan fungsi `delete_user($id_user, $oleh_user)` yang memanggil `dbo.sp_DeleteUser`.
+  3. **Controller & Antarmuka UI:**
+     - Menambahkan method `delete($id_user)` di `Users.php` dengan proteksi akun sendiri dan verifikasi role.
+     - Menambahkan tombol form aksi `Hapus` pada tabel `users/index.php` yang memicu konfirmasi pengguna.
+     - Memperbarui `tools/test-comprehensive.php` untuk memverifikasi `sp_SaveUser` dan `sp_DeleteUser` (56 skenario pengujian lulus 100%).
+

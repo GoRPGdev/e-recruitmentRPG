@@ -1,23 +1,37 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
-<main class="card" style="padding:20px 24px">
-	<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; flex-wrap:wrap; gap:10px">
+<div class="card" style="padding:20px 24px; margin-bottom:20px">
+	<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; flex-wrap:wrap; gap:12px">
 		<div>
-			<h1 style="margin:0 0 4px"><?= html_escape($req['no_mpr'] ?: '#' . $req['id_req']) ?> &mdash; Pipeline Seleksi</h1>
-			<p class="muted" style="margin:0">
-				<strong><?= html_escape($req['nama_posisi']) ?></strong> &middot;
-				Kebutuhan: <?= (int) $req['jumlah_dibutuhkan'] ?> orang &middot;
-				Terpenuhi: <?= (int) $req['jumlah_terpenuhi'] ?> orang &middot;
-				<a href="<?= site_url('requisitions/view/' . (int) $req['id_req']) ?>">Lihat Detail MPR</a>
-			</p>
+			<div class="eyebrow" style="margin-bottom:3px">Papan Seleksi Lamaran</div>
+			<h1 style="margin:0 0 6px; font-size:20px">
+				<?= html_escape($req['no_mpr'] ?: '#' . $req['id_req']) ?> &mdash; <?= html_escape($req['nama_posisi']) ?>
+			</h1>
+			<div class="muted" style="font-size:13px; display:flex; gap:12px; flex-wrap:wrap; align-items:center">
+				<span>Departemen: <strong><?= html_escape($req['departemen'] ?: '-') ?></strong></span>
+				<span>&bull;</span>
+				<span>Kebutuhan: <strong><?= (int) $req['jumlah_dibutuhkan'] ?></strong> orang</span>
+				<span>&bull;</span>
+				<span>Terpenuhi: <strong style="color:var(--good)"><?= (int) $req['jumlah_terpenuhi'] ?></strong></span>
+				<span>&bull;</span>
+				<span class="tag <?= in_array($req['status_req'], array('Sourcing','Approved','Terpenuhi')) ? 'on' : 'warn' ?>"><?= html_escape($req['status_req']) ?></span>
+			</div>
 		</div>
 		<div style="display:flex; gap:8px; align-items:center">
+			<a href="<?= site_url('requisitions/view/' . (int) $req['id_req']) ?>" class="btn btn-sm btn-ghost">
+				<svg style="width:13px; height:13px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+				<span>Detail MPR</span>
+			</a>
 			<a href="<?= site_url('requisitions') ?>" class="btn btn-sm btn-ghost">&larr; Daftar MPR</a>
 		</div>
 	</div>
 
 	<?php if ( ! $stages): ?>
-		<div style="padding:40px 20px; text-align:center; background:var(--surface-2); border-radius:8px; margin-top:16px">
-			<p class="muted" style="font-size:15px">Belum ada kandidat aktif di pipeline lowongan ini.</p>
+		<div style="padding:48px 20px; text-align:center; background:var(--surface-2); border-radius:8px; margin-top:16px">
+			<svg style="width:36px; height:36px; margin:0 auto 10px; color:var(--text-faint)" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+			<p class="muted" style="font-size:14px; margin:0">Belum ada kandidat di alur pipeline lowongan ini.</p>
+			<div style="margin-top:12px">
+				<a href="<?= site_url('manual') ?>" class="btn btn-sm btn-primary">+ Tambah Pelamar Manual</a>
+			</div>
 		</div>
 	<?php else: ?>
 		<?php
@@ -34,75 +48,77 @@
 
 			$cur_off = isset($offers[$id_lamaran]) ? $offers[$id_lamaran] : NULL;
 		?>
-			<div style="flex:0 0 290px; width:290px; border:1px solid var(--border); border-radius:8px; padding:12px; background:var(--surface); box-shadow:var(--shadow-sm); display:flex; flex-direction:column; justify-content:space-between">
+			<div style="flex:0 0 295px; width:295px; border:1px solid var(--border); border-radius:9px; padding:14px; background:var(--surface); box-shadow:var(--shadow-sm); display:flex; flex-direction:column; justify-content:space-between">
 				<div>
-					<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px">
-						<strong style="font-size:14.5px; line-height:1.3">
-							<a href="<?= site_url('candidates/detail/' . $id_lamaran) ?>" style="color:var(--text); text-decoration:none; border-bottom:1px dashed var(--accent)" title="Lihat Detail Profil Kandidat">
+					<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; gap:6px">
+						<strong style="font-size:14px; line-height:1.3">
+							<a href="<?= site_url('candidates/detail/' . $id_lamaran) ?>" style="color:var(--text); text-decoration:none; border-bottom:1px dashed var(--accent)" title="Lihat Dossier Lengkap">
 								<?= html_escape($c['nama_lengkap']) ?>
 							</a>
 						</strong>
-						<span class="tag <?= $c['status_global'] === 'In_Progress' ? 'on' : 'off' ?>"><?= html_escape($c['status_global']) ?></span>
+						<span class="tag <?= $c['status_global'] === 'In_Progress' ? 'on' : ($c['status_global'] === 'Hired' ? 'on' : 'off') ?>" style="font-size:10px">
+							<?= html_escape($c['status_global']) ?>
+						</span>
 					</div>
 					<div class="muted mono" style="font-size:12px; margin-bottom:6px"><?= html_escape($c['no_wa_normal'] ?: '-') ?></div>
-					
-					<div style="font-size:12px; color:var(--text-muted); margin-bottom:8px">
-						<span>⏱️ <?= (int) $c['hari_di_tahap'] ?> hr di tahap ini</span>
+
+					<div style="font-size:11.5px; color:var(--text-muted); margin-bottom:10px; display:flex; gap:8px">
+						<span>⏱️ <?= (int) $c['hari_di_tahap'] ?> hr di tahap</span>
 						<?php if ($c['screening_score'] !== NULL): ?>
-							&middot; <span>Skor CV: <strong><?= (int)$c['screening_score'] ?></strong></span>
+							&middot; <span>Skor: <strong><?= (int)$c['screening_score'] ?></strong></span>
 						<?php endif; ?>
 					</div>
 
-					<!-- Bagian Data Kontekstual Seleksi -->
+					<!-- Bagian Konteks Khusus Berdasarkan Tahap -->
 					<?php if ($s['tipe'] === 'INTERVIEW'): ?>
-						<div style="background:var(--surface-2); border-radius:6px; padding:6px 8px; font-size:12px; margin-bottom:8px">
+						<div style="background:var(--surface-2); border-radius:6px; padding:8px 10px; font-size:12px; margin-bottom:10px">
 							<?php if ($latest_iv): ?>
-								<div>📅 <strong><?= html_escape($latest_iv['tipe'] ?: 'Interview') ?></strong>: <?= html_escape($latest_iv['jadwal'] ?: 'Belum dijadwalkan') ?></div>
+								<div style="font-weight:600; margin-bottom:2px">📅 <?= html_escape($latest_iv['tipe'] ?: 'Interview') ?>: <?= html_escape($latest_iv['jadwal'] ?: 'Terjadwal') ?></div>
 								<?php if ($latest_iv['nama_interviewer']): ?>
-									<div class="muted">Oleh: <?= html_escape($latest_iv['nama_interviewer']) ?> (<?= html_escape($latest_iv['peran_interviewer']) ?>)</div>
+									<div class="muted">Oleh: <?= html_escape($latest_iv['nama_interviewer']) ?></div>
 								<?php endif; ?>
 								<?php if ($latest_iv['hasil']): ?>
-									<div style="margin-top:2px">Hasil: <span class="tag <?= strtolower($latest_iv['hasil']) ?>"><?= html_escape($latest_iv['hasil']) ?></span> <?= $latest_iv['skor'] !== NULL ? '(Skor: ' . (int)$latest_iv['skor'] . ')' : '' ?></div>
+									<div style="margin-top:3px">Hasil: <span class="tag <?= strtolower($latest_iv['hasil']) ?>"><?= html_escape($latest_iv['hasil']) ?></span> <?= $latest_iv['skor'] !== NULL ? '(Skor: ' . (int)$latest_iv['skor'] . ')' : '' ?></div>
 								<?php endif; ?>
 							<?php else: ?>
-								<span class="muted">Belum dijadwalkan interview.</span>
+								<span class="faint">Belum dijadwalkan interview.</span>
 							<?php endif; ?>
 						</div>
 					<?php elseif ($s['tipe'] === 'TEST'): ?>
-						<div style="background:var(--surface-2); border-radius:6px; padding:6px 8px; font-size:12px; margin-bottom:8px">
+						<div style="background:var(--surface-2); border-radius:6px; padding:8px 10px; font-size:12px; margin-bottom:10px">
 							<?php if ($latest_psi): ?>
-								<div>🧠 <strong><?= html_escape($latest_psi['vendor_tes'] ?: 'Psikotes') ?></strong> &middot; <?= html_escape($latest_psi['tanggal_tes']) ?></div>
+								<div style="font-weight:600; margin-bottom:2px">🧠 <?= html_escape($latest_psi['vendor_tes'] ?: 'Psikotes') ?></div>
 								<div>Hasil: <span class="tag <?= strtolower($latest_psi['hasil']) ?>"><?= html_escape($latest_psi['hasil'] ?: 'Pending') ?></span> <?= $latest_psi['skor_total'] !== NULL ? '(Skor: ' . (int)$latest_psi['skor_total'] . ')' : '' ?></div>
 							<?php else: ?>
-								<span class="muted">Belum ada catatan psikotes.</span>
+								<span class="faint">Belum ada catatan psikotes.</span>
 							<?php endif; ?>
 						</div>
 					<?php elseif ($s['tipe'] === 'OFFER' || $cur_off): ?>
-						<div style="background:var(--surface-2); border-radius:6px; padding:6px 8px; font-size:12px; margin-bottom:8px">
+						<div style="background:var(--surface-2); border-radius:6px; padding:8px 10px; font-size:12px; margin-bottom:10px">
 							<?php if ($cur_off): ?>
-								<div>💼 Status: <span class="tag <?= strtolower($cur_off['status_offer']) ?>"><?= html_escape($cur_off['status_offer']) ?></span></div>
+								<div style="font-weight:600; margin-bottom:2px">💼 Status: <span class="tag <?= strtolower($cur_off['status_offer']) ?>"><?= html_escape($cur_off['status_offer']) ?></span></div>
 								<?php if ($cur_off['tanggal_join_disepakati']): ?>
 									<div class="muted">Join: <?= html_escape($cur_off['tanggal_join_disepakati']) ?></div>
 								<?php endif; ?>
 								<?php if ($can_gaji && $cur_off['gaji_ditawarkan'] !== NULL): ?>
-									<div style="color:var(--accent); font-weight:600">Rp <?= number_format((float)$cur_off['gaji_ditawarkan'], 0, ',', '.') ?></div>
+									<div style="color:var(--accent); font-weight:700">Rp <?= number_format((float)$cur_off['gaji_ditawarkan'], 0, ',', '.') ?></div>
 								<?php elseif ( ! $can_gaji && $cur_off['gaji_ditawarkan'] !== NULL): ?>
-									<div class="muted">[Gaji Terproteksi]</div>
+									<div class="faint">[Gaji Terproteksi]</div>
 								<?php endif; ?>
 							<?php else: ?>
-								<span class="muted">Belum dibuat draft penawaran.</span>
+								<span class="faint">Belum dibuat draft penawaran.</span>
 							<?php endif; ?>
 						</div>
 					<?php endif; ?>
 				</div>
 
 				<?php if ($can_aksi): ?>
-				<div style="border-top:1px solid var(--border); padding-top:8px; margin-top:6px; display:flex; flex-direction:column; gap:6px">
+				<div style="border-top:1px solid var(--border); padding-top:10px; margin-top:8px; display:flex; flex-direction:column; gap:6px">
 					<!-- Advance Stage Form -->
 					<?= form_open(site_url('pipeline/advance/' . (int) $req['id_req']), array('style' => 'margin:0')) ?>
 						<input type="hidden" name="id_app_stage" value="<?= $id_app_stage ?>">
 						<div style="display:flex; gap:4px">
-							<select name="id_remark" style="width:100%; padding:3px 6px; font-size:12px">
+							<select name="id_remark" style="width:100%; padding:4px 6px; font-size:12px">
 								<option value="">— proses / lanjut —</option>
 								<?php if (isset($remarks[$id_stage])): ?>
 									<?php foreach ($remarks[$id_stage] as $rk): ?>
@@ -110,55 +126,55 @@
 									<?php endforeach; ?>
 								<?php endif; ?>
 							</select>
-							<button type="submit" class="btn-sm" style="padding:3px 8px; font-size:12px">Proses</button>
+							<button type="submit" class="btn btn-sm btn-primary" style="padding:4px 10px; font-size:12px; flex:none">Proses</button>
 						</div>
 					<?= form_close() ?>
 
 					<!-- Stage-Specific Action Modals Triggers -->
 					<div style="display:flex; gap:4px; flex-wrap:wrap">
 						<?php if ($s['tipe'] === 'KONTAK'): ?>
-							<?= form_open(site_url('pipeline/contact/' . (int) $req['id_req']), array('style' => 'display:flex; gap:4px; width:100%')) ?>
+							<?= form_open(site_url('pipeline/contact/' . (int) $req['id_req']), array('style' => 'display:flex; gap:4px; width:100%; margin:0')) ?>
 								<input type="hidden" name="id_lamaran" value="<?= $id_lamaran ?>">
 								<select name="metode" style="padding:3px 4px; font-size:12px; width:35%">
 									<option>WA</option><option>Telepon</option><option>Email</option>
 								</select>
-								<select name="hasil" style="padding:3px 4px; font-size:12px; width:40%">
+								<select name="hasil" style="padding:3px 4px; font-size:12px; width:45%">
 									<option>Respon</option><option>Tidak_Respon</option><option>Nomor_Salah</option><option>Menolak</option>
 								</select>
-								<button type="submit" class="btn-sm btn-ghost" style="padding:3px 8px; font-size:12px; width:25%">Log</button>
+								<button type="submit" class="btn btn-sm btn-ghost" style="padding:3px 8px; font-size:12px; width:20%">Log</button>
 							<?= form_close() ?>
 						<?php endif; ?>
 
 						<?php if ($s['tipe'] === 'INTERVIEW'): ?>
-							<button type="button" class="btn-sm btn-ghost" style="width:100%; font-size:12px; justify-content:center"
+							<button type="button" class="btn btn-sm btn-ghost" style="width:100%; font-size:12px; justify-content:center"
 								onclick='openInterviewModal(<?= json_encode(array(
 									"id_app_stage" => $id_app_stage,
 									"nama" => $c["nama_lengkap"],
 									"interview" => $latest_iv
 								)) ?>)'>
-								🎤 <?= $latest_iv ? 'Ubah / Catat Hasil Interview' : 'Jadwalkan Interview' ?>
+								🎤 <?= $latest_iv ? 'Catat Hasil Interview' : 'Jadwal Interview' ?>
 							</button>
 						<?php endif; ?>
 
 						<?php if ($s['tipe'] === 'TEST'): ?>
-							<button type="button" class="btn-sm btn-ghost" style="width:100%; font-size:12px; justify-content:center"
+							<button type="button" class="btn btn-sm btn-ghost" style="width:100%; font-size:12px; justify-content:center"
 								onclick='openPsikotesModal(<?= json_encode(array(
 									"id_app_stage" => $id_app_stage,
 									"nama" => $c["nama_lengkap"],
 									"psikotes" => $latest_psi
 								)) ?>)'>
-								🧠 <?= $latest_psi ? 'Ubah Hasil Psikotes' : 'Catat Hasil Psikotes' ?>
+								🧠 <?= $latest_psi ? 'Ubah Hasil Psikotes' : 'Catat Psikotes' ?>
 							</button>
 						<?php endif; ?>
 
 						<?php if ($s['tipe'] === 'OFFER' || $cur_off): ?>
-							<button type="button" class="btn-sm btn-ghost" style="width:100%; font-size:12px; justify-content:center"
+							<button type="button" class="btn btn-sm btn-ghost" style="width:100%; font-size:12px; justify-content:center"
 								onclick='openOfferModal(<?= json_encode(array(
 									"id_lamaran" => $id_lamaran,
 									"nama" => $c["nama_lengkap"],
 									"offer" => $cur_off
 								)) ?>)'>
-								💼 <?= $cur_off ? 'Ubah Form / Status Offer' : 'Buat Penawaran (Offer)' ?>
+								💼 <?= $cur_off ? 'Ubah Status Offer' : 'Buat Offer' ?>
 							</button>
 						<?php endif; ?>
 					</div>
@@ -167,12 +183,12 @@
 					<?= form_open(site_url('pipeline/insert_stage/' . (int) $req['id_req']), array('style' => 'margin:0')) ?>
 						<input type="hidden" name="id_lamaran" value="<?= $id_lamaran ?>">
 						<div style="display:flex; gap:4px">
-							<select name="id_stage" style="width:100%; padding:3px 6px; font-size:12px">
+							<select name="id_stage" style="width:100%; padding:3px 6px; font-size:11.5px">
 								<?php foreach ($all_stages as $st): ?>
 									<option value="<?= (int) $st['id_stage'] ?>"><?= html_escape($st['nama_tahap']) ?></option>
 								<?php endforeach; ?>
 							</select>
-							<button type="submit" class="btn-sm btn-ghost" style="padding:3px 8px; font-size:12px; white-space:nowrap">+ Sisip</button>
+							<button type="submit" class="btn btn-sm btn-ghost" style="padding:3px 8px; font-size:11.5px; white-space:nowrap">+ Sisip</button>
 						</div>
 					<?= form_close() ?>
 				</div>
@@ -188,21 +204,25 @@
 			$cards_awal  = array_slice($s['cards'], 0, 12);
 			$cards_sisa  = array_slice($s['cards'], 12);
 		?>
-		<div style="border-top:1px solid var(--border); padding-top:14px; margin-top:18px">
-			<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
-				<h2 style="margin:0; font-size:15px">
-					<?= (int) $urut ?>. <?= html_escape($s['nama']) ?>
-					<span class="muted" style="font-size:12px; font-weight:400">[<?= html_escape($s['tipe']) ?>] &middot; <?= $total_cards ?> kandidat</span>
-				</h2>
+		<div style="border-top:1px solid var(--border); padding-top:16px; margin-top:20px">
+			<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+				<div style="display:flex; align-items:center; gap:8px">
+					<div class="user-avatar" style="width:24px; height:24px; font-size:11px"><?= (int) $urut ?></div>
+					<h2 style="margin:0; font-size:15px">
+						<?= html_escape($s['nama']) ?>
+					</h2>
+					<span class="tag info" style="font-size:10.5px"><?= html_escape($s['tipe']) ?></span>
+					<span class="faint" style="font-size:12px">&middot; <?= $total_cards ?> kandidat</span>
+				</div>
 				<?php if ($total_cards > 12): ?>
-					<button type="button" class="btn-sm btn-ghost" onclick="toggleStageCards(<?= (int) $urut ?>)" id="btn-toggle-<?= (int) $urut ?>">
+					<button type="button" class="btn btn-sm btn-ghost" onclick="toggleStageCards(<?= (int) $urut ?>)" id="btn-toggle-<?= (int) $urut ?>">
 						Lihat semua (<?= $total_cards ?>)
 					</button>
 				<?php endif; ?>
 			</div>
 
 			<?php if ( ! $total_cards): ?>
-				<p class="muted" style="font-size:13px; margin:4px 0">Tidak ada kandidat di tahap ini.</p>
+				<p class="faint" style="font-size:12.5px; margin:4px 0 10px; font-style:italic">Tidak ada kandidat di tahap ini.</p>
 			<?php else: ?>
 				<!-- Baris kartu horizontal dengan scroll dan batas 12 kartu -->
 				<div style="display:flex; gap:12px; overflow-x:auto; padding:4px 2px 14px; align-items:stretch">
@@ -211,10 +231,10 @@
 					<?php endforeach; ?>
 
 					<?php if ($total_cards > 12): ?>
-						<div id="card-more-summary-<?= (int) $urut ?>" style="flex:0 0 200px; width:200px; min-height:160px; border:2px dashed var(--border-strong); border-radius:8px; padding:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; background:var(--surface-2)">
-							<span style="font-size:22px; font-weight:700; color:var(--text)">+<?= count($cards_sisa) ?></span>
+						<div id="card-more-summary-<?= (int) $urut ?>" style="flex:0 0 200px; width:200px; min-height:160px; border:2px dashed var(--border-strong); border-radius:9px; padding:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; background:var(--surface-2)">
+							<span style="font-size:24px; font-weight:700; color:var(--text); font-family:'Archivo', sans-serif">+<?= count($cards_sisa) ?></span>
 							<span class="muted" style="font-size:12px; margin:2px 0 10px">kandidat lagi</span>
-							<button type="button" class="btn-sm btn-ghost" onclick="toggleStageCards(<?= (int) $urut ?>)">Lihat Semua</button>
+							<button type="button" class="btn btn-sm btn-ghost" onclick="toggleStageCards(<?= (int) $urut ?>)">Lihat Semua</button>
 						</div>
 
 						<div id="more-cards-<?= (int) $urut ?>" style="display:none; gap:12px; flex:0 0 auto">
@@ -234,7 +254,7 @@
 			<?= form_open(site_url('pipeline/save_interview/' . (int) $req['id_req'])) ?>
 				<input type="hidden" name="id_interview" id="iv-id-interview">
 				<input type="hidden" name="id_app_stage" id="iv-id-app-stage">
-				
+
 				<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
 					<div>
 						<label for="iv-tipe">Tipe Interview</label>
@@ -293,9 +313,9 @@
 				<label for="iv-catatan">Catatan / Feedback</label>
 				<textarea name="catatan" id="iv-catatan" rows="3" placeholder="Catatan kelebihan, kekurangan, rekomendasi..."></textarea>
 
-				<div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px">
-					<button type="button" class="btn-ghost" onclick="document.getElementById('dlg-interview').close()">Batal</button>
-					<button type="submit">Simpan Interview</button>
+				<div style="display:flex; justify-content:flex-end; gap:8px; margin-top:18px">
+					<button type="button" class="btn btn-ghost" onclick="document.getElementById('dlg-interview').close()">Batal</button>
+					<button type="submit" class="btn btn-primary">Simpan Interview</button>
 				</div>
 			<?= form_close() ?>
 		</dialog>
@@ -337,9 +357,9 @@
 				<label for="psi-rekomendasi">Rekomendasi / Profil Singkat</label>
 				<textarea name="rekomendasi" id="psi-rekomendasi" rows="3" placeholder="Deskripsi kepribadian, potensi, catatan khusus..."></textarea>
 
-				<div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px">
-					<button type="button" class="btn-ghost" onclick="document.getElementById('dlg-psikotes').close()">Batal</button>
-					<button type="submit">Simpan Hasil Psikotes</button>
+				<div style="display:flex; justify-content:flex-end; gap:8px; margin-top:18px">
+					<button type="button" class="btn btn-ghost" onclick="document.getElementById('dlg-psikotes').close()">Batal</button>
+					<button type="submit" class="btn btn-primary">Simpan Hasil Psikotes</button>
 				</div>
 			<?= form_close() ?>
 		</dialog>
@@ -390,9 +410,9 @@
 				<label for="off-alasan">Alasan / Catatan Penawaran</label>
 				<input type="text" name="alasan" id="off-alasan" placeholder="Catatan nego gaji, alasan penolakan, fasilitas...">
 
-				<div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px">
-					<button type="button" class="btn-ghost" onclick="document.getElementById('dlg-offer').close()">Batal</button>
-					<button type="submit">Simpan Penawaran</button>
+				<div style="display:flex; justify-content:flex-end; gap:8px; margin-top:18px">
+					<button type="button" class="btn btn-ghost" onclick="document.getElementById('dlg-offer').close()">Batal</button>
+					<button type="submit" class="btn btn-primary">Simpan Penawaran</button>
 				</div>
 			<?= form_close() ?>
 		</dialog>
@@ -466,5 +486,4 @@
 		}
 		</script>
 	<?php endif; ?>
-</main>
-
+</div>
