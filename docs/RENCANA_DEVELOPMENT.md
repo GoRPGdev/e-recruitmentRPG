@@ -354,7 +354,7 @@ Pembagian di bawah bisa ditukar sesuai preferensi — yang penting jangan dua or
 - [x] Flow builder: susun tahap, drag urutan, wajib/opsional, SLA, PIC
 - [x] "Simpan sebagai template baru" (clone `M_FLOW` + `M_FLOW_STAGE`, isi `id_flow_induk`)
 - [x] Naikkan `M_FLOW.versi` setiap kali template diubah
-- [x] CRUD `M_STAGE` (dengan `tipe_tahap` wajib) & `M_REMARKS` (+ `efek_status`, urutan, soft delete) _(M_STAGE ✅ via `sp_SaveStage` & `sp_ToggleStage` + menu Master; M_REMARKS ✅ via `sp_SaveRemark` + edit support)_
+- [x] CRUD `M_STAGE` (dengan `tipe_tahap` wajib) & `M_REMARKS` (+ `efek_status`, urutan, soft delete) _(M_STAGE ✅ `sp_SaveStage`/`sp_ToggleStage` di Flow Builder → `EDIT_FLOW_TEMPLATE`; M_REMARKS ✅ `sp_SaveRemark` + edit)_
 - [x] `sp_GenerateApplicationStages` — snapshot flow saat lamaran dibuat
 - [x] `sp_AdvanceStage` — baca `efek_status` dari remark, tulis history, atomik
 - [x] `sp_InsertAdHocStage` — tahap sisipan + renumber urutan
