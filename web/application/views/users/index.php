@@ -1,4 +1,4 @@
-<?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
+﻿<?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
 <div class="card" style="padding:22px 26px">
 	<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; flex-wrap:wrap; gap:12px">
 		<div>
@@ -136,6 +136,49 @@
 			</tbody>
 		</table>
 	</div>
+		<!-- BAR PAGINASI HALAMAN STANDAR -->
+		<div style="display:flex; justify-content:space-between; align-items:center; padding:12px 20px; border-top:1px solid var(--border); background:var(--surface); flex-wrap:wrap; gap:12px">
+			<div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap">
+				<div class="muted" style="font-size:12.5px">
+					Menampilkan <strong><?= count($users ?? array()) ?></strong> dari <strong><?= (int) ($total ?? 0) ?></strong> pengguna (Halaman <?= (int) ($page ?? 1) ?> dari <?= (int) ($pages ?? 1) ?>)
+				</div>
+				<div style="display:flex; align-items:center; gap:6px; font-size:12px" class="muted">
+					<span>Tampilkan:</span>
+					<select onchange="location.href=this.value" style="padding:3px 6px; font-size:12px; width:auto; border-radius:6px; background:var(--surface-2)">
+						<?php foreach (array(10, 20, 50) as $opt): ?>
+							<option value="<?= site_url('users?' . http_build_query(array_merge($filter, array('per' => $opt, 'page' => 1)))) ?>" <?= ((int)($per ?? 10)) === $opt ? 'selected' : '' ?>>
+								<?= $opt ?> baris
+							</option>
+						<?php endforeach; ?>
+					</select>
+				</div>
+			</div>
+
+			<div style="display:flex; align-items:center; gap:4px">
+				<?php if (($page ?? 1) > 1): ?>
+					<a href="<?= site_url('users?' . http_build_query(array_merge($filter, array('page' => 1)))) ?>" class="btn btn-sm btn-ghost" title="Halaman Pertama" style="padding:4px 8px">&laquo;</a>
+					<a href="<?= site_url('users?' . http_build_query(array_merge($filter, array('page' => $page - 1)))) ?>" class="btn btn-sm btn-ghost" style="padding:4px 10px">&larr; Prev</a>
+				<?php else: ?>
+					<button type="button" class="btn btn-sm btn-ghost" disabled style="opacity:0.4; padding:4px 8px">&laquo;</button>
+					<button type="button" class="btn btn-sm btn-ghost" disabled style="opacity:0.4; padding:4px 10px">&larr; Prev</button>
+				<?php endif; ?>
+
+				<?php for ($i = max(1, ($page ?? 1) - 2); $i <= min(($pages ?? 1), ($page ?? 1) + 2); $i++): ?>
+					<a href="<?= site_url('users?' . http_build_query(array_merge($filter, array('page' => $i)))) ?>"
+						class="btn btn-sm <?= $i === ($page ?? 1) ? 'btn-primary' : 'btn-ghost' ?>" style="min-width:30px; text-align:center; padding:4px 8px">
+						<?= $i ?>
+					</a>
+				<?php endfor; ?>
+
+				<?php if (($page ?? 1) < ($pages ?? 1)): ?>
+					<a href="<?= site_url('users?' . http_build_query(array_merge($filter, array('page' => $page + 1)))) ?>" class="btn btn-sm btn-ghost" style="padding:4px 10px">Next &rarr;</a>
+					<a href="<?= site_url('users?' . http_build_query(array_merge($filter, array('page' => $pages)))) ?>" class="btn btn-sm btn-ghost" title="Halaman Terakhir" style="padding:4px 8px">&raquo;</a>
+				<?php else: ?>
+					<button type="button" class="btn btn-sm btn-ghost" disabled style="opacity:0.4; padding:4px 10px">Next &rarr;</button>
+					<button type="button" class="btn btn-sm btn-ghost" disabled style="opacity:0.4; padding:4px 8px">&raquo;</button>
+				<?php endif; ?>
+			</div>
+		</div>
 </div>
 
 <!-- ================= MODAL DIALOG POPUP TAMBAH PENGGUNA ================= -->

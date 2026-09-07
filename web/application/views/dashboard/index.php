@@ -397,7 +397,7 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 		</div>
 
 		<!-- Funnel Konversi Dinamis (Posisi x Tahap) & Efisiensi Waktu -->
-		<div style="display:grid; grid-template-columns:2.2fr 1fr; gap:18px; margin-bottom:22px; align-items:start">
+		<div style="display:block; margin-bottom:22px">
 			<!-- Matriks Funnel Dinamis (Posisi yang Dibuka x Tahap Seleksi) -->
 			<div class="dash-card" style="padding:18px 20px">
 				<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px; flex-wrap:wrap; gap:10px">
@@ -437,14 +437,14 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 					</div>
 				<?php else: ?>
 					<div class="table-responsive-fit" style="overflow-x:auto">
-						<table class="dash-table" style="white-space:nowrap">
+						<table class="dash-table" style="width:100%">
 							<thead>
 								<tr>
-									<th style="min-width:180px; position:sticky; left:0; z-index:2; background:var(--surface-2)">
+									<th style="width:24%; min-width:150px; padding:9px 10px">
 										Posisi Lowongan
 									</th>
 									<?php foreach ($pos_stage_funnel['stages'] as $st_id => $st): ?>
-										<th style="text-align:center; min-width:90px; padding:8px 10px">
+										<th style="text-align:center; padding:8px 4px">
 											<div style="font-weight:700; color:var(--text); font-size:11.5px"><?= html_escape($st['nama_tahap']) ?></div>
 											<span class="tag <?= in_array($st['tipe_tahap'], array('OFFER', 'ONBOARD')) ? 'on' : (in_array($st['tipe_tahap'], array('INTERVIEW')) ? 'warn' : 'info') ?>" style="font-size:9.5px; padding:1px 5px; margin-top:3px; display:inline-block">
 												<?= html_escape($st['tipe_tahap']) ?>
@@ -457,7 +457,7 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 							<tbody>
 								<?php foreach ($pos_stage_funnel['positions'] as $p_id => $pos): ?>
 									<tr>
-										<td style="position:sticky; left:0; z-index:1; background:var(--surface)">
+										<td style="padding:9px 10px">
 											<div style="font-weight:700; color:var(--text)">
 												<?= html_escape($pos['nama_posisi']) ?>
 											</div>
@@ -477,7 +477,7 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 											$cell = $pos_stage_funnel['matrix'][$p_id][$st_id] ?? NULL;
 											$cnt  = $cell ? (int) $cell['total'] : 0;
 										?>
-											<td style="text-align:center; padding:8px 6px">
+											<td style="text-align:center; padding:8px 4px">
 												<?php if ($cnt > 0): ?>
 													<span class="tag info" style="font-size:11px; font-weight:700; padding:2px 7px; min-width:26px; display:inline-block">
 														<?= $cnt ?>
@@ -495,7 +495,7 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 							</tbody>
 							<tfoot>
 								<tr style="background:var(--surface-2); font-weight:700; border-top:2px solid var(--border)">
-									<td style="position:sticky; left:0; z-index:1; background:var(--surface-2); color:var(--text)">
+									<td style="padding:9px 10px; color:var(--text)">
 										TOTAL SELURUHNYA
 									</td>
 									<?php foreach ($pos_stage_funnel['stages'] as $st_id => $st): ?>
@@ -514,7 +514,7 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 			</div>
 
 			<!-- Durasi Proses & Kepatuhan UU PDP -->
-			<div style="display:flex; flex-direction:column; gap:16px">
+			<div style="display:grid; grid-template-columns:1.2fr 1fr; gap:18px; margin-bottom:22px; align-items:stretch">
 				<div class="dash-card" style="padding:18px 20px">
 					<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px">
 						<h2 style="font-size:15px; font-weight:700; margin:0; color:var(--text)">Durasi &amp; Kecepatan Proses</h2>
