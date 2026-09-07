@@ -1,9 +1,9 @@
-﻿<?php
+<?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
  * Candidate_model -- layar detail kandidat, profil lamaran, riwayat seleksi,
- * serta pembacaan data pribadi spesifik (kesehatan, gaji pelamar, perbankan).
+ * serta pembacaan data pribadi spesifik (kesehatan, gaji pelamar, perbankan, onboarding).
  */
 class Candidate_model extends CI_Model
 {
@@ -11,9 +11,10 @@ class Candidate_model extends CI_Model
 	{
 		$sql = 'SELECT a.id_lamaran, a.id_kandidat, a.id_req, a.id_flow, a.status_global, a.tanggal_lamar,
 		               a.intake_method, a.screening_score, a.id_stage_sekarang,
-		               c.nama_lengkap, c.no_wa_normal, c.email, c.tempat_lahir, c.tanggal_lahir,
+		               c.nama_lengkap, c.nama_panggilan, c.no_wa_normal, c.email, c.tempat_lahir, c.tanggal_lahir,
 		               c.jenis_kelamin, c.pendidikan_terakhir, c.nama_sekolah, c.jurusan,
 		               c.kota_domisili, c.alamat_lengkap, c.status_pernikahan,
+		               c.nik, c.no_sim, c.npwp, c.agama, c.gol_darah, c.tinggi_badan, c.berat_badan,
 		               c.kontak_darurat_nama, c.kontak_darurat_telp, c.kontak_darurat_hub,
 		               c.is_blacklist, c.retensi_sampai, c.created_at AS kandidat_dibuat,
 		               r.no_mpr, r.tipe_penempatan, r.status_req,
@@ -198,6 +199,95 @@ class Candidate_model extends CI_Model
 		$r = $q->result_array(); $q->free_result(); return $r;
 	}
 
+	/* ================= DATA ONBOARDING LANJUTAN ================= */
+
+	/**
+	 * Ambil token formulir onboarding yang aktif / terbaru
+	 */
+	public function get_onboarding_token($id_lamaran)
+	{
+		$q = $this->db->query(
+			"SELECT TOP 1 id_token, token, tujuan, kadaluarsa_pada, dipakai_pada, is_revoked, dibuat_pada
+			 FROM dbo.FORM_TOKENS
+			 WHERE id_lamaran = ? AND tujuan = 'FORM_ONBOARDING'
+			 ORDER BY id_token DESC",
+			array((int) $id_lamaran)
+		);
+		$row = $q->row_array();
+		$q->free_result();
+		if ( ! $row) {
+			return NULL;
+		}
+		$row['valid'] = ( ! $row['is_revoked']
+			&& $row['dipakai_pada'] === NULL
+			&& ($row['kadaluarsa_pada'] === NULL || strtotime($row['kadaluarsa_pada']) > time()));
+		return $row;
+	}
+
+	/**
+	 * Buat atau perbarui token onboarding baru untuk lamaran ini
+	 */
+	public function create_onboarding_token($id_lamaran, $id_user, $masa_hari = 14)
+	{
+		// Cabut token lama yang belum dipakai
+		$this->db->query(
+			"UPDATE dbo.FORM_TOKENS SET is_revoked = 1
+			 WHERE id_lamaran = ? AND tujuan = 'FORM_ONBOARDING' AND dipakai_pada IS NULL AND is_revoked = 0",
+			array((int) $id_lamaran)
+		);
+
+		$token = bin2hex(random_bytes(24));
+		$exp   = (int) $masa_hari > 0
+			? date('Y-m-d H:i:s', time() + (int) $masa_hari * 86400)
+			: NULL;
+
+		$this->db->query(
+			"INSERT INTO dbo.FORM_TOKENS (id_lamaran, token, tujuan, kadaluarsa_pada, dibuat_oleh)
+			 VALUES (?, ?, 'FORM_ONBOARDING', ?, ?)",
+			array((int) $id_lamaran, $token, $exp, (int) $id_user)
+		);
+
+		return $token;
+	}
+
+	/**
+	 * Ambil daftar riwayat pengalaman kerja (multi-item)
+	 */
+	public function get_work_experiences($id_lamaran)
+	{
+		$tbl_exists = $this->db->query("SELECT 1 FROM sys.tables WHERE name = 'CANDIDATE_WORK_EXPERIENCES'")->row();
+		if ( ! $tbl_exists) {
+			return array();
+		}
+
+		$q = $this->db->query(
+			"SELECT * FROM dbo.CANDIDATE_WORK_EXPERIENCES WHERE id_lamaran = ? ORDER BY urutan ASC, id_exp ASC",
+			array((int) $id_lamaran)
+		);
+		$rows = $q->result_array();
+		$q->free_result();
+		return $rows;
+	}
+
+	/**
+	 * Ambil daftar anggota keluarga (multi-item)
+	 */
+	public function get_family_members($id_kandidat)
+	{
+		$tbl_exists = $this->db->query("SELECT 1 FROM sys.tables WHERE name = 'CANDIDATE_FAMILY'")->row();
+		if ( ! $tbl_exists) {
+			return array();
+		}
+
+		$q = $this->db->query(
+			"SELECT * FROM dbo.CANDIDATE_FAMILY WHERE id_kandidat = ? ORDER BY urutan ASC, id_family ASC",
+			array((int) $id_kandidat)
+		);
+		$rows = $q->result_array();
+		$q->free_result();
+		return $rows;
+	}
+
 	/* ---- List Kandidat Global & Filter ---- */
 
 	private function _list_where($f, &$b)
@@ -299,7 +389,7 @@ class Candidate_model extends CI_Model
 		            SELECT a.id_lamaran, a.id_kandidat, a.id_req, a.status_global, a.tanggal_lamar,
 		                   a.intake_method, a.screening_score, a.id_stage_sekarang,
 		                   c.nama_lengkap, c.no_wa_normal, c.email, c.kota_domisili, c.pendidikan_terakhir,
-		                   r.no_mpr, r.tipe_penempatan,
+		                   r.no_mpr, r.tipe_penempatan, r.status_req,
 		                   p.id_posisi, p.nama_posisi, p.id_departemen,
 		                   d.nama AS nama_departemen,
 		                   o.nama_outlet,

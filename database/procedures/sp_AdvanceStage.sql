@@ -73,9 +73,13 @@ BEGIN
             WHERE id_lamaran = @id_lamaran AND urutan > @urutan AND status_tahap = 'Belum'
             ORDER BY urutan;
 
-            IF @efek = 'HIRED'
+            /* Jika diarahkan HIRED atau sudah berada di tahap paling akhir */
+            IF @efek = 'HIRED' OR @next_app_stage IS NULL
+            BEGIN
                 SET @st_global_baru = 'Hired';
-            ELSE IF @next_app_stage IS NOT NULL
+                SET @efek = 'HIRED'; -- picu logika fill-rate & auto-close posting
+            END
+            ELSE
             BEGIN
                 SET @st_global_baru = 'In_Progress';   -- keluar dari On_Hold/Unreachable kalau maju
                 SET @event = 'STAGE_CHANGE';

@@ -180,7 +180,7 @@
 									</div>
 									<div class="muted" style="font-size:12px; margin-top:2px">
 										<?= html_escape($r['nama_departemen'] ?: '-') ?> &middot;
-										<span class="mono"><?= html_escape($r['no_mpr'] ?: '#' . $r['id_req']) ?></span>
+										<span class="mono"><?= html_escape($r['no_mpr'] ?: '#' . $r['id_req']) ?></span> <?php if (in_array($r['status_req'] ?? '', array('Sourcing', 'Approved', 'Sourcing_Ulang'))): ?><span class="tag on" style="font-size:9.5px; padding:1px 5px; font-weight:700" title="Status: <?= html_escape($r['status_req'] ?? '') ?>">● Jalan</span><?php else: ?><span class="tag off" style="font-size:9.5px; padding:1px 5px; font-weight:700" title="Status: <?= html_escape($r['status_req'] ?? 'Closed') ?>">✕ Closed</span><?php endif; ?>
 									</div>
 									<div style="margin-top:4px">
 										<span class="tag" style="font-size:10px; padding:1px 6px">

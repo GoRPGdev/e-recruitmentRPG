@@ -89,6 +89,11 @@ class Candidates extends Secured_Controller
 		$psikotes  = $this->candidate_model->get_psikotes($id_lamaran);
 		$offer     = $this->candidate_model->get_offer($id_lamaran);
 
+		// Data kelengkapan onboarding
+		$onboarding_token = $this->candidate_model->get_onboarding_token($id_lamaran);
+		$experiences      = $this->candidate_model->get_work_experiences($id_lamaran);
+		$families         = $this->candidate_model->get_family_members($detail['id_kandidat']);
+
 		// Evaluasi izin akses data sensitif & pencatatan log
 		$can_gaji_pelamar = can_sensitif('GAJI_PELAMAR');
 		if ($can_gaji_pelamar && $profile && ($profile['gaji_terakhir'] !== NULL || $profile['gaji_diharapkan'] !== NULL)) {
@@ -146,6 +151,32 @@ class Candidates extends Secured_Controller
 			'can_kesehatan'    => $can_kesehatan,
 			'can_finansial'    => $can_finansial,
 			'can_gaji'         => $can_gaji,
+			'onboarding_token' => $onboarding_token,
+			'experiences'      => $experiences,
+			'families'         => $families,
 		));
+	}
+
+	/**
+	 * Generate / perbarui link form onboarding khusus kandidat
+	 */
+	public function generate_onboarding_link($id_lamaran = NULL)
+	{
+		$this->require_permission('KELOLA_REKRUTMEN');
+
+		if ( ! $id_lamaran) {
+			show_404();
+		}
+
+		$detail = $this->candidate_model->get_detail($id_lamaran);
+		if ( ! $detail) {
+			show_404();
+		}
+
+		$uid = (int) $this->session->userdata('id_user');
+		$token = $this->candidate_model->create_onboarding_token((int) $id_lamaran, $uid, 14);
+
+		$this->session->set_flashdata('success', 'Tautan formulir onboarding baru berhasil dibuat (masa aktif 14 hari).');
+		redirect('candidates/detail/' . (int) $id_lamaran);
 	}
 }

@@ -12,17 +12,86 @@
 			<div class="muted" style="margin-top:4px; font-size:13px">
 				Posisi: <strong><?= html_escape($c['nama_posisi']) ?></strong> &middot;
 				<?= html_escape($c['nama_departemen'] ?: '-') ?> <?= $c['nama_outlet'] ? '(' . html_escape($c['nama_outlet']) . ')' : '' ?> &middot;
-				MPR: <span class="mono"><?= html_escape($c['no_mpr'] ?: '#' . $c['id_req']) ?></span> &middot;
+				MPR: <span class="mono"><?= html_escape($c['no_mpr'] ?: '#' . $c['id_req']) ?></span> <?php if (in_array($c['status_req'] ?? '', array('Sourcing', 'Approved', 'Sourcing_Ulang'))): ?><span class="tag on" style="font-size:9.5px; padding:1px 5px; font-weight:700">● Jalan</span><?php else: ?><span class="tag off" style="font-size:9.5px; padding:1px 5px; font-weight:700">✕ Closed (<?= html_escape($c['status_req'] ?? 'Tutup') ?>)</span><?php endif; ?> &middot;
 				Tahap Berjalan: <strong style="color:var(--accent)"><?= html_escape($c['nama_tahap_kini'] ?: '-') ?></strong>
 			</div>
 		</div>
-		<div style="display:flex; gap:8px">
+		<div style="display:flex; gap:8px; flex-wrap:wrap">
 			<a class="btn btn-sm btn-ghost" href="<?= site_url('pipeline/index/' . (int) $c['id_req']) ?>">&larr; Kembali ke Pipeline</a>
 			<a class="btn btn-sm btn-ghost" href="<?= site_url('documents/checklist/' . (int) $c['id_lamaran']) ?>">
 				<svg style="width:13px; height:13px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
 				<span>Checklist Berkas</span>
 			</a>
 		</div>
+	</div>
+
+	<!-- Notifikasi Flash Message -->
+	<?php if ($this->session->flashdata('success')): ?>
+		<div class="flash ok" style="margin-bottom:16px"><?= html_escape($this->session->flashdata('success')) ?></div>
+	<?php endif; ?>
+	<?php if ($this->session->flashdata('error')): ?>
+		<div class="flash err" style="margin-bottom:16px"><?= html_escape($this->session->flashdata('error')) ?></div>
+	<?php endif; ?>
+
+	<!-- ================= PANEL TAUTAN FORM ONBOARDING KARYAWAN ================= -->
+	<div class="card" style="padding:16px 20px; margin-bottom:20px; background:var(--surface-2); border:1px solid var(--border); border-left:4px solid var(--accent)">
+		<div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:12px">
+			<div>
+				<div class="eyebrow" style="color:var(--accent); font-weight:700">Formulir Onboarding Karyawan Baru</div>
+				<div style="font-size:14px; font-weight:600; margin-top:2px; color:var(--text)">
+					Tautan Khusus Pengisian Kelengkapan Data Onboarding
+				</div>
+				<div class="muted" style="font-size:12px; margin-top:2px">
+					Kandidat akan mengisi data identitas resmi (NIK/NPWP/SIM), rekening bank payroll, riwayat pengalaman kerja, dan susunan keluarga. Data awal (Form 1) akan otomatis terkunci.
+				</div>
+			</div>
+
+			<div style="display:flex; align-items:center; gap:8px">
+				<?php if (!empty($onboarding_token['dipakai_pada'])): ?>
+					<span class="tag on" style="font-size:11px">✓ Sudah Diisi (<?= html_escape(substr($onboarding_token['dipakai_pada'], 0, 16)) ?>)</span>
+				<?php elseif (!empty($onboarding_token['valid'])): ?>
+					<span class="tag info" style="font-size:11px">Aktif s/d <?= html_escape(substr($onboarding_token['kadaluarsa_pada'], 0, 10)) ?></span>
+				<?php elseif (!empty($onboarding_token)): ?>
+					<span class="tag off" style="font-size:11px">Kedaluwarsa / Dicabut</span>
+				<?php else: ?>
+					<span class="tag" style="font-size:11px">Belum Dibuat</span>
+				<?php endif; ?>
+
+				<?php if ($can_kelola): ?>
+					<a href="<?= site_url('candidates/generate_onboarding_link/' . (int) $c['id_lamaran']) ?>"
+					   class="btn btn-sm btn-primary"
+					   onclick="return confirm('<?= !empty($onboarding_token) ? "Buat link onboarding baru? (Link lama akan otomatis dicabut)" : "Buat tautan formulir onboarding untuk kandidat ini?" ?>')"
+					   style="font-size:12px; font-weight:600; white-space:nowrap">
+						<?= !empty($onboarding_token) ? '↻ Buat Link Baru' : '+ Generate Link Onboarding' ?>
+					</a>
+				<?php endif; ?>
+			</div>
+		</div>
+
+		<?php if (!empty($onboarding_token['valid'])): ?>
+			<?php
+			$onboarding_url = site_url('onboarding/' . $onboarding_token['token']);
+			$wa_msg = "Halo " . $c['nama_lengkap'] . ", selamat bergabung di Ratu Pertiwi Group! Mohon untuk melengkapi formulir onboarding karyawan baru melalui tautan resmi berikut: " . $onboarding_url . " . Terima kasih.";
+			$wa_link = 'https://wa.me/' . preg_replace('/[^0-9]/', '', $c['no_wa_normal']) . '?text=' . rawurlencode($wa_msg);
+			?>
+			<div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; background:var(--surface); padding:10px 14px; border-radius:8px; border:1px solid var(--border)">
+				<span class="muted" style="font-size:12px; font-weight:600; white-space:nowrap">Tautan Kandidat:</span>
+				<input type="text" id="onboarding_link_input" value="<?= html_escape($onboarding_url) ?>" readonly style="flex:1; min-width:260px; font-size:12px; padding:6px 10px; background:var(--surface-2); border:1px solid var(--border); border-radius:6px; font-family:monospace; margin:0">
+				<button type="button" class="btn btn-sm btn-ghost" onclick="copyOnboardingLink()" style="font-size:12px; white-space:nowrap">
+					📋 Salin Tautan
+				</button>
+				<a href="<?= html_escape($wa_link) ?>" target="_blank" class="btn btn-sm btn-ghost" style="color:var(--good); font-size:12px; white-space:nowrap; text-decoration:none">
+					💬 Bagikan ke WhatsApp
+				</a>
+				<a href="<?= html_escape($onboarding_url) ?>" target="_blank" class="btn btn-sm btn-ghost" style="font-size:12px; white-space:nowrap; text-decoration:none">
+					Buka Form &rarr;
+				</a>
+			</div>
+		<?php elseif (!empty($onboarding_token['dipakai_pada'])): ?>
+			<div style="font-size:12px; color:var(--text-muted); background:var(--surface); padding:8px 12px; border-radius:6px; border:1px solid var(--border)">
+				Kandidat telah selesai mengisi formulir onboarding pada <strong><?= html_escape(substr($onboarding_token['dipakai_pada'], 0, 16)) ?></strong>. Data riwayat pekerjaan, keluarga, dan identitas dapat dilihat pada tabel di bawah ini.
+			</div>
+		<?php endif; ?>
 	</div>
 
 	<!-- Panel Aksi Transisi Tahap Saat Ini (Jika Lamaran Aktif) -->
@@ -132,10 +201,11 @@
 		<div class="card" style="padding:18px 20px">
 			<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom:10px">
 				<h2 style="margin:0; font-size:15px">👤 Biodata &amp; Kontak Pelamar</h2>
-				<span class="tag info" style="font-size:10.5px">Data Umum</span>
+				<span class="tag info" style="font-size:10.5px">Data Pribadi</span>
 			</div>
 			<table style="font-size:13px; margin:0">
-				<tr><td class="muted" style="width:150px">Nomor WhatsApp</td><td><span class="mono" style="font-weight:600"><?= html_escape($c['no_wa_normal'] ?: '-') ?></span></td></tr>
+				<tr><td class="muted" style="width:150px">Nama Lengkap</td><td><strong><?= html_escape($c['nama_lengkap']) ?></strong> <?= !empty($c['nama_panggilan']) ? '(' . html_escape($c['nama_panggilan']) . ')' : '' ?></td></tr>
+				<tr><td class="muted">Nomor WhatsApp</td><td><span class="mono" style="font-weight:600"><?= html_escape($c['no_wa_normal'] ?: '-') ?></span></td></tr>
 				<tr><td class="muted">Alamat Email</td><td><?= html_escape($c['email'] ?: '-') ?></td></tr>
 				<tr><td class="muted">Tempat, Tgl Lahir</td><td><?= html_escape($c['tempat_lahir'] ?: '-') ?>, <?= html_escape($c['tanggal_lahir'] ? substr($c['tanggal_lahir'], 0, 10) : '-') ?></td></tr>
 				<tr><td class="muted">Jenis Kelamin</td><td><?= $c['jenis_kelamin'] === 'L' ? 'Laki-laki' : ($c['jenis_kelamin'] === 'P' ? 'Perempuan' : '-') ?></td></tr>
@@ -145,6 +215,17 @@
 				<tr><td class="muted">Kota Domisili</td><td><?= html_escape($c['kota_domisili'] ?: '-') ?></td></tr>
 				<tr><td class="muted">Alamat Lengkap</td><td><?= nl2br(html_escape($c['alamat_lengkap'] ?: '-')) ?></td></tr>
 				<tr><td class="muted">Kontak Darurat</td><td><?= html_escape($c['kontak_darurat_nama'] ?: '-') ?> (<?= html_escape($c['kontak_darurat_hub'] ?: '-') ?>) &middot; <span class="mono"><?= html_escape($c['kontak_darurat_telp'] ?: '-') ?></span></td></tr>
+
+				<!-- Data Identitas Lanjutan dari Onboarding -->
+				<?php if (!empty($c['nik']) || !empty($c['npwp']) || !empty($c['no_sim'])): ?>
+					<tr><td colspan="2" style="padding-top:10px; border-bottom:1px solid var(--border)"><strong style="font-size:12px; color:var(--accent)">Identitas Resmi (Onboarding)</strong></td></tr>
+					<tr><td class="muted">NIK (KTP)</td><td><span class="mono" style="font-weight:600"><?= html_escape($c['nik'] ?: '-') ?></span></td></tr>
+					<tr><td class="muted">No. NPWP</td><td><span class="mono"><?= html_escape($c['npwp'] ?: '-') ?></span></td></tr>
+					<tr><td class="muted">No. SIM</td><td><?= html_escape($c['no_sim'] ?: '-') ?></td></tr>
+					<tr><td class="muted">Agama / Gol. Darah</td><td><?= html_escape($c['agama'] ?: '-') ?> &middot; <?= html_escape($c['gol_darah'] ?: '-') ?></td></tr>
+					<tr><td class="muted">Tinggi / Berat Badan</td><td><?= $c['tinggi_badan'] ? (int)$c['tinggi_badan'] . ' cm' : '-' ?> / <?= $c['berat_badan'] ? (int)$c['berat_badan'] . ' kg' : '-' ?></td></tr>
+				<?php endif; ?>
+
 				<tr><td class="muted">Metode Pendaftaran</td><td><span class="tag on"><?= html_escape($c['intake_method'] ?: 'FORM_PUBLIC') ?></span></td></tr>
 				<tr><td class="muted">Tanggal Registrasi</td><td><?= html_escape($c['tanggal_lamar'] ? substr($c['tanggal_lamar'], 0, 10) : '-') ?></td></tr>
 				<?php if ($c['retensi_sampai']): ?>
@@ -156,10 +237,10 @@
 		<!-- Kolom 2: Pekerjaan & Data Sensitif (Gaji, Bank, Kesehatan) -->
 		<div style="display:flex; flex-direction:column; gap:18px">
 
-			<!-- Riwayat Kerja & Ekspektasi Gaji -->
+			<!-- Riwayat Kerja Terakhir & Ekspektasi Gaji -->
 			<div class="card" style="padding:18px 20px">
 				<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom:10px">
-					<h2 style="margin:0; font-size:15px">💼 Riwayat Pekerjaan &amp; Gaji</h2>
+					<h2 style="margin:0; font-size:15px">💼 Riwayat Pekerjaan Terakhir &amp; Gaji</h2>
 					<span class="eyebrow" style="font-size:10.5px">Kompensasi</span>
 				</div>
 				<?php if ($profile): ?>
@@ -260,6 +341,90 @@
 		</div>
 	</div>
 
+	<!-- ================= TABEL RIWAYAT PEKERJAAN MULTI-ITEM (ONBOARDING) ================= -->
+	<?php if (!empty($experiences)): ?>
+		<div class="card" style="margin-bottom:20px; padding:18px 20px">
+			<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom:12px">
+				<h2 style="margin:0; font-size:15px">🏢 Riwayat Pengalaman Kerja Lengkap</h2>
+				<span class="tag on" style="font-size:10.5px"><?= count($experiences) ?> Pengalaman</span>
+			</div>
+			<div style="overflow-x:auto">
+				<table style="margin:0; font-size:13px">
+					<thead>
+						<tr>
+							<th style="width:40px">#</th>
+							<th>Perusahaan</th>
+							<th>Jabatan</th>
+							<th>Periode</th>
+							<th>Gaji Terakhir</th>
+							<th>Alasan Berhenti</th>
+							<th>Deskripsi Pekerjaan</th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ($experiences as $e): ?>
+							<tr>
+								<td class="mono"><?= (int) $e['urutan'] ?></td>
+								<td><strong><?= html_escape($e['nama_perusahaan']) ?></strong></td>
+								<td><?= html_escape($e['posisi_jabatan']) ?></td>
+								<td class="faint"><?= html_escape($e['periode_kerja'] ?: '-') ?></td>
+								<td>
+									<?php if ($can_gaji_pelamar): ?>
+										<?= $e['gaji_terakhir'] !== NULL ? 'Rp ' . number_format((float)$e['gaji_terakhir'], 0, ',', '.') : '-' ?>
+									<?php else: ?>
+										<span class="muted">🔒 [Terproteksi]</span>
+									<?php endif; ?>
+								</td>
+								<td><?= html_escape($e['alasan_keluar'] ?: '-') ?></td>
+								<td><?= nl2br(html_escape($e['deskripsi_tugas'] ?: '-')) ?></td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	<?php endif; ?>
+
+	<!-- ================= TABEL SUSUNAN KELUARGA MULTI-ITEM (ONBOARDING) ================= -->
+	<?php if (!empty($families)): ?>
+		<div class="card" style="margin-bottom:20px; padding:18px 20px">
+			<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom:12px">
+				<h2 style="margin:0; font-size:15px">👨‍👩‍👧‍👦 Susunan Anggota Keluarga</h2>
+				<span class="tag on" style="font-size:10.5px"><?= count($families) ?> Anggota</span>
+			</div>
+			<div style="overflow-x:auto">
+				<table style="margin:0; font-size:13px">
+					<thead>
+						<tr>
+							<th style="width:40px">#</th>
+							<th>Hubungan</th>
+							<th>Nama Lengkap</th>
+							<th>L/P</th>
+							<th>Usia</th>
+							<th>Pendidikan</th>
+							<th>Pekerjaan</th>
+							<th>No. Telepon</th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ($families as $fam): ?>
+							<tr>
+								<td class="mono"><?= (int) $fam['urutan'] ?></td>
+								<td><strong><?= html_escape($fam['hubungan']) ?></strong></td>
+								<td><?= html_escape($fam['nama_lengkap']) ?></td>
+								<td><?= html_escape($fam['jenis_kelamin'] ?: '-') ?></td>
+								<td><?= $fam['usia'] ? (int)$fam['usia'] . ' th' : '-' ?></td>
+								<td><?= html_escape($fam['pendidikan'] ?: '-') ?></td>
+								<td><?= html_escape($fam['pekerjaan'] ?: '-') ?></td>
+								<td><span class="mono"><?= html_escape($fam['no_telp'] ?: '-') ?></span></td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	<?php endif; ?>
+
 	<!-- Berkas Dokumen Kandidat -->
 	<div class="card" style="margin-bottom:20px; padding:18px 20px">
 		<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom:12px">
@@ -310,122 +475,7 @@
 		<?php endif; ?>
 	</div>
 
-	<!-- Sembunyikan Catatan Evaluasi, Psikotes & Hasil Tahap sementara -->
-		<?php if (false): ?>
-<!-- Riwayat Seleksi & Hasil Test/Interview/Offer -->
-	<div class="card" style="margin-bottom:20px; padding:18px 20px">
-		<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom:14px">
-			<h2 style="margin:0; font-size:15px">🎯 Catatan Evaluasi &amp; Hasil Tahap</h2>
-			<span class="eyebrow">Catatan Seleksi</span>
-		</div>
-
-		<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:14px; margin-bottom:18px">
-
-			<!-- Interview -->
-			<div style="background:var(--surface-2); border-radius:8px; padding:14px">
-				<h3 style="margin-top:0; font-size:13.5px; border-bottom:1px solid var(--border); padding-bottom:6px">🎤 Hasil Wawancara</h3>
-				<?php if (!empty($interviews)): ?>
-					<?php foreach ($interviews as $iv): ?>
-						<div style="border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom:8px">
-							<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px">
-								<strong><?= html_escape($iv['tipe'] ?: 'Interview') ?></strong>
-								<?php if ($iv['hasil']): ?><span class="tag <?= strtolower($iv['hasil']) ?>"><?= html_escape($iv['hasil']) ?></span><?php endif; ?>
-							</div>
-							<div class="muted" style="font-size:12px">Jadwal: <?= html_escape($iv['jadwal'] ?: '-') ?></div>
-							<?php if ($iv['nama_interviewer']): ?><div class="muted" style="font-size:12px">Pewawancara: <?= html_escape($iv['nama_interviewer']) ?> (<?= html_escape($iv['peran_interviewer']) ?>)</div><?php endif; ?>
-							<?php if ($iv['skor'] !== NULL): ?><div style="font-size:12px; margin-top:2px">Skor: <strong style="color:var(--accent)"><?= (int)$iv['skor'] ?> / 100</strong></div><?php endif; ?>
-							<?php if ($iv['catatan']): ?><div style="font-size:12px; margin-top:4px; font-style:italic">&ldquo;<?= html_escape($iv['catatan']) ?>&rdquo;</div><?php endif; ?>
-						</div>
-					<?php endforeach; ?>
-				<?php else: ?>
-					<p class="faint" style="margin:0; font-size:12.5px">Belum ada evaluasi wawancara.</p>
-				<?php endif; ?>
-			</div>
-
-			<!-- Psikotes -->
-			<div style="background:var(--surface-2); border-radius:8px; padding:14px">
-				<h3 style="margin-top:0; font-size:13.5px; border-bottom:1px solid var(--border); padding-bottom:6px">🧠 Hasil Psikotes &amp; Ujian</h3>
-				<?php if (!empty($psikotes)): ?>
-					<?php foreach ($psikotes as $psi): ?>
-						<div style="border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom:8px">
-							<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px">
-								<strong><?= html_escape($psi['vendor_tes'] ?: 'Psikotes') ?></strong>
-								<?php if ($psi['hasil']): ?><span class="tag <?= strtolower($psi['hasil']) ?>"><?= html_escape($psi['hasil']) ?></span><?php endif; ?>
-							</div>
-							<div class="muted" style="font-size:12px">Tanggal: <?= html_escape($psi['tanggal_tes'] ? substr($psi['tanggal_tes'], 0, 10) : '-') ?></div>
-							<?php if ($psi['skor_total'] !== NULL): ?><div style="font-size:12px; margin-top:2px">Skor: <strong style="color:var(--accent)"><?= (int)$psi['skor_total'] ?></strong></div><?php endif; ?>
-							<?php if ($psi['rekomendasi']): ?><div style="font-size:12px; margin-top:4px; font-style:italic">&ldquo;<?= html_escape($psi['rekomendasi']) ?>&rdquo;</div><?php endif; ?>
-						</div>
-					<?php endforeach; ?>
-				<?php else: ?>
-					<p class="faint" style="margin:0; font-size:12.5px">Belum ada evaluasi tes.</p>
-				<?php endif; ?>
-			</div>
-
-			<!-- Offering -->
-			<div style="background:var(--surface-2); border-radius:8px; padding:14px">
-				<h3 style="margin-top:0; font-size:13.5px; border-bottom:1px solid var(--border); padding-bottom:6px">📝 Penawaran Kerja (Offering)</h3>
-				<?php if ($offer): ?>
-					<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px">
-						<span class="muted" style="font-size:12px">Status:</span>
-						<span class="tag <?= $offer['status_offer'] === 'Diterima' ? 'on' : ($offer['status_offer'] === 'Ditolak' ? 'off' : 'warn') ?>"><?= html_escape($offer['status_offer']) ?></span>
-					</div>
-					<div style="font-size:12.5px; margin-bottom:4px">
-						Gaji:
-						<?php if ($can_gaji): ?>
-							<strong style="color:var(--accent)"><?= $offer['gaji_ditawarkan'] !== NULL ? 'Rp ' . number_format((float)$offer['gaji_ditawarkan'], 0, ',', '.') : '-' ?></strong>
-						<?php else: ?>
-							<span class="faint">🔒 [Terproteksi]</span>
-						<?php endif; ?>
-					</div>
-					<?php if ($offer['tanggal_penawaran']): ?><div class="muted" style="font-size:12px">Penawaran: <?= html_escape($offer['tanggal_penawaran']) ?></div><?php endif; ?>
-					<?php if ($offer['tanggal_join_disepakati']): ?><div class="muted" style="font-size:12px">Join Plan: <?= html_escape($offer['tanggal_join_disepakati']) ?></div><?php endif; ?>
-					<?php if ($offer['tanggal_join_aktual']): ?><div style="font-size:12px; color:var(--good); font-weight:600">Join Aktual: <?= html_escape($offer['tanggal_join_aktual']) ?></div><?php endif; ?>
-					<?php if ($offer['alasan']): ?><div style="font-size:12px; margin-top:4px; font-style:italic">&ldquo;<?= html_escape($offer['alasan']) ?>&rdquo;</div><?php endif; ?>
-				<?php else: ?>
-					<p class="faint" style="margin:0; font-size:12.5px">Belum ada penawaran kerja dibuat.</p>
-				<?php endif; ?>
-			</div>
-
-		</div>
-
-		<!-- Timeline Tahap Lengkap -->
-		<h3 style="font-size:14px; margin:16px 0 8px">Tahapan Flow Lamaran (Snapshot)</h3>
-		<div style="overflow-x:auto">
-			<table style="margin:0">
-				<thead>
-					<tr>
-						<th>Urut</th>
-						<th>Tahap</th>
-						<th>Tipe</th>
-						<th>Status</th>
-						<th>Mulai</th>
-						<th>Selesai</th>
-						<th>Remark</th>
-						<th>Diproses Oleh</th>
-					</tr>
-				</thead>
-				<tbody>
-					<?php foreach ($stages as $st): ?>
-					<tr>
-						<td class="mono"><?= (int) $st['urutan'] ?></td>
-						<td><strong><?= html_escape($st['nama_tahap']) ?></strong></td>
-						<td><span class="tag"><?= html_escape($st['tipe_tahap']) ?></span></td>
-						<td><span class="tag <?= $st['status_tahap'] === 'Selesai' ? 'on' : ($st['status_tahap'] === 'Sedang_Jalan' ? 'accent' : 'off') ?>"><?= html_escape($st['status_tahap']) ?></span></td>
-						<td class="faint"><?= html_escape($st['tanggal_mulai'] ? substr($st['tanggal_mulai'], 0, 16) : '-') ?></td>
-						<td class="faint"><?= html_escape($st['tanggal_selesai'] ? substr($st['tanggal_selesai'], 0, 16) : '-') ?></td>
-						<td><?= html_escape($st['label_remark'] ?: '-') ?></td>
-						<td><?= html_escape($st['diproses_oleh_nama'] ?: '-') ?></td>
-					</tr>
-					<?php endforeach; ?>
-				</tbody>
-			</table>
-		</div>
-	</div>
-
-			<?php endif; ?>
-
-		<!-- History & Audit Trail -->
+	<!-- History & Audit Trail -->
 	<div class="card" style="padding:18px 20px">
 		<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom:12px">
 			<h2 style="margin:0; font-size:15px">⏱️ Audit Trail Aktivitas Lamaran</h2>
@@ -466,3 +516,18 @@
 		<?php endif; ?>
 	</div>
 </div>
+
+<script>
+function copyOnboardingLink() {
+	var input = document.getElementById('onboarding_link_input');
+	if (!input) return;
+	input.select();
+	input.setSelectionRange(0, 99999);
+	navigator.clipboard.writeText(input.value).then(function() {
+		alert('Tautan formulir onboarding berhasil disalin ke clipboard!');
+	}).catch(function() {
+		document.execCommand('copy');
+		alert('Tautan formulir onboarding disalin!');
+	});
+}
+</script>

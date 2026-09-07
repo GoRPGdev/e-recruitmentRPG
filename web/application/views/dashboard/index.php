@@ -92,6 +92,53 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 .dash-table tr:hover {
 	background: var(--surface-2);
 }
+	/* Styling Spesifik Matriks Funnel Konversi */
+	.matrix-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; table-layout: auto; }
+	.matrix-table th { padding: 10px 8px; vertical-align: top; background: var(--surface-2); border-bottom: 2px solid var(--border); white-space: normal; }
+	.matrix-table td { padding: 10px 8px; vertical-align: middle; border-bottom: 1px solid var(--border); }
+	.matrix-col-pos { min-width: 170px; text-align: left; vertical-align: top !important; }
+	.matrix-col-stage { text-align: center; min-width: 85px; vertical-align: top !important; }
+	.matrix-stage-name { font-weight: 700; color: var(--text); font-size: 11.5px; line-height: 1.3; word-break: normal; overflow-wrap: break-word; margin-bottom: 4px; }
+	.matrix-stage-badge { font-size: 9px; padding: 2px 6px; display: inline-block; white-space: nowrap; letter-spacing: .03em; font-weight: 700; }
+	.matrix-val-badge { font-size: 11.5px; font-weight: 700; padding: 3px 8px; min-width: 28px; display: inline-block; border-radius: 6px; }
+	.matrix-col-total { text-align: right; width: 75px; min-width: 65px; }
+
+	/* Modal Popup Fullscreen Matriks */
+	dialog.dialog-fullscreen {
+		max-width: 96vw !important;
+		width: 96vw !important;
+		max-height: 92vh !important;
+		height: 92vh !important;
+		padding: 0 !important;
+		border-radius: 12px;
+		overflow: hidden;
+		flex-direction: column;
+		border: 1px solid var(--border);
+		background: var(--surface);
+		box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+	}
+	dialog.dialog-fullscreen[open] {
+		display: flex !important;
+	}
+	dialog.dialog-fullscreen:not([open]) {
+		display: none !important;
+	}
+	.modal-header-matrix {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 14px 20px;
+		border-bottom: 1px solid var(--border);
+		background: var(--surface-2);
+		flex-shrink: 0;
+	}
+	.modal-body-matrix {
+		padding: 20px;
+		overflow: auto;
+		flex: 1;
+		width: 100%;
+		background: var(--surface);
+	}
 </style>
 
 <?php if ($user_role === 'USER_DEPT'): ?>
@@ -420,11 +467,17 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 							<?php endif; ?>
 						</div>
 					</div>
-					<div style="text-align:right">
-						<span class="muted" style="font-size:11.5px">Total Terdata:</span>
-						<span class="mono" style="font-size:14px; font-weight:700; color:var(--accent); margin-left:4px">
-							<?= (int) ($pos_stage_funnel['total_all'] ?? 0) ?> kandidat
-						</span>
+					<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+						<div style="text-align:right">
+							<span class="muted" style="font-size:11.5px">Total Terdata:</span>
+							<span class="mono" style="font-size:14px; font-weight:700; color:var(--accent); margin-left:4px">
+								<?= (int) ($pos_stage_funnel['total_all'] ?? 0) ?> kandidat
+							</span>
+						</div>
+						<button type="button" class="btn btn-sm btn-ghost" onclick="openMatrixModal()" style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; font-size:12px; border:1px solid var(--border); border-radius:7px; background:var(--surface)" title="Perbesar Matriks ke Layar Penuh">
+							<svg style="width:13px; height:13px" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+							<span>Perbesar Tampilan</span>
+						</button>
 					</div>
 				</div>
 
@@ -437,27 +490,27 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 					</div>
 				<?php else: ?>
 					<div class="table-responsive-fit" style="overflow-x:auto">
-						<table class="dash-table" style="width:100%">
+						<table class="dash-table matrix-table" style="width:100%">
 							<thead>
 								<tr>
-									<th style="width:24%; min-width:150px; padding:9px 10px">
+									<th class="matrix-col-pos" style="padding:10px 12px">
 										Posisi Lowongan
 									</th>
 									<?php foreach ($pos_stage_funnel['stages'] as $st_id => $st): ?>
-										<th style="text-align:center; padding:8px 4px">
-											<div style="font-weight:700; color:var(--text); font-size:11.5px"><?= html_escape($st['nama_tahap']) ?></div>
-											<span class="tag <?= in_array($st['tipe_tahap'], array('OFFER', 'ONBOARD')) ? 'on' : (in_array($st['tipe_tahap'], array('INTERVIEW')) ? 'warn' : 'info') ?>" style="font-size:9.5px; padding:1px 5px; margin-top:3px; display:inline-block">
+										<th class="matrix-col-stage">
+											<div class="matrix-stage-name"><?= html_escape($st['nama_tahap']) ?></div>
+											<span class="tag matrix-stage-badge <?= in_array($st['tipe_tahap'], array('OFFER', 'ONBOARD')) ? 'on' : (in_array($st['tipe_tahap'], array('INTERVIEW')) ? 'warn' : 'info') ?>">
 												<?= html_escape($st['tipe_tahap']) ?>
 											</span>
 										</th>
 									<?php endforeach; ?>
-									<th style="text-align:right; width:70px">Total</th>
+									<th class="matrix-col-total">Total</th>
 								</tr>
 							</thead>
 							<tbody>
 								<?php foreach ($pos_stage_funnel['positions'] as $p_id => $pos): ?>
 									<tr>
-										<td style="padding:9px 10px">
+										<td class="matrix-col-pos" style="padding:10px 12px">
 											<div style="font-weight:700; color:var(--text)">
 												<?= html_escape($pos['nama_posisi']) ?>
 											</div>
@@ -465,21 +518,15 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 												<?php if (!empty($pos['departemen'])): ?>
 													<span class="muted" style="font-size:11px"><?= html_escape($pos['departemen']) ?></span>
 												<?php endif; ?>
-												<?php if (!empty($pos['id_req'])): ?>
-													<span class="faint">&bull;</span>
-													<a href="<?= site_url('pipeline/index/' . (int) $pos['id_req']) ?>" style="font-size:10.5px; text-decoration:none; color:var(--accent); font-weight:600">
-														Buka Pipeline &rarr;
-													</a>
-												<?php endif; ?>
 											</div>
 										</td>
 										<?php foreach ($pos_stage_funnel['stages'] as $st_id => $st):
 											$cell = $pos_stage_funnel['matrix'][$p_id][$st_id] ?? NULL;
 											$cnt  = $cell ? (int) $cell['total'] : 0;
 										?>
-											<td style="text-align:center; padding:8px 4px">
+											<td class="matrix-col-stage">
 												<?php if ($cnt > 0): ?>
-													<span class="tag info" style="font-size:11px; font-weight:700; padding:2px 7px; min-width:26px; display:inline-block">
+													<span class="tag info matrix-val-badge">
 														<?= $cnt ?>
 													</span>
 												<?php else: ?>
@@ -487,7 +534,7 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 												<?php endif; ?>
 											</td>
 										<?php endforeach; ?>
-										<td style="text-align:right; font-weight:700" class="mono">
+										<td class="matrix-col-total mono" style="font-weight:700">
 											<?= (int) $pos['total'] ?>
 										</td>
 									</tr>
@@ -495,15 +542,15 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 							</tbody>
 							<tfoot>
 								<tr style="background:var(--surface-2); font-weight:700; border-top:2px solid var(--border)">
-									<td style="padding:9px 10px; color:var(--text)">
+									<td class="matrix-col-pos" style="padding:10px 12px; color:var(--text); font-weight:700">
 										TOTAL SELURUHNYA
 									</td>
 									<?php foreach ($pos_stage_funnel['stages'] as $st_id => $st): ?>
-										<td style="text-align:center; color:var(--accent)" class="mono">
+										<td class="matrix-col-stage mono" style="color:var(--accent); font-weight:700">
 											<?= (int) $st['total'] ?>
 										</td>
 									<?php endforeach; ?>
-									<td style="text-align:right; color:var(--accent)" class="mono">
+									<td class="matrix-col-total mono" style="color:var(--accent); font-weight:700">
 										<?= (int) ($pos_stage_funnel['total_all'] ?? 0) ?>
 									</td>
 								</tr>
@@ -513,8 +560,101 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 				<?php endif; ?>
 			</div>
 
+			<!-- Modal Dialog Fullscreen untuk Matriks Funnel -->
+			<dialog id="matrixModal" class="dialog-fullscreen">
+				<div class="modal-header-matrix">
+					<div>
+						<div style="display:flex; align-items:center; gap:8px">
+							<h2 style="font-size:16px; font-weight:700; margin:0; color:var(--text)">Matriks Funnel Konversi: Posisi &times; Tahapan (Layar Penuh)</h2>
+							<span class="tag info" style="font-size:10px">Tampilan Penuh</span>
+						</div>
+						<div class="muted" style="font-size:12px; margin-top:3px">
+							Total Terdata: <strong style="color:var(--accent)"><?= (int) ($pos_stage_funnel['total_all'] ?? 0) ?> kandidat</strong>. Tekan <strong>ESC</strong> atau tombol tutup untuk kembali.
+						</div>
+					</div>
+					<button type="button" class="btn btn-sm btn-ghost" onclick="closeMatrixModal()" style="display:inline-flex; align-items:center; gap:6px; padding:6px 14px; font-weight:600; border:1px solid var(--border); border-radius:7px">
+						&times; Tutup
+					</button>
+				</div>
+				<div class="modal-body-matrix">
+					<?php if (empty($pos_stage_funnel['positions']) || empty($pos_stage_funnel['stages'])): ?>
+						<div style="padding:48px 16px; text-align:center; background:var(--surface-2); border-radius:8px">
+							<div style="font-size:14px; font-weight:600; color:var(--text); margin-bottom:4px">Tidak Ada Pergerakan Kandidat</div>
+							<div class="muted" style="font-size:12.5px">Tidak ada data posisi atau tahapan seleksi pada filter yang dipilih.</div>
+						</div>
+					<?php else: ?>
+						<div class="table-responsive-fit" style="overflow-x:auto; width:100%">
+							<table class="dash-table matrix-table" style="width:100%">
+								<thead>
+									<tr>
+										<th class="matrix-col-pos" style="padding:12px 14px; min-width:220px">
+											Posisi Lowongan
+										</th>
+										<?php foreach ($pos_stage_funnel['stages'] as $st_id => $st): ?>
+											<th class="matrix-col-stage" style="min-width:110px">
+												<div class="matrix-stage-name" style="font-size:12px"><?= html_escape($st['nama_tahap']) ?></div>
+												<span class="tag matrix-stage-badge <?= in_array($st['tipe_tahap'], array('OFFER', 'ONBOARD')) ? 'on' : (in_array($st['tipe_tahap'], array('INTERVIEW')) ? 'warn' : 'info') ?>">
+													<?= html_escape($st['tipe_tahap']) ?>
+												</span>
+											</th>
+										<?php endforeach; ?>
+										<th class="matrix-col-total" style="min-width:80px">Total</th>
+									</tr>
+								</thead>
+								<tbody>
+									<?php foreach ($pos_stage_funnel['positions'] as $p_id => $pos): ?>
+										<tr>
+											<td class="matrix-col-pos" style="padding:12px 14px">
+												<div style="font-weight:700; color:var(--text); font-size:13.5px">
+													<?= html_escape($pos['nama_posisi']) ?>
+												</div>
+												<?php if (!empty($pos['departemen'])): ?>
+													<div class="muted" style="font-size:11.5px; margin-top:2px"><?= html_escape($pos['departemen']) ?></div>
+												<?php endif; ?>
+											</td>
+											<?php foreach ($pos_stage_funnel['stages'] as $st_id => $st):
+												$cell = $pos_stage_funnel['matrix'][$p_id][$st_id] ?? NULL;
+												$cnt  = $cell ? (int) $cell['total'] : 0;
+											?>
+												<td class="matrix-col-stage">
+													<?php if ($cnt > 0): ?>
+														<span class="tag info matrix-val-badge" style="font-size:12.5px; padding:4px 10px">
+															<?= $cnt ?>
+														</span>
+													<?php else: ?>
+														<span class="faint" style="font-size:12px">-</span>
+													<?php endif; ?>
+												</td>
+											<?php endforeach; ?>
+											<td class="matrix-col-total mono" style="font-weight:700; font-size:13.5px">
+												<?= (int) $pos['total'] ?>
+											</td>
+										</tr>
+									<?php endforeach; ?>
+								</tbody>
+								<tfoot>
+									<tr style="background:var(--surface-2); font-weight:700; border-top:2px solid var(--border)">
+										<td class="matrix-col-pos" style="padding:12px 14px; color:var(--text); font-weight:700">
+											TOTAL SELURUHNYA
+										</td>
+										<?php foreach ($pos_stage_funnel['stages'] as $st_id => $st): ?>
+											<td class="matrix-col-stage mono" style="color:var(--accent); font-weight:700; font-size:13.5px">
+												<?= (int) $st['total'] ?>
+											</td>
+										<?php endforeach; ?>
+										<td class="matrix-col-total mono" style="color:var(--accent); font-weight:700; font-size:13.5px">
+											<?= (int) ($pos_stage_funnel['total_all'] ?? 0) ?>
+										</td>
+									</tr>
+								</tfoot>
+							</table>
+						</div>
+					<?php endif; ?>
+				</div>
+			</dialog>
+
 			<!-- Durasi Proses & Kepatuhan UU PDP -->
-			<div style="display:grid; grid-template-columns:1.2fr 1fr; gap:18px; margin-bottom:22px; align-items:stretch">
+			<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:18px; margin-bottom:22px; align-items:stretch; margin-top:22px">
 				<div class="dash-card" style="padding:18px 20px">
 					<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px">
 						<h2 style="font-size:15px; font-weight:700; margin:0; color:var(--text)">Durasi &amp; Kecepatan Proses</h2>
@@ -577,7 +717,7 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 								<th>Posisi Lowongan</th>
 								<th>Tahap Berjalan</th>
 								<th style="text-align:center">Lama di Tahap</th>
-																<th style="text-align:right">Aksi</th>
+								<th style="text-align:right">Aksi</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -587,7 +727,7 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 								<td><strong><?= html_escape($a['nama_lengkap']) ?></strong></td>
 								<td><?= html_escape($a['nama_posisi']) ?></td>
 								<td><span class="tag info" style="font-size:10.5px"><?= html_escape($a['tipe_tahap']) ?></span></td>
-																<td style="text-align:center; color:var(--crit); font-weight:700" class="mono"><?= (int) $a['hari_di_tahap'] ?> hari</td>
+								<td style="text-align:center; color:var(--crit); font-weight:700" class="mono"><?= (int) $a['hari_di_tahap'] ?> hari</td>
 								<td style="text-align:right">
 									<a href="<?= site_url('pipeline/index/' . (int) $a['id_req']) ?>" class="btn btn-sm btn-ghost" style="padding:3px 8px; font-size:11.5px">
 										Buka Pipeline &rarr;
@@ -634,4 +774,26 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 			<?php endif; ?>
 		</div>
 	</div>
+
+	<script>
+	function openMatrixModal() {
+		var d = document.getElementById('matrixModal');
+		if (d && typeof d.showModal === 'function') {
+			d.showModal();
+		}
+	}
+	function closeMatrixModal() {
+		var d = document.getElementById('matrixModal');
+		if (d && typeof d.close === 'function') {
+			d.close();
+		}
+	}
+	// Tutup modal jika klik di luar area modal (backdrop)
+	document.addEventListener('click', function(e) {
+		var d = document.getElementById('matrixModal');
+		if (d && d.open && e.target === d) {
+			d.close();
+		}
+	});
+	</script>
 <?php endif; ?>

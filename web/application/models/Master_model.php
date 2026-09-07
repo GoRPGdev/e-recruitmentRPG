@@ -85,14 +85,16 @@ class Master_model extends CI_Model
 	{
 		$id = 0;
 		$id_st = ! empty($in['id_stage']) ? (int) $in['id_stage'] : (! empty($in['id']) ? (int) $in['id'] : NULL);
-		$this->_sp('{CALL dbo.sp_SaveStage(?,?,?,?,?,?,?)}', array(
+		$is_aktif = isset($in['is_aktif']) ? (int) $in['is_aktif'] : 1;
+		$this->_sp('{CALL dbo.sp_SaveStage(?,?,?,?,?,?,?,?)}', array(
 			$id_st,
 			(string) $in['kode_stage'],
 			(string) $in['nama_tahap'],
 			(string) $in['tipe_tahap'],
 			! empty($in['is_terminal']) ? 1 : 0,
-			$oleh_user ? (int) $oleh_user : NULL,
+			$is_aktif,
 			array(&$id, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
+			$oleh_user ? (int) $oleh_user : NULL,
 		));
 		return (int) $id;
 	}
@@ -119,10 +121,12 @@ class Master_model extends CI_Model
 	{
 		$id = 0;
 		$id_dept = ! empty($in['id_departemen']) ? (int) $in['id_departemen'] : (! empty($in['id']) ? (int) $in['id'] : NULL);
-		$this->_sp('{CALL dbo.sp_SaveDepartemen(?,?,?,?,?)}', array(
+		$is_aktif = isset($in['is_aktif']) ? (int) $in['is_aktif'] : 1;
+		$this->_sp('{CALL dbo.sp_SaveDepartemen(?,?,?,?,?,?)}', array(
 			$id_dept,
 			(string) $in['kode'],
 			(string) $in['nama'],
+			$is_aktif,
 			$oleh_user ? (int) $oleh_user : NULL,
 			array(&$id, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
 		));
@@ -232,15 +236,17 @@ class Master_model extends CI_Model
 	{
 		$id = 0;
 		$id_rem = ! empty($in['id_remark']) ? (int) $in['id_remark'] : (! empty($in['id']) ? (int) $in['id'] : NULL);
-		$this->_sp('{CALL dbo.sp_SaveRemark(?,?,?,?,?,?,?,?)}', array(
+		$is_aktif = isset($in['is_aktif']) ? (int) $in['is_aktif'] : 1;
+		$this->_sp('{CALL dbo.sp_SaveRemark(?,?,?,?,?,?,?,?,?)}', array(
 			$id_rem,
 			(int) $in['id_stage'],
 			(string) $in['kode_remark'],
 			(string) $in['label'],
 			(string) $in['efek_status'],
 			! empty($in['urutan']) ? (int) $in['urutan'] : 1,
-			$oleh_user ? (int) $oleh_user : NULL,
+			$is_aktif,
 			array(&$id, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
+			$oleh_user ? (int) $oleh_user : NULL,
 		));
 		return (int) $id;
 	}

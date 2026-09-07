@@ -224,7 +224,6 @@ th, td {
   vertical-align: middle;
   word-break: break-word;
   overflow-wrap: break-word;
-  hyphens: auto;
 }
 th {
   font-family: "Archivo", sans-serif;
@@ -234,15 +233,19 @@ th {
   font-size: 11px;
   letter-spacing: .05em;
   background: var(--surface-2);
-  white-space: nowrap;
+  vertical-align: middle;
+}
+.nowrap, th.nowrap, td.nowrap {
+  white-space: nowrap !important;
 }
 tr:hover td { background-color: color-mix(in srgb, var(--surface-2) 40%, transparent); }
 
-/* Override legacy overflow containers */
+/* Responsive tables container */
 div[style*="overflow-x:auto"],
 div[style*="overflow-x: auto"],
 .table-responsive-fit {
-  overflow-x: visible !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
   width: 100% !important;
   max-width: 100% !important;
 }
@@ -587,7 +590,7 @@ dialog::backdrop {
 
 <?php
   $seg1 = $this->uri->segment(1);
-  $is_public_route = in_array($seg1, array('lamar', 'auth'));
+  $is_public_route = in_array($seg1, array('lamar', 'auth', 'berkas', 'onboarding'));
   if ($this->session->userdata('logged_in') && ! $is_public_route):
     $au = (array) $this->session->userdata('auth_user');
     $initials = strtoupper(substr($au['nama'] ?? ($au['username'] ?? 'U'), 0, 2));
@@ -618,6 +621,13 @@ dialog::backdrop {
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
         <span>Daftar Pelamar</span>
       </a>
+      <?php /* ponytail: Menu Report & Summary di-hide dari sidebar nav sesuai instruksi user, routing & controller tetap tersedia */ ?>
+      <?php if (false): ?>
+      <a href="<?= site_url('reports') ?>" class="nav-item <?= $seg1 === 'reports' ? 'active' : '' ?>">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        <span>Report &amp; Summary</span>
+      </a>
+      <?php endif; ?>
     </div>
 
     <!-- Nav Group: Intake & Pelamar -->

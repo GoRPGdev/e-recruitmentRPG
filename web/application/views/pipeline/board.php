@@ -948,18 +948,38 @@ function openAdvanceModal(idAppStage, idStage, namaKandidat, currentRemarkId, cu
 	document.getElementById('adv-catatan').value = currentCatatan || '';
 
 	var sel = document.getElementById('adv-id-remark');
-	sel.innerHTML = '<option value="">- Pilih Keputusan / Remark -</option>';
+	sel.innerHTML = '<option value="">-- Pilih Keputusan --</option>';
 	var rmkList = stageRemarksMap[idStage] || [];
+
+	var grpLanjut = document.createElement('optgroup');
+	grpLanjut.label = '✔ Lolos / Lanjut Tahap';
+	var grpReject = document.createElement('optgroup');
+	grpReject.label = '✖ Gugur / Ditolak (Rejected)';
+	var grpLain = document.createElement('optgroup');
+	grpLain.label = '⏳ Status Khusus (Hold / Unreachable)';
+
 	rmkList.forEach(function(r) {
 		var opt = document.createElement('option');
 		opt.value = r.id_remark;
-		opt.textContent = r.label + ' (' + r.efek_status + ')';
 		opt.setAttribute('data-efek', r.efek_status);
 		if (currentRemarkId && parseInt(currentRemarkId) === parseInt(r.id_remark)) {
 			opt.selected = true;
 		}
-		sel.appendChild(opt);
+		if (r.efek_status === 'LANJUT' || r.efek_status === 'HIRED') {
+			opt.textContent = '✔ Lanjut: ' + r.label;
+			grpLanjut.appendChild(opt);
+		} else if (r.efek_status === 'TOLAK' || r.efek_status === 'WITHDRAWN' || r.efek_status === 'OFFER_DECLINED' || r.efek_status === 'NO_SHOW' || r.efek_status === 'TALENT_POOL') {
+			opt.textContent = '✖ Tolak: ' + r.label;
+			grpReject.appendChild(opt);
+		} else {
+			opt.textContent = '● ' + r.label + ' (' + r.efek_status + ')';
+			grpLain.appendChild(opt);
+		}
 	});
+
+	if (grpLanjut.children.length > 0) sel.appendChild(grpLanjut);
+	if (grpReject.children.length > 0) sel.appendChild(grpReject);
+	if (grpLain.children.length > 0) sel.appendChild(grpLain);
 
 	dlg.showModal();
 }
