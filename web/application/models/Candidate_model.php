@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
@@ -215,9 +215,15 @@ class Candidate_model extends CI_Model
 			$w[] = 'p.id_departemen = ?';
 			$b[] = (int) $f['dept'];
 		}
-		if ( ! empty($f['intake'])) {
-			$w[] = 'a.intake_method = ?';
-			$b[] = (string) $f['intake'];
+		if ( ! empty($f['status_mpr'])) {
+			if ($f['status_mpr'] === 'BUKA') {
+				$w[] = "r.status_req IN ('Sourcing', 'Approved', 'Sourcing_Ulang')";
+			} elseif ($f['status_mpr'] === 'TUTUP') {
+				$w[] = "r.status_req IN ('Terpenuhi', 'Terpenuhi_Sebagian', 'Ditolak_HR', 'Ditolak_BOD', 'Dibatalkan', 'Kadaluarsa')";
+			} else {
+				$w[] = 'r.status_req = ?';
+				$b[] = (string) $f['status_mpr'];
+			}
 		}
 		if ( ! empty($f['dari'])) {
 			$w[] = 'a.tanggal_lamar >= ?';
