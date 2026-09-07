@@ -135,6 +135,15 @@ BEGIN
                     WHEN @hired > 0 AND status_req IN ('Sourcing','Sourcing_Ulang') THEN 'Terpenuhi_Sebagian'
                     ELSE status_req END
             WHERE id_req = @id_req;
+
+            /* -- auto-close posting publik jika kuota requisition terpenuhi -- */
+            IF @hired >= @target
+            BEGIN
+                UPDATE dbo.JOB_POSTINGS
+                SET form_aktif = 0,
+                    form_ditutup = ISNULL(form_ditutup, GETDATE())
+                WHERE id_req = @id_req AND form_aktif = 1;
+            END
         END
 
         /* -- history -- */

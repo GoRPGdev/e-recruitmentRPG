@@ -109,10 +109,8 @@ BEGIN
                   AND status_req NOT IN ('Draft','Terpenuhi','Dibatalkan','Kadaluarsa'))
                 RAISERROR('Requisition tidak menerima lamaran saat ini.', 16, 1);
 
-            /* -- 2. channel --------------------------------------------- */
-            DECLARE @id_channel INT =
-                (SELECT TOP 1 id_channel FROM dbo.M_CHANNEL
-                 WHERE nama_channel = @nama_channel AND is_aktif = 1);
+            /* -- 2. channel (dilepas - kolom diisi NULL) ---------------- */
+            DECLARE @id_channel INT = NULL;
 
             /* -- 3. dedupe kandidat ----------------------------------- */
             DECLARE @wa VARCHAR(20) = dbo.fn_NormalisasiWA(@no_wa_raw);
@@ -178,13 +176,13 @@ BEGIN
 
             /* -- 5. snapshot flow ------------------------------------- */
             DECLARE @id_flow INT, @flow_versi INT;
-            SELECT @id_flow = COALESCE(r.id_flow, p.default_flow)
+            SELECT @id_flow = COALESCE(r.id_flow, p.default_flow, (SELECT TOP 1 id_flow FROM dbo.M_FLOW WHERE is_aktif = 1 ORDER BY id_flow))
             FROM dbo.REQUISITIONS r
             LEFT JOIN dbo.M_POSISI p ON p.id_posisi = r.id_posisi
             WHERE r.id_req = @id_req;
 
             IF @id_flow IS NULL
-                RAISERROR('Requisition/posisi belum punya flow. Tetapkan flow dulu.', 16, 1);
+                RAISERROR('Sistem belum memiliki alur seleksi aktif. Tetapkan alur seleksi terlebih dahulu.', 16, 1);
 
             SELECT @flow_versi = versi FROM dbo.M_FLOW WHERE id_flow = @id_flow;
 

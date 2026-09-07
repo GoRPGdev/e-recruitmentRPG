@@ -12,12 +12,12 @@ class Import_model extends CI_Model
 {
 	public static $HEADERS_WAJIB = array('nama', 'no_wa');
 
-	public function create_batch($id_req, $id_channel, $nama_file, $id_user)
+	public function create_batch($id_req, $id_channel = NULL, $nama_file = '', $id_user = 0)
 	{
 		$this->db->query(
 			'INSERT INTO dbo.IMPORT_BATCHES (id_req, id_channel, nama_file, status, diimpor_oleh)
-			 VALUES (?, ?, ?, \'Preview\', ?)',
-			array((int) $id_req, (int) $id_channel, (string) $nama_file, (int) $id_user)
+			 VALUES (?, NULL, ?, \'Preview\', ?)',
+			array((int) $id_req, (string) $nama_file, (int) $id_user)
 		);
 		return (int) $this->db->query('SELECT CAST(SCOPE_IDENTITY() AS INT) AS id')->row()->id;
 	}
@@ -58,11 +58,10 @@ class Import_model extends CI_Model
 	public function get_batch($id_batch)
 	{
 		$q = $this->db->query(
-			'SELECT b.*, p.nama_posisi, ch.nama_channel, r.no_mpr
+			'SELECT b.*, p.nama_posisi, NULL AS nama_channel, r.no_mpr
 			 FROM dbo.IMPORT_BATCHES b
 			 LEFT JOIN dbo.REQUISITIONS r ON r.id_req = b.id_req
 			 LEFT JOIN dbo.M_POSISI p     ON p.id_posisi = r.id_posisi
-			 LEFT JOIN dbo.M_CHANNEL ch   ON ch.id_channel = b.id_channel
 			 WHERE b.id_batch = ?', array((int) $id_batch));
 		$row = $q->row_array();
 		$q->free_result();

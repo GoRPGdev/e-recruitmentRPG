@@ -78,9 +78,9 @@ class Lamar extends MY_Controller
 		$health = $this->input->post('consent_kesehatan') ? 1 : 0;
 		$in = array(
 			'url_slug'            => $slug,
-			'nama_channel'        => 'Portal Sendiri',
+			'nama_channel'        => NULL,
 			'nama_lengkap'        => $this->input->post('nama_lengkap', TRUE),
-			'email'              => $this->input->post('email', TRUE),
+			'email'               => $this->input->post('email', TRUE),
 			'no_wa_raw'           => $this->input->post('no_wa', TRUE),
 			'tempat_lahir'        => $this->input->post('tempat_lahir', TRUE),
 			'tanggal_lahir'       => $this->input->post('tanggal_lahir', TRUE) ?: NULL,
@@ -117,8 +117,6 @@ class Lamar extends MY_Controller
 		try {
 			$final = $this->_finalize_cv($cv, $res['id_lamaran']);
 			$id_dok = $this->app_m->id_dokumen_by_nama('CV') ?: $this->app_m->id_dokumen_by_nama('Ijazah');
-			// M_DOKUMEN belum tentu punya baris "CV" -- kalau NULL, lewati pencatatan,
-			// file tetap tersimpan; verifikasi manual bisa menautkan nanti.
 			if ($id_dok) {
 				$this->app_m->save_cv_document($res['id_lamaran'], $id_dok, array(
 					'path_file'  => $final,
@@ -130,7 +128,6 @@ class Lamar extends MY_Controller
 				));
 			}
 		} catch (RuntimeException $e) {
-			// lamaran sudah dibuat; CV gagal dipindah -> log, jangan gagalkan submit
 			log_message('error', 'CV finalize gagal untuk lamaran ' . $res['id_lamaran'] . ': ' . $e->getMessage());
 		}
 

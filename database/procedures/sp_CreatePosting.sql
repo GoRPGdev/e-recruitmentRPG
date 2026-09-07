@@ -4,6 +4,7 @@
 
    url_slug dibiarkan NULL -- di-generate saat HR mengaktifkan link form
    (Postings::ensure_slug). form_aktif default 0 (belum disebar).
+   id_channel kini opsional / default NULL menyusul penghapusan M_CHANNEL.
 
    Deploy:  php tools/migrate.php proc
    ========================================================================= */
@@ -11,13 +12,13 @@ IF OBJECT_ID('dbo.sp_CreatePosting') IS NOT NULL DROP PROCEDURE dbo.sp_CreatePos
 GO
 
 CREATE PROCEDURE dbo.sp_CreatePosting
-    @id_req       INT,
-    @id_channel   INT,
+    @id_req        INT,
+    @id_channel    INT          = NULL,
     @judul_posting NVARCHAR(200),
-    @job_desc     VARCHAR(MAX) = NULL,
-    @kualifikasi  VARCHAR(MAX) = NULL,
-    @batch_ke     INT          = 1,
-    @id_posting   INT OUTPUT
+    @job_desc      VARCHAR(MAX) = NULL,
+    @kualifikasi   VARCHAR(MAX) = NULL,
+    @batch_ke      INT          = 1,
+    @id_posting    INT OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -31,13 +32,11 @@ BEGIN
             RAISERROR('Requisition tidak ditemukan.', 16, 1);
         IF @status NOT IN ('Approved','Sourcing','Sourcing_Ulang','Terpenuhi_Sebagian')
             RAISERROR('Requisition belum siap di-posting (status %s).', 16, 1, @status);
-        IF NOT EXISTS (SELECT 1 FROM dbo.M_CHANNEL WHERE id_channel = @id_channel AND is_aktif = 1)
-            RAISERROR('Channel tidak valid.', 16, 1);
 
         INSERT INTO dbo.JOB_POSTINGS
             (id_req, id_channel, batch_ke, judul_posting, job_desc, kualifikasi, tanggal_posting, form_aktif)
         VALUES
-            (@id_req, @id_channel, @batch_ke, @judul_posting, @job_desc, @kualifikasi, CAST(GETDATE() AS DATE), 0);
+            (@id_req, NULL, @batch_ke, @judul_posting, @job_desc, @kualifikasi, CAST(GETDATE() AS DATE), 0);
 
         SET @id_posting = SCOPE_IDENTITY();
 

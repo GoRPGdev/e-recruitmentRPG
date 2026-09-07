@@ -60,7 +60,7 @@ BEGIN
         WHERE id_approval = @id_approval;
 
         IF @keputusan = 'Rejected'
-            UPDATE dbo.REQUISITIONS SET status_req = 'Draft' WHERE id_req = @id_req;
+            UPDATE dbo.REQUISITIONS SET status_req = 'Ditolak_BOD' WHERE id_req = @id_req;
         ELSE
             UPDATE dbo.REQUISITIONS
             SET status_req = 'Sourcing', jumlah_disetujui = @setuju

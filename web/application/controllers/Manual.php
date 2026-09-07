@@ -27,7 +27,6 @@ class Manual extends Secured_Controller
 			'title'    => 'Entry Manual',
 			'_content' => 'manual/form',
 			'reqs'     => $this->app_m->list_open_requisitions(),
-			'channels' => $this->app_m->list_channels(),
 		));
 	}
 
@@ -52,13 +51,11 @@ class Manual extends Secured_Controller
 			}
 		}
 
-		$chan = $this->input->post('nama_channel', TRUE) ?: 'Walk-in';
-
 		try {
 			$res = $this->app_m->submit(array(
 				'id_req_manual'  => (int) $this->input->post('id_req'),
 				'intake_method'  => 'MANUAL',
-				'nama_channel'   => $chan,
+				'nama_channel'   => NULL,
 				'nama_lengkap'   => $this->input->post('nama_lengkap', TRUE),
 				'no_wa_raw'      => $this->input->post('no_wa', TRUE),
 				'kota_domisili'  => $this->input->post('kota_domisili', TRUE),
@@ -106,7 +103,6 @@ class Manual extends Secured_Controller
 			'title'    => 'Entry Manual',
 			'_content' => 'manual/form',
 			'reqs'     => $this->app_m->list_open_requisitions(),
-			'channels' => $this->app_m->list_channels(),
 		));
 	}
 }

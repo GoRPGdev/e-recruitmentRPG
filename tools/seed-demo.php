@@ -144,7 +144,7 @@ $posCrew = scalar($conn, "SELECT id_posisi FROM dbo.M_POSISI WHERE nama_posisi=N
 $flowMkt = scalar($conn, "SELECT default_flow FROM dbo.M_POSISI WHERE id_posisi=?", array($posMkt));
 $flowCrew= scalar($conn, "SELECT default_flow FROM dbo.M_POSISI WHERE id_posisi=?", array($posCrew));
 $outlet  = scalar($conn, "SELECT TOP 1 id_outlet FROM dbo.M_OUTLET ORDER BY id_outlet");
-$chPortal= scalar($conn, "SELECT id_channel FROM dbo.M_CHANNEL WHERE nama_channel=N'Portal Sendiri'");
+$chPortal= null;
 
 /* ------------------------------------------------------------------- MPR -- */
 $reqA = insert_row($conn, 'REQUISITIONS', array(

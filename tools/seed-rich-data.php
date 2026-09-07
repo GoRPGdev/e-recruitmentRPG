@@ -72,9 +72,9 @@ if (!$posVM) {
 
 $outletSoyu = scalar($conn, "SELECT id_outlet FROM dbo.M_OUTLET WHERE kode_outlet='I-TCM'");
 $outletKemang = scalar($conn, "SELECT id_outlet FROM dbo.M_OUTLET WHERE kode_outlet='K-LC3'");
-$chPortal = scalar($conn, "SELECT id_channel FROM dbo.M_CHANNEL WHERE nama_channel=N'Portal Sendiri'");
-$chJobstreet = scalar($conn, "SELECT id_channel FROM dbo.M_CHANNEL WHERE nama_channel=N'JobStreet'");
-$chGlints = scalar($conn, "SELECT id_channel FROM dbo.M_CHANNEL WHERE nama_channel=N'Glints'");
+$chPortal = null;
+$chJobstreet = null;
+$chGlints = null;
 
 $uSuperAdmin = scalar($conn, "SELECT id_user FROM dbo.M_USERS WHERE username='demo_super_admin'");
 $uUserDept   = scalar($conn, "SELECT id_user FROM dbo.M_USERS WHERE username='demo_user_dept'");

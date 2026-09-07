@@ -25,8 +25,9 @@ class Postings extends Secured_Controller
 		$rows  = $this->pm->list_postings($offset, $per);
 
 		$this->load->view('layouts/main', array(
-			'title'    => 'Form Publik',
+			'title'    => 'Form Publik & Lowongan',
 			'_content' => 'postings/index',
+			'wide'     => TRUE,
 			'rows'     => $rows,
 			'page'     => $page,
 			'pages'    => max(1, (int) ceil($total / $per)),
@@ -66,6 +67,30 @@ class Postings extends Secured_Controller
 			'slug'       => $slug,
 			'public_url' => site_url('lamar/' . $slug),
 		));
+	}
+
+	public function toggle($id_posting = NULL)
+	{
+		if ( ! $id_posting || $this->input->method() !== 'post') {
+			show_404();
+		}
+
+		try {
+			$form_aktif = $this->input->post('form_aktif');
+			$aktif_target = ($form_aktif !== NULL && $form_aktif !== '') ? (int) $form_aktif : NULL;
+
+			$status_akhir = $this->pm->toggle_form($id_posting, $aktif_target, (int) $this->auth_user['id_user']);
+			$pesan = $status_akhir ? 'Form publik dibuka (menerima lamaran).' : 'Form publik ditutup.';
+			$this->session->set_flashdata('ok', $pesan);
+		} catch (RuntimeException $e) {
+			$this->session->set_flashdata('error', $e->getMessage());
+		}
+
+		$redirect = $this->input->post('redirect_to', TRUE);
+		if ($redirect && strpos($redirect, '://') === FALSE) {
+			redirect($redirect);
+		}
+		redirect('postings');
 	}
 
 	public function stats($id_posting = NULL)

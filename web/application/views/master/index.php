@@ -1,155 +1,703 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
-<main class="card">
-	<h1>Master Data</h1>
-	<p class="muted" style="margin-top:0">
+
+<div style="margin-bottom:24px">
+	<!-- Page Header -->
+	<div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:18px">
+		<div>
+			<div style="display:flex; align-items:center; gap:8px; margin-bottom:4px">
+				<span class="eyebrow" style="margin:0; font-size:11px">Konfigurasi Sistem</span>
+				<span class="muted">&bull;</span>
+				<span class="muted" style="font-size:12px">Master Data RPG</span>
+			</div>
+			<h1 style="margin:0; font-size:24px; font-weight:700; color:var(--text); letter-spacing:-.02em">
+				Master Data &mdash; <?= html_escape($types[$t]['label']) ?>
+			</h1>
+			<p class="muted" style="margin:4px 0 0; font-size:13.5px">
+				<?= html_escape($types[$t]['desc'] ?? 'Kelola entitas data master dan referensi sistem rekrutmen.') ?>
+			</p>
+		</div>
+
+		<div>
+			<button type="button" class="btn btn-primary" onclick="openAddModal()" style="display:inline-flex; align-items:center; gap:6px; font-weight:600; padding:8px 16px; border-radius:8px">
+				<svg style="width:15px; height:15px" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+				<span>+ Tambah <?= html_escape($types[$t]['label']) ?></span>
+			</button>
+		</div>
+	</div>
+
+	<!-- Sub-Menu Navigation Tabs / Cards -->
+	<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin-bottom:20px">
 		<?php
-		$keys = array_keys($types);
-		$last = end($keys);
-		foreach ($types as $k => $v): ?>
-			<a href="<?= site_url('master/index/' . $k) ?>" <?= $k === $t ? 'style="font-weight:700"' : '' ?>><?= html_escape($v['label']) ?></a>
-			<?= $k !== $last ? '&middot;' : '' ?>
+		$menu_icons = array(
+			'posisi'     => '<path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>',
+			'departemen' => '<path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>',
+			'outlet'     => '<path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>',
+			'dokumen'    => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>',
+			'remark'     => '<path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>',
+				'efek_status' => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+		);
+		foreach ($types as $k => $v):
+			$is_curr = ($k === $t);
+		?>
+			<a href="<?= site_url('master/index/' . $k) ?>" style="text-decoration:none; display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-radius:10px; border:1px solid <?= $is_curr ? 'var(--accent)' : 'var(--border)' ?>; background:<?= $is_curr ? 'var(--accent-soft)' : 'var(--surface)' ?>; transition:all .15s ease; box-shadow:<?= $is_curr ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' ?>">
+				<div style="display:flex; align-items:center; gap:10px; min-width:0">
+					<div style="width:32px; height:32px; border-radius:8px; display:grid; place-items:center; background:<?= $is_curr ? 'var(--accent)' : 'var(--surface-2)' ?>; color:<?= $is_curr ? 'var(--accent-contrast)' : 'var(--text-muted)' ?>; flex:none">
+						<svg style="width:16px; height:16px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+							<?= $menu_icons[$k] ?? '' ?>
+						</svg>
+					</div>
+					<div style="min-width:0">
+						<div style="font-size:13.5px; font-weight:<?= $is_curr ? '700' : '600' ?>; color:<?= $is_curr ? 'var(--accent-ink)' : 'var(--text)' ?>; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">
+							<?= html_escape($v['label']) ?>
+						</div>
+						<div class="muted" style="font-size:11px; margin-top:1px">
+							CRUD Master
+						</div>
+					</div>
+				</div>
+				<span class="tag <?= $is_curr ? 'on' : '' ?>" style="font-size:11px; margin-left:6px; flex:none; padding:2px 7px">
+					<?= $counts[$k] ?? 0 ?>
+				</span>
+			</a>
 		<?php endforeach; ?>
-	</p>
+	</div>
+</div>
 
-	<?php
-	// definisi kolom & field per tipe
-	$col = array(
-		'posisi'     => array('Nama', 'Departemen', 'Level', 'Flow default'),
-		'departemen' => array('Kode', 'Nama'),
-		'outlet'     => array('Kode', 'Nama', 'Brand', 'Region'),
-		'channel'    => array('Nama', 'Eksternal'),
-		'dokumen'    => array('Nama', 'Kategori', 'Sensitif', 'Wajib default'),
-		'remark'     => array('Tahap', 'Kode', 'Label', 'Efek Status', 'Urutan'),
-	);
-	$levels = array('MP','Staff','Staff_Krusial','Spv','Manager','Senior_Manager');
-	$kat    = array('IDENTITAS','PENDIDIKAN','FINANSIAL','LAMARAN');
-	$sens   = array('UMUM','IDENTITAS','FINANSIAL');
-	?>
+<?php
+// Kolom tabel per tipe
+$col = array(
+	'posisi'     => array('Nama Posisi', 'Departemen', 'Level Organisasi', 'Template Jabatan (HR)'),
+	'departemen' => array('Kode Departemen', 'Nama Departemen'),
+	'outlet'     => array('Kode Outlet', 'Nama Outlet / Cabang', 'Brand', 'Wilayah / Region'),
+	'dokumen'    => array('Nama Dokumen Persyaratan', 'Kategori Berkas', 'Tingkat Sensitif PDP', 'Wajib Default'),
+	'remark'      => array('Tahap Alur', 'Kode', 'Label Keputusan', 'Efek Status Seleksi', 'Urutan'),
+		'efek_status' => array('Kode Efek', 'Nama Efek Status', 'Hasil Tahap', 'Status Global Target', 'Deskripsi Aturan', 'Urutan'),
+);
+$levels = array('MP','Staff','Staff_Krusial','Spv','Manager','Senior_Manager');
+$kat    = array('IDENTITAS','PENDIDIKAN','FINANSIAL','LAMARAN');
+$sens   = array('UMUM','IDENTITAS','FINANSIAL');
+?>
 
-	<div class="table-responsive-fit"><table>
-		<tr><?php foreach ($col[$t] as $c): ?><th><?= $c ?></th><?php endforeach; ?><th>Status</th><th>Aksi</th></tr>
-		<?php foreach ($rows as $r): ?>
-		<tr style="<?= empty($r['is_aktif']) ? 'opacity:.55' : '' ?>">
-			<?php if ($t === 'posisi'): ?>
-				<td><?= html_escape($r['nama_posisi']) ?></td><td><?= html_escape($r['departemen']) ?></td>
-				<td><?= html_escape($r['level_posisi']) ?></td><td><?= html_escape($r['kode_flow'] ?: '-') ?></td>
-			<?php elseif ($t === 'departemen'): ?>
-				<td><code><?= html_escape($r['kode']) ?></code></td><td><?= html_escape($r['nama']) ?></td>
-			<?php elseif ($t === 'outlet'): ?>
-				<td><?= html_escape($r['kode_outlet']) ?></td><td><?= html_escape($r['nama_outlet']) ?></td>
-				<td><?= html_escape($r['brand'] ?: '-') ?></td><td><?= html_escape($r['region'] ?: '-') ?></td>
-			<?php elseif ($t === 'channel'): ?>
-				<td><?= html_escape($r['nama_channel']) ?></td><td><?= $r['is_eksternal'] ? 'ya' : '-' ?></td>
-			<?php elseif ($t === 'dokumen'): ?>
-				<td><?= html_escape($r['nama_dokumen']) ?></td><td><?= html_escape($r['kategori']) ?></td>
-				<td><?= html_escape($r['tingkat_sensitif']) ?></td><td><?= $r['is_mandatory_default'] ? 'ya' : '-' ?></td>
-			<?php elseif ($t === 'remark'): ?>
-				<td><?= html_escape($r['nama_tahap'] ?? '-') ?></td>
-				<td><code><?= html_escape($r['kode_remark']) ?></code></td>
-				<td><?= html_escape($r['label']) ?></td>
-				<td><span class="tag <?= in_array($r['efek_status'], array('HIRED','LANJUT')) ? 'on' : '' ?>"><?= html_escape($r['efek_status']) ?></span></td>
-				<td><?= (int) $r['urutan'] ?></td>
-			<?php endif; ?>
-			<td><span class="tag <?= $r['is_aktif'] ? 'on' : 'off' ?>"><?= $r['is_aktif'] ? 'aktif' : 'nonaktif' ?></span></td>
-			<td style="white-space:nowrap">
-				<?php if ($t === 'departemen'): ?>
-					<a href="<?= site_url('master/index/departemen?edit_id=' . (int) $r['id_departemen']) ?>" class="btn-sm btn-ghost" style="text-decoration:none; display:inline-block">edit</a>
-				<?php elseif ($t === 'remark'): ?>
-					<a href="<?= site_url('master/index/remark?edit_id=' . (int) $r['id_remark']) ?>" class="btn-sm btn-ghost" style="text-decoration:none; display:inline-block">edit</a>
+<!-- ================= TABEL DATA UTAMA (FULL WIDTH FIT 1 LAYAR) ================= -->
+<div class="card" style="padding:0; overflow:hidden; margin-bottom:24px">
+	<div style="padding:14px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:var(--surface-2); flex-wrap:wrap; gap:10px">
+		<div style="display:flex; align-items:center; gap:10px">
+			<div style="width:8px; height:8px; border-radius:50%; background:var(--accent)"></div>
+			<div>
+				<h3 style="margin:0; font-size:15px; font-weight:700; color:var(--text)">
+					Daftar Data <?= html_escape($types[$t]['label']) ?>
+				</h3>
+				<span class="muted" style="font-size:12px">Total <?= count($rows ?? array()) ?> data terdaftar pada sistem</span>
+			</div>
+		</div>
+		<div style="display:flex; align-items:center; gap:8px">
+			<span class="tag on" style="font-size:11px">&#10003; Soft Delete Protected</span>
+			<button type="button" class="btn btn-sm btn-primary" onclick="openAddModal()" style="display:inline-flex; align-items:center; gap:5px">
+				<svg style="width:13px; height:13px" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+				<span>Tambah <?= html_escape($types[$t]['label']) ?></span>
+			</button>
+		</div>
+	</div>
+
+	<div class="table-responsive-fit" style="overflow-x:visible">
+		<table style="width:100%; border-collapse:collapse; table-layout:fixed">
+			<thead>
+				<tr>
+					<?php foreach ($col[$t] as $c): ?>
+						<th style="padding:12px 14px; font-size:12px; font-weight:600; text-align:left; background:var(--surface); border-bottom:1px solid var(--border)">
+							<?= $c ?>
+						</th>
+					<?php endforeach; ?>
+					<th style="padding:12px 14px; font-size:12px; font-weight:600; text-align:center; width:95px; background:var(--surface); border-bottom:1px solid var(--border)">
+						Status
+					</th>
+					<th style="padding:12px 14px; font-size:12px; font-weight:600; text-align:right; width:140px; background:var(--surface); border-bottom:1px solid var(--border)">
+						Aksi
+					</th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php if (empty($rows)): ?>
+					<tr>
+						<td colspan="<?= count($col[$t]) + 2 ?>" style="text-align:center; padding:40px 16px" class="muted">
+							<div style="font-size:28px; margin-bottom:8px">&#128194;</div>
+							<div style="font-size:14px; font-weight:600; color:var(--text)">Belum ada data <?= html_escape(strtolower($types[$t]['label'])) ?></div>
+							<div style="font-size:12.5px; margin-top:4px">Klik tombol "Tambah <?= html_escape($types[$t]['label']) ?>" untuk menambahkan data baru melalui form pop up.</div>
+						</td>
+					</tr>
+				<?php else: ?>
+					<?php foreach ($rows as $r): ?>
+						<?php
+						$row_id = (int) ($r['id_posisi'] ?? ($r['id_departemen'] ?? ($r['id_outlet'] ?? ($r['id_dokumen'] ?? ($r['id_remark'] ?? 0)))));
+						$json_data = htmlspecialchars(json_encode($r), ENT_QUOTES, 'UTF-8');
+						?>
+						<tr style="<?= empty($r['is_aktif']) ? 'opacity:.55; background:var(--surface-2);' : '' ?>">
+							<?php if ($t === 'posisi'): ?>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border)">
+									<div style="font-weight:600; color:var(--text); word-break:break-word"><?= html_escape($r['nama_posisi']) ?></div>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-size:13px; word-break:break-word">
+									<?= html_escape($r['departemen']) ?>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border)">
+									<span class="tag" style="font-size:11px"><?= html_escape($r['level_posisi']) ?></span>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-size:12px">
+									<?php
+									$has_jd   = !empty(trim($r['job_desc'] ?? ''));
+									$has_kual = !empty(trim($r['kualifikasi'] ?? ''));
+									$has_req  = !empty($r['pendidikan_minimal']) || !empty($r['pengalaman_minimal_tahun']);
+									?>
+									<?php if ($has_jd && $has_kual): ?>
+										<span class="tag on" style="font-size:11px" title="Job Desc & Kualifikasi lengkap terisi">&#10003; Lengkap</span>
+									<?php elseif ($has_jd || $has_kual || $has_req): ?>
+										<span class="tag" style="font-size:11px; color:var(--warn-ink); background:var(--warn-soft); border-color:var(--warn)" title="Sebagian template terisi">Parsial</span>
+									<?php else: ?>
+										<span class="muted" style="font-size:11.5px">Belum diatur</span>
+									<?php endif; ?>
+									<?php if (!empty($r['pendidikan_minimal'])): ?>
+										<span class="muted" style="display:block; font-size:11px; margin-top:2px"><?= html_escape($r['pendidikan_minimal']) ?><?= !empty($r['pengalaman_minimal_tahun']) ? ', ' . (int)$r['pengalaman_minimal_tahun'] . ' thn' : '' ?></span>
+									<?php endif; ?>
+								</td>
+
+							<?php elseif ($t === 'departemen'): ?>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border)">
+									<code><?= html_escape($r['kode']) ?></code>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-weight:600; color:var(--text); word-break:break-word">
+									<?= html_escape($r['nama']) ?>
+								</td>
+
+							<?php elseif ($t === 'outlet'): ?>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border)">
+									<code><?= html_escape($r['kode_outlet']) ?></code>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-weight:600; color:var(--text); word-break:break-word">
+									<?= html_escape($r['nama_outlet']) ?>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-size:13px">
+									<?= html_escape($r['brand'] ?: '-') ?>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-size:13px">
+									<?= html_escape($r['region'] ?: '-') ?>
+								</td>
+
+							<?php elseif ($t === 'dokumen'): ?>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-weight:600; color:var(--text); word-break:break-word">
+									<?= html_escape($r['nama_dokumen']) ?>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border)">
+									<span class="tag" style="font-size:11px"><?= html_escape($r['kategori']) ?></span>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border)">
+									<span class="tag <?= $r['tingkat_sensitif'] === 'FINANSIAL' ? 'warn' : ($r['tingkat_sensitif'] === 'IDENTITAS' ? 'info' : '') ?>" style="font-size:11px">
+										<?= html_escape($r['tingkat_sensitif']) ?>
+									</span>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-size:12.5px">
+									<?= $r['is_mandatory_default'] ? '<span style="color:var(--accent); font-weight:600">&#10003; Wajib</span>' : '<span class="muted">Opsional</span>' ?>
+								</td>
+
+							<?php elseif ($t === 'remark'): ?>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-size:13px; word-break:break-word">
+									<?= html_escape($r['nama_tahap'] ?? '-') ?>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border)">
+									<code><?= html_escape($r['kode_remark']) ?></code>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-weight:600; color:var(--text); word-break:break-word">
+									<?= html_escape($r['label']) ?>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border)">
+									<span class="tag <?= in_array($r['efek_status'], array('HIRED','LANJUT')) ? 'on' : (in_array($r['efek_status'], array('TOLAK','WITHDRAWN','OFFER_DECLINED','NO_SHOW')) ? 'off' : 'warn') ?>" style="font-size:11px">
+										<?= html_escape($r['efek_status']) ?>
+									</span>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-size:12.5px">
+									<?= (int) $r['urutan'] ?>
+								</td>
+							<?php elseif ($t === 'efek_status'): ?>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border)">
+									<code><?= html_escape($r['kode_efek']) ?></code>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-weight:600; color:var(--text); word-break:break-word">
+									<?= html_escape($r['nama_efek']) ?>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border)">
+									<span class="tag <?= $r['status_tahap'] === 'Lulus' ? 'on' : ($r['status_tahap'] === 'Tidak_Lulus' ? 'off' : 'warn') ?>" style="font-size:11px">
+										<?= html_escape($r['status_tahap']) ?>
+									</span>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border)">
+									<span class="tag <?= in_array($r['status_global_target'], array('Hired','In_Progress')) ? 'on' : (in_array($r['status_global_target'], array('Rejected','Withdrawn','Offer_Declined','No_Show')) ? 'off' : 'warn') ?>" style="font-size:11px">
+										<?= html_escape($r['status_global_target']) ?>
+									</span>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-size:12px; color:var(--text-muted); word-break:break-word">
+									<?= html_escape($r['deskripsi'] ?: '-') ?>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-size:12.5px">
+									<?= (int) $r['urutan'] ?>
+								</td>
+							<?php endif; ?>
+
+							<!-- Status Aktif / Nonaktif -->
+							<td style="padding:11px 14px; border-bottom:1px solid var(--border); text-align:center">
+								<span class="tag <?= $r['is_aktif'] ? 'on' : 'off' ?>" style="font-size:11px">
+									<?= $r['is_aktif'] ? 'Aktif' : 'Nonaktif' ?>
+								</span>
+							</td>
+
+							<!-- Kolom Aksi -->
+							<td style="padding:11px 14px; border-bottom:1px solid var(--border); text-align:right; white-space:nowrap">
+								<button type="button" class="btn-sm btn-ghost" onclick='openEditModal(<?= $json_data ?>)' style="display:inline-flex; align-items:center; gap:4px; padding:4px 8px; font-size:12px; cursor:pointer" title="Edit data ini">
+									<svg style="width:12px; height:12px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+									<span>Edit</span>
+								</button>
+								<?= form_open(site_url('master/toggle/' . $t), array('class' => 'inline', 'style' => 'display:inline; margin-left:4px')) ?>
+									<input type="hidden" name="id" value="<?= $row_id ?>">
+									<input type="hidden" name="is_aktif" value="<?= $r['is_aktif'] ? 0 : 1 ?>">
+									<button type="submit" class="btn-sm btn-ghost" style="padding:4px 8px; font-size:12px; color:<?= $r['is_aktif'] ? 'var(--warn-ink)' : 'var(--accent)' ?>" title="<?= $r['is_aktif'] ? 'Nonaktifkan item ini' : 'Aktifkan kembali item ini' ?>">
+										<?= $r['is_aktif'] ? 'Nonaktif' : 'Aktifkan' ?>
+									</button>
+								<?= form_close() ?>
+							</td>
+						</tr>
+					<?php endforeach; ?>
 				<?php endif; ?>
-				<?= form_open(site_url('master/toggle/' . $t), array('class' => 'inline')) ?>
-					<input type="hidden" name="id" value="<?= (int) $r[array_key_first($r)] ?>">
-					<input type="hidden" name="is_aktif" value="<?= $r['is_aktif'] ? 0 : 1 ?>">
-					<button class="btn-sm btn-ghost"><?= $r['is_aktif'] ? 'nonaktifkan' : 'aktifkan' ?></button>
-				<?= form_close() ?>
-			</td>
-		</tr>
-		<?php endforeach; ?>
-	</table></div>
+			</tbody>
+		</table>
+	</div>
+</div>
 
-	<h2>
-		<?php if ($t === 'departemen' && !empty($edit_row)): ?>
-			Edit Departemen #<?= (int) $edit_row['id_departemen'] ?>
-		<?php elseif ($t === 'remark' && !empty($edit_row)): ?>
-			Edit Remark #<?= (int) $edit_row['id_remark'] ?>
-		<?php else: ?>
-			Tambah <?= html_escape($types[$t]['label']) ?>
-		<?php endif; ?>
-	</h2>
-	<?php if (!empty($edit_row) && in_array($t, array('departemen', 'remark'))): ?>
-		<p class="muted" style="margin-top:0"><a href="<?= site_url('master/index/' . $t) ?>">&larr; batal edit / tambah baru</a></p>
-	<?php endif; ?>
+<!-- ================= MODAL DIALOG POPUP FORM TAMBAH / EDIT ================= -->
+<style>
+	#dlg-master {
+		border: 1px solid var(--border);
+		border-radius: 14px;
+		padding: 0;
+		max-width: 660px;
+		width: 94%;
+		max-height: 88vh;
+		background: var(--surface);
+		color: var(--text);
+		box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
+		overflow: hidden;
+	}
+	#dlg-master[open] {
+		display: flex;
+		flex-direction: column;
+	}
+	#dlg-master::backdrop {
+		background: rgba(12, 18, 14, 0.55);
+		backdrop-filter: blur(3px);
+	}
+	.modal-header-bar {
+		padding: 16px 24px;
+		border-bottom: 1px solid var(--border);
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		background: var(--surface-2);
+		flex: none;
+	}
+	.modal-form-scroll {
+		padding: 20px 24px;
+		overflow-y: auto;
+		flex: 1;
+		min-height: 0;
+	}
+	.modal-form-scroll::-webkit-scrollbar {
+		width: 6px;
+	}
+	.modal-form-scroll::-webkit-scrollbar-thumb {
+		background: var(--border);
+		border-radius: 4px;
+	}
+	.modal-footer-dock {
+		display: flex;
+		justify-content: flex-end;
+		align-items: center;
+		gap: 10px;
+		padding: 14px 24px;
+		border-top: 1px solid var(--border);
+		background: var(--surface-2);
+		flex: none;
+	}
+</style>
 
-	<?= validation_errors('<div class="flash err">', '</div>') ?>
-	<?= form_open(site_url('master/save/' . $t)) ?>
-		<?php if ($t === 'posisi'): ?>
-			<label>Nama posisi</label><input type="text" name="nama_posisi" required>
-			<label>Departemen</label>
-			<select name="id_departemen" required>
-				<?php foreach ($depts as $d): ?><option value="<?= (int) $d['id_departemen'] ?>"><?= html_escape($d['nama']) ?></option><?php endforeach; ?>
-			</select>
-			<label>Level</label>
-			<select name="level_posisi"><?php foreach ($levels as $l): ?><option><?= $l ?></option><?php endforeach; ?></select>
-			<label>Flow default</label>
-			<select name="default_flow"><option value="">-</option>
-				<?php foreach ($flows as $f): ?><option value="<?= (int) $f['id_flow'] ?>"><?= html_escape($f['kode_flow']) ?></option><?php endforeach; ?>
-			</select>
-		<?php elseif ($t === 'departemen'): ?>
-			<?php if (!empty($edit_row)): ?>
-				<input type="hidden" name="id_departemen" value="<?= (int) $edit_row['id_departemen'] ?>">
+<dialog id="dlg-master">
+	<!-- Modal Header (Fixed Top) -->
+	<div class="modal-header-bar">
+		<div>
+			<h3 id="modal-title" style="margin:0; font-size:16px; font-weight:700; color:var(--text); display:flex; align-items:center; gap:8px">
+				Tambah <?= html_escape($types[$t]['label']) ?> Baru
+			</h3>
+			<span id="modal-sub" class="muted" style="font-size:12px; margin-top:2px; display:block">
+				Lengkapi formulir di bawah ini untuk menyimpan data.
+			</span>
+		</div>
+		<button type="button" onclick="closeMasterModal()" style="background:none; border:none; color:var(--text-muted); font-size:24px; cursor:pointer; line-height:1; padding:4px 8px; border-radius:6px; transition:color .15s" title="Tutup pop up">&times;</button>
+	</div>
+
+	<!-- Modal Form (Wraps Body & Docked Footer) -->
+	<?= form_open(site_url('master/save/' . $t), array('id' => 'form-master', 'style' => 'display:flex; flex-direction:column; flex:1; min-height:0; margin:0')) ?>
+		<!-- Modal Body Form (Scrollable Area) -->
+		<div class="modal-form-scroll">
+			<?= validation_errors('<div class="flash err" style="margin-bottom:14px; font-size:12.5px; padding:8px 12px">', '</div>') ?>
+
+			<!-- Hidden Primary Key Field -->
+			<input type="hidden" name="id" id="field-id" value="">
+			<input type="hidden" name="id_posisi" id="field-id-posisi" value="">
+			<input type="hidden" name="id_departemen" id="field-id-departemen" value="">
+			<input type="hidden" name="id_outlet" id="field-id-outlet" value="">
+			<input type="hidden" name="id_dokumen" id="field-id-dokumen" value="">
+				<input type="hidden" name="id_efek_status" id="field-id-efek-status" value="">
+				<input type="hidden" name="id_efek_status" id="field-id-efek-status" value="">
+			<input type="hidden" name="id_remark" id="field-id-remark" value="">
+
+			<div style="display:flex; flex-direction:column; gap:14px">
+
+			<!-- ================= FORM POSISI ================= -->
+			<?php if ($t === 'posisi'): ?>
+				<div>
+					<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Nama Posisi / Jabatan <span style="color:var(--crit)">*</span></label>
+					<input type="text" name="nama_posisi" id="field-nama-posisi" placeholder="Mis. SPV Area, Staff Finance" required style="width:100%">
+				</div>
+
+				<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Departemen <span style="color:var(--crit)">*</span></label>
+						<select name="id_departemen" id="field-id-dept" required style="width:100%">
+							<option value="">-- Pilih Departemen --</option>
+							<?php foreach ($depts as $d): ?>
+								<option value="<?= (int) $d['id_departemen'] ?>">
+									<?= html_escape($d['nama']) ?> (<?= html_escape($d['kode']) ?>)
+								</option>
+							<?php endforeach; ?>
+						</select>
+					</div>
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Level Organisasi <span style="color:var(--crit)">*</span></label>
+						<select name="level_posisi" id="field-level-posisi" required style="width:100%">
+							<?php foreach ($levels as $l): ?>
+								<option value="<?= $l ?>"><?= $l ?></option>
+							<?php endforeach; ?>
+						</select>
+					</div>
+					<div style="grid-column: span 2">
+						<div class="muted" style="font-size:12px; padding:6px 10px; background:var(--surface-2); border:1px solid var(--border); border-radius:6px">
+							<span style="color:var(--accent); font-weight:600">&#10003; Alur Seleksi:</span> Otomatis menggunakan <strong>Alur Standar Rekrutmen RPG</strong>
+						</div>
+					</div>
+				</div>
+
+				<!-- Master Job Specification (Template Jabatan HR) -->
+				<div style="background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:14px; margin-top:2px">
+					<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding-bottom:8px; border-bottom:1px dashed var(--border)">
+						<div style="display:flex; align-items:center; gap:7px">
+							<div style="width:7px; height:7px; border-radius:50%; background:var(--accent)"></div>
+							<div style="font-size:13px; font-weight:700; color:var(--text)">Template Standar Jabatan (HR)</div>
+						</div>
+						<span class="tag" style="font-size:10.5px">Auto-fill di Form MPR & Form Publik</span>
+					</div>
+
+					<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px">
+						<div>
+							<label style="display:block; font-size:12px; font-weight:600; margin:0 0 5px">Pendidikan Minimal</label>
+							<select name="pendidikan_minimal" id="field-pendidikan-posisi" style="width:100%; font-size:13px">
+								<option value="">- Fleksibel / Tidak Ditentukan -</option>
+								<option value="SMA/SMK">SMA/SMK Sederajat</option>
+								<option value="D3">Diploma (D3)</option>
+								<option value="S1">Sarjana (S1 / D4)</option>
+								<option value="S2">Magister (S2)</option>
+							</select>
+						</div>
+						<div>
+							<label style="display:block; font-size:12px; font-weight:600; margin:0 0 5px">Pengalaman Minimal (Tahun)</label>
+							<input type="number" name="pengalaman_minimal_tahun" id="field-pengalaman-posisi" min="0" max="30" placeholder="0 = Fresh graduate" style="width:100%; font-size:13px">
+						</div>
+					</div>
+
+					<div style="margin-bottom:12px">
+						<label style="display:block; font-size:12px; font-weight:600; margin:0 0 5px">Deskripsi Pekerjaan (Job Description)</label>
+						<textarea name="job_desc" id="field-job-desc-posisi" rows="4" placeholder="Uraian tugas, fungsi utama, dan tanggung jawab kerja posisi ini..." style="width:100%; font-size:12.5px; line-height:1.45; resize:vertical"></textarea>
+					</div>
+
+					<div>
+						<label style="display:block; font-size:12px; font-weight:600; margin:0 0 5px">Kualifikasi & Persyaratan Standar</label>
+						<textarea name="kualifikasi" id="field-kualifikasi-posisi" rows="4" placeholder="Keahlian teknis, kompetensi soft skill, sertifikasi, atau kriteria khusus..." style="width:100%; font-size:12.5px; line-height:1.45; resize:vertical"></textarea>
+					</div>
+				</div>
+
+			<!-- ================= FORM DEPARTEMEN ================= -->
+			<?php elseif ($t === 'departemen'): ?>
+				<div style="display:grid; grid-template-columns:140px 1fr; gap:12px">
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Kode Dept <span style="color:var(--crit)">*</span></label>
+						<input type="text" name="kode" id="field-kode-dept" placeholder="Mis. FIN" required style="width:100%">
+					</div>
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Nama Departemen <span style="color:var(--crit)">*</span></label>
+						<input type="text" name="nama" id="field-nama-dept" placeholder="Mis. Finance & Accounting" required style="width:100%">
+					</div>
+				</div>
+
+			<!-- ================= FORM OUTLET ================= -->
+			<?php elseif ($t === 'outlet'): ?>
+				<div style="display:grid; grid-template-columns:140px 1fr; gap:12px">
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Kode Outlet <span style="color:var(--crit)">*</span></label>
+						<input type="text" name="kode" id="field-kode-outlet" placeholder="Mis. OUT-01" required style="width:100%">
+					</div>
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Nama Outlet / Cabang <span style="color:var(--crit)">*</span></label>
+						<input type="text" name="nama" id="field-nama-outlet" placeholder="Mis. RPG Central Park" required style="width:100%">
+					</div>
+				</div>
+
+				<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Brand Unit</label>
+						<input type="text" name="brand" id="field-brand" placeholder="Mis. Ratu Pertiwi" style="width:100%">
+					</div>
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Region / Wilayah</label>
+						<input type="text" name="region" id="field-region" placeholder="Mis. Jabodetabek" style="width:100%">
+					</div>
+				</div>
+
+			<!-- ================= FORM DOKUMEN ================= -->
+			<?php elseif ($t === 'dokumen'): ?>
+				<div>
+					<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Nama Dokumen Persyaratan <span style="color:var(--crit)">*</span></label>
+					<input type="text" name="nama" id="field-nama-dokumen" placeholder="Mis. KTP, Ijazah Terakhir, NPWP" required style="width:100%">
+				</div>
+
+				<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Kategori Berkas <span style="color:var(--crit)">*</span></label>
+						<select name="kategori" id="field-kategori-dokumen" required style="width:100%">
+							<?php foreach ($kat as $k): ?>
+								<option value="<?= $k ?>"><?= $k ?></option>
+							<?php endforeach; ?>
+						</select>
+					</div>
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Tingkat Sensitifitas PDP <span style="color:var(--crit)">*</span></label>
+						<select name="tingkat_sensitif" id="field-tingkat-sensitif" required style="width:100%">
+							<?php foreach ($sens as $s): ?>
+								<option value="<?= $s ?>"><?= $s ?></option>
+							<?php endforeach; ?>
+						</select>
+					</div>
+				</div>
+
+				<div style="margin-top:2px">
+					<label style="display:flex; align-items:center; gap:8px; font-size:12.5px; cursor:pointer">
+						<input type="checkbox" name="is_mandatory_default" id="field-is-mandatory" value="1">
+						<span>Wajib dikumpulkan secara default pada saat lamar</span>
+					</label>
+				</div>
+
+			<!-- ================= FORM REMARK ALUR ================= -->
+			<?php elseif ($t === 'remark'): ?>
+				<div>
+					<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Tahap Alur Seleksi <span style="color:var(--crit)">*</span></label>
+					<select name="id_stage" id="field-id-stage" required style="width:100%">
+						<option value="">-- Pilih Tahap --</option>
+						<?php foreach ($all_stages as $st): ?>
+							<option value="<?= (int) $st['id_stage'] ?>">
+								<?= html_escape($st['nama_tahap']) ?> (<?= html_escape($st['tipe_tahap']) ?>)
+							</option>
+						<?php endforeach; ?>
+					</select>
+				</div>
+
+				<div style="display:grid; grid-template-columns:150px 1fr; gap:12px">
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Kode Remark <span style="color:var(--crit)">*</span></label>
+						<input type="text" name="kode_remark" id="field-kode-remark" placeholder="Mis. SCV_PASS" required style="width:100%">
+					</div>
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Label Keputusan <span style="color:var(--crit)">*</span></label>
+						<input type="text" name="label" id="field-label-remark" placeholder="Mis. Lolos Screening Berkas" required style="width:100%">
+					</div>
+				</div>
+
+				<div style="display:grid; grid-template-columns:1fr 120px; gap:12px">
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Efek Status Seleksi <span style="color:var(--crit)">*</span></label>
+						<select name="efek_status" id="field-efek-status" required style="width:100%">
+							<?php foreach ($efek as $e): ?>
+								<option value="<?= $e ?>"><?= $e ?></option>
+							<?php endforeach; ?>
+						</select>
+					</div>
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Urutan Tampil</label>
+						<input type="number" name="urutan" id="field-urutan-remark" value="0" style="width:100%">
+					</div>
+				</div>
+
+				<!-- ================= FORM EFEK STATUS ================= -->
+				<?php elseif ($t === 'efek_status'): ?>
+					<div style="display:grid; grid-template-columns:140px 1fr; gap:12px">
+						<div>
+							<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Kode Efek <span style="color:var(--crit)">*</span></label>
+							<input type="text" name="kode_efek" id="field-kode-efek" placeholder="Mis. LANJUT" required style="width:100%">
+						</div>
+						<div>
+							<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Nama Efek Status <span style="color:var(--crit)">*</span></label>
+							<input type="text" name="nama_efek" id="field-nama-efek" placeholder="Mis. Lanjut ke Tahap Berikutnya" required style="width:100%">
+						</div>
+					</div>
+
+					<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+						<div>
+							<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Hasil Tahap Seleksi <span style="color:var(--crit)">*</span></label>
+							<select name="status_tahap" id="field-status-tahap" required style="width:100%">
+								<?php foreach ($st_tahap_options as $stt): ?>
+									<option value="<?= $stt ?>"><?= $stt ?></option>
+								<?php endforeach; ?>
+							</select>
+						</div>
+						<div>
+							<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Status Global Target <span style="color:var(--crit)">*</span></label>
+							<select name="status_global_target" id="field-status-global-target" required style="width:100%">
+								<?php foreach ($st_global_options as $stg): ?>
+									<option value="<?= $stg ?>"><?= $stg ?></option>
+								<?php endforeach; ?>
+							</select>
+						</div>
+					</div>
+
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Deskripsi Aturan Alur</label>
+						<textarea name="deskripsi" id="field-deskripsi-efek" rows="2" placeholder="Penjelasan efek status ini saat diterapkan ke kandidat..." style="width:100%"></textarea>
+					</div>
+
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Urutan Tampil</label>
+						<input type="number" name="urutan" id="field-urutan-efek" value="0" style="width:120px">
+					</div>
 			<?php endif; ?>
-			<label>Kode</label>
-			<input type="text" name="kode" value="<?= html_escape($edit_row['kode'] ?? '') ?>" placeholder="Mis. FIN, HRD, MKT" required>
-			<label>Nama</label>
-			<input type="text" name="nama" value="<?= html_escape($edit_row['nama'] ?? '') ?>" placeholder="Mis. Finance & Accounting" required>
-		<?php elseif ($t === 'outlet'): ?>
-			<label>Kode outlet</label><input type="text" name="kode" required>
-			<label>Nama outlet</label><input type="text" name="nama" required>
-			<label>Brand</label><input type="text" name="brand">
-			<label>Region</label><input type="text" name="region">
-		<?php elseif ($t === 'channel'): ?>
-			<label>Nama channel</label><input type="text" name="nama" required>
-			<label><input type="checkbox" name="is_eksternal" value="1"> Channel eksternal</label>
-		<?php elseif ($t === 'dokumen'): ?>
-			<label>Nama dokumen</label><input type="text" name="nama" required>
-			<label>Kategori</label>
-			<select name="kategori"><?php foreach ($kat as $k): ?><option><?= $k ?></option><?php endforeach; ?></select>
-			<label>Tingkat sensitif</label>
-			<select name="tingkat_sensitif"><?php foreach ($sens as $s): ?><option><?= $s ?></option><?php endforeach; ?></select>
-			<label><input type="checkbox" name="is_mandatory_default" value="1"> Wajib secara default</label>
-		<?php elseif ($t === 'remark'): ?>
-			<?php if (!empty($edit_row)): ?>
-				<input type="hidden" name="id_remark" value="<?= (int) $edit_row['id_remark'] ?>">
-			<?php endif; ?>
-			<label>Tahap Alur</label>
-			<select name="id_stage" required>
-				<?php foreach ($all_stages as $st): ?>
-					<option value="<?= (int) $st['id_stage'] ?>" <?= (!empty($edit_row) && $edit_row['id_stage'] == $st['id_stage']) ? 'selected' : '' ?>>
-						<?= html_escape($st['nama_tahap']) ?> (<?= html_escape($st['tipe_tahap']) ?>)
-					</option>
-				<?php endforeach; ?>
-			</select>
-			<label>Kode Remark</label>
-			<input type="text" name="kode_remark" value="<?= html_escape($edit_row['kode_remark'] ?? '') ?>" placeholder="Mis. SCV_PASS" required>
-			<label>Label Tampilan</label>
-			<input type="text" name="label" value="<?= html_escape($edit_row['label'] ?? '') ?>" placeholder="Mis. Lolos Seleksi Berkas" required>
-			<label>Efek Status Seleksi</label>
-			<select name="efek_status" required>
-				<?php foreach ($efek as $e): ?>
-					<option value="<?= $e ?>" <?= (!empty($edit_row) && $edit_row['efek_status'] === $e) ? 'selected' : '' ?>><?= $e ?></option>
-				<?php endforeach; ?>
-			</select>
-			<label>Urutan Tampil</label>
-			<input type="number" name="urutan" value="<?= (int) ($edit_row['urutan'] ?? 0) ?>">
-		<?php endif; ?>
-		<button type="submit">
-			<?php if ($t === 'departemen' && !empty($edit_row)): ?>
-				Update Departemen
-			<?php elseif ($t === 'remark' && !empty($edit_row)): ?>
-				Update Remark
-			<?php else: ?>
-				Simpan
-			<?php endif; ?>
-		</button>
+
+			</div>
+		</div>
+
+		<!-- Modal Footer Aksi (Docked Bottom) -->
+		<div class="modal-footer-dock">
+			<button type="button" class="btn btn-ghost" onclick="closeMasterModal()">Batal</button>
+			<button type="submit" id="btn-submit-modal" class="btn btn-primary" style="padding:9px 22px; font-weight:600">
+				Simpan Data
+			</button>
+		</div>
 	<?= form_close() ?>
-</main>
+</dialog>
+
+<!-- ================= JAVASCRIPT LOGIC MODAL POP UP ================= -->
+<script>
+var dlgMaster = document.getElementById('dlg-master');
+var currentType = '<?= $t ?>';
+
+function openAddModal() {
+	if (!dlgMaster) return;
+
+	// Reset form
+	document.getElementById('form-master').reset();
+	document.getElementById('field-id').value = '';
+	if (document.getElementById('field-id-posisi')) document.getElementById('field-id-posisi').value = '';
+	if (document.getElementById('field-id-departemen')) document.getElementById('field-id-departemen').value = '';
+	if (document.getElementById('field-id-outlet')) document.getElementById('field-id-outlet').value = '';
+	if (document.getElementById('field-id-dokumen')) document.getElementById('field-id-dokumen').value = '';
+	if (document.getElementById('field-id-remark')) document.getElementById('field-id-remark').value = '';
+		if (document.getElementById('field-id-efek-status')) document.getElementById('field-id-efek-status').value = '';
+
+	document.getElementById('modal-title').textContent = 'Tambah ' + <?= json_encode($types[$t]['label']) ?> + ' Baru';
+	document.getElementById('modal-sub').textContent = 'Lengkapi formulir di bawah ini untuk menyimpan data baru.';
+	document.getElementById('btn-submit-modal').textContent = '+ Tambahkan Data';
+
+	dlgMaster.showModal();
+}
+
+function openEditModal(data) {
+	if (!dlgMaster || !data) return;
+
+	// Reset form awal
+	document.getElementById('form-master').reset();
+
+	var labelTipe = <?= json_encode($types[$t]['label']) ?>;
+	var pkVal = data.id_posisi || data.id_departemen || data.id_outlet || data.id_dokumen || data.id_remark || data.id_efek_status || '';
+
+	document.getElementById('field-id').value = pkVal;
+	document.getElementById('modal-title').textContent = 'Edit ' + labelTipe + ' #' + pkVal;
+	document.getElementById('modal-sub').textContent = 'Perbarui informasi data ' + labelTipe.toLowerCase() + ' yang dipilih.';
+	document.getElementById('btn-submit-modal').textContent = 'Simpan Perubahan';
+
+	if (currentType === 'posisi') {
+		document.getElementById('field-id-posisi').value = data.id_posisi || '';
+		document.getElementById('field-nama-posisi').value = data.nama_posisi || '';
+		document.getElementById('field-id-dept').value = data.id_departemen || '';
+		document.getElementById('field-level-posisi').value = data.level_posisi || 'Staff';
+		if (document.getElementById('field-default-flow')) document.getElementById('field-default-flow').value = data.default_flow || '';
+		if (document.getElementById('field-pendidikan-posisi')) document.getElementById('field-pendidikan-posisi').value = data.pendidikan_minimal || '';
+		if (document.getElementById('field-pengalaman-posisi')) document.getElementById('field-pengalaman-posisi').value = (data.pengalaman_minimal_tahun !== null && data.pengalaman_minimal_tahun !== undefined) ? data.pengalaman_minimal_tahun : '';
+		if (document.getElementById('field-job-desc-posisi')) document.getElementById('field-job-desc-posisi').value = data.job_desc || '';
+		if (document.getElementById('field-kualifikasi-posisi')) document.getElementById('field-kualifikasi-posisi').value = data.kualifikasi || '';
+	} else if (currentType === 'departemen') {
+		document.getElementById('field-id-departemen').value = data.id_departemen || '';
+		document.getElementById('field-kode-dept').value = data.kode || '';
+		document.getElementById('field-nama-dept').value = data.nama || '';
+	} else if (currentType === 'outlet') {
+		document.getElementById('field-id-outlet').value = data.id_outlet || '';
+		document.getElementById('field-kode-outlet').value = data.kode_outlet || '';
+		document.getElementById('field-nama-outlet').value = data.nama_outlet || '';
+		document.getElementById('field-brand').value = data.brand || '';
+		document.getElementById('field-region').value = data.region || '';
+	} else if (currentType === 'dokumen') {
+		document.getElementById('field-id-dokumen').value = data.id_dokumen || '';
+		document.getElementById('field-nama-dokumen').value = data.nama_dokumen || '';
+		document.getElementById('field-kategori-dokumen').value = data.kategori || 'IDENTITAS';
+		document.getElementById('field-tingkat-sensitif').value = data.tingkat_sensitif || 'UMUM';
+		document.getElementById('field-is-mandatory').checked = (data.is_mandatory_default == 1);
+	} else if (currentType === 'remark') {
+		document.getElementById('field-id-remark').value = data.id_remark || '';
+		document.getElementById('field-id-stage').value = data.id_stage || '';
+		document.getElementById('field-kode-remark').value = data.kode_remark || '';
+		document.getElementById('field-label-remark').value = data.label || '';
+		document.getElementById('field-efek-status').value = data.efek_status || 'LANJUT';
+		document.getElementById('field-urutan-remark').value = data.urutan || '0';
+	} else if (currentType === 'efek_status') {
+		document.getElementById('field-id-efek-status').value = data.id_efek_status || '';
+		document.getElementById('field-kode-efek').value = data.kode_efek || '';
+		document.getElementById('field-nama-efek').value = data.nama_efek || '';
+		document.getElementById('field-status-tahap').value = data.status_tahap || 'Lulus';
+		document.getElementById('field-status-global-target').value = data.status_global_target || 'In_Progress';
+		document.getElementById('field-deskripsi-efek').value = data.deskripsi || '';
+		document.getElementById('field-urutan-efek').value = data.urutan || '0';
+	}
+
+	dlgMaster.showModal();
+}
+
+function closeMasterModal() {
+	if (dlgMaster) dlgMaster.close();
+}
+
+// Tutup modal jika user mengklik backdrop luar
+if (dlgMaster) {
+	dlgMaster.addEventListener('click', function(e) {
+		if (e.target === dlgMaster) {
+			dlgMaster.close();
+		}
+	});
+}
+
+// Auto open modal jika ada parameter edit_id dari server
+<?php if (!empty($edit_row)): ?>
+window.addEventListener('DOMContentLoaded', function() {
+	openEditModal(<?= json_encode($edit_row) ?>);
+});
+<?php endif; ?>
+</script>

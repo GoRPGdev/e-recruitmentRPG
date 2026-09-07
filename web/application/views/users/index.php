@@ -9,10 +9,10 @@
 			</p>
 		</div>
 		<div>
-			<a href="<?= site_url('users/create') ?>" class="btn btn-sm btn-primary">
+			<button type="button" class="btn btn-sm btn-primary" onclick="openAddUserModal()" style="display:inline-flex; align-items:center; gap:6px">
 				<svg style="width:13px; height:13px" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
 				<span>+ Tambah Pengguna</span>
-			</a>
+			</button>
 		</div>
 	</div>
 
@@ -137,3 +137,99 @@
 		</table>
 	</div>
 </div>
+
+<!-- ================= MODAL DIALOG POPUP TAMBAH PENGGUNA ================= -->
+<dialog id="dlg-user-add" style="border:1px solid var(--border); border-radius:12px; padding:0; max-width:560px; width:92%; background:var(--surface); color:var(--text); box-shadow:var(--shadow); overflow:hidden">
+	<div style="padding:16px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:var(--surface-2)">
+		<div>
+			<h3 style="margin:0; font-size:16px; font-weight:700; color:var(--text)">
+				Tambah Pengguna Baru
+			</h3>
+			<span class="muted" style="font-size:12px">
+				Lengkapi data akun dan role untuk akses sistem.
+			</span>
+		</div>
+		<button type="button" onclick="closeAddUserModal()" style="background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer; line-height:1; padding:4px 8px; border-radius:6px" title="Tutup pop up">&times;</button>
+	</div>
+
+	<div style="padding:20px">
+		<?= form_open(site_url('users/store'), array('style' => 'display:flex; flex-direction:column; gap:12px')) ?>
+			<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+				<div>
+					<label for="u_username" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Username <span style="color:var(--crit)">*</span></label>
+					<input type="text" id="u_username" name="username" required style="width:100%" placeholder="mis. andi.hr">
+				</div>
+				<div>
+					<label for="u_password" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Password <span style="color:var(--crit)">*</span></label>
+					<input type="password" id="u_password" name="password" required style="width:100%" placeholder="Min. 6 karakter">
+				</div>
+			</div>
+
+			<div>
+				<label for="u_nama_snapshot" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Nama Lengkap <span style="color:var(--crit)">*</span></label>
+				<input type="text" id="u_nama_snapshot" name="nama_snapshot" required style="width:100%" placeholder="Nama lengkap sesuai KTP/identitas">
+			</div>
+
+			<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+				<div>
+					<label for="u_nik_karyawan" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">NIK Karyawan (Opsional)</label>
+					<input type="text" id="u_nik_karyawan" name="nik_karyawan" placeholder="e.g. 20240901" style="width:100%">
+				</div>
+				<div>
+					<label for="u_id_role" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Peran (Role) <span style="color:var(--crit)">*</span></label>
+					<select id="u_id_role" name="id_role" required style="width:100%">
+						<?php foreach ($roles as $r): ?>
+							<option value="<?= (int) $r['id_role'] ?>">
+								<?= html_escape($r['nama_role']) ?> (<?= html_escape($r['kode_role']) ?>)
+							</option>
+						<?php endforeach; ?>
+					</select>
+				</div>
+			</div>
+
+			<div>
+				<label for="u_id_departemen" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Departemen Scoping</label>
+				<select id="u_id_departemen" name="id_departemen" style="width:100%">
+					<option value="">-- Lintas Departemen / Tanpa Batasan (SUPER_ADMIN / HR) --</option>
+					<?php foreach ($departemen as $d): ?>
+						<option value="<?= (int) $d['id_departemen'] ?>">
+							<?= html_escape($d['nama']) ?> (<?= html_escape($d['kode']) ?>)
+						</option>
+					<?php endforeach; ?>
+				</select>
+				<div class="muted" style="font-size:11.5px; margin-top:3px">
+					Wajib untuk <code>USER_DEPT</code> agar pelamar dan formasi terisolasi ke divisi yang bersangkutan.
+				</div>
+			</div>
+
+			<div style="margin-top:2px">
+				<label style="display:inline-flex; align-items:center; gap:8px; font-size:12.5px; cursor:pointer">
+					<input type="checkbox" name="is_aktif" value="1" checked>
+					<span>Akun berstatus aktif (dapat langsung login)</span>
+				</label>
+			</div>
+
+			<div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px; padding-top:14px; border-top:1px solid var(--border)">
+				<button type="button" class="btn btn-ghost" onclick="closeAddUserModal()">Batal</button>
+				<button type="submit" class="btn btn-primary" style="padding:8px 18px">
+					Buat Pengguna
+				</button>
+			</div>
+		<?= form_close() ?>
+	</div>
+</dialog>
+
+<script>
+var dlgUserAdd = document.getElementById('dlg-user-add');
+function openAddUserModal() {
+	if (dlgUserAdd) dlgUserAdd.showModal();
+}
+function closeAddUserModal() {
+	if (dlgUserAdd) dlgUserAdd.close();
+}
+if (dlgUserAdd) {
+	dlgUserAdd.addEventListener('click', function(e) {
+		if (e.target === dlgUserAdd) dlgUserAdd.close();
+	});
+}
+</script>

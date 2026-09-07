@@ -30,17 +30,8 @@
 		<label for="kota_domisili">Kota domisili</label>
 		<input type="text" id="kota_domisili" name="kota_domisili" value="<?= set_value('kota_domisili') ?>">
 
-		<label for="nama_channel">Channel</label>
-		<select id="nama_channel" name="nama_channel">
-			<?php foreach ($channels as $c): ?>
-				<option value="<?= html_escape($c['nama_channel']) ?>" <?= $c['nama_channel'] === 'Walk-in' ? 'selected' : '' ?>>
-					<?= html_escape($c['nama_channel']) ?>
-				</option>
-			<?php endforeach; ?>
-		</select>
-
 		<label for="tanggal_join">Rencana tanggal join (opsional)</label>
-		<input type="text" id="tanggal_join" name="tanggal_join" value="<?= set_value('tanggal_join') ?>" placeholder="YYYY-MM-DD">
+		<input type="date" id="tanggal_join" name="tanggal_join" value="<?= set_value('tanggal_join') ?>">
 
 		<label for="cv">CV (opsional)</label>
 		<input type="file" id="cv" name="cv" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">

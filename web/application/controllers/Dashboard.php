@@ -14,6 +14,9 @@ class Dashboard extends Secured_Controller
 	public function index()
 	{
 		$dept = current_user_dept();
+		$au   = current_user();
+		$role = $au['kode_role'] ?? 'SUPER_ADMIN';
+
 		$f = array(
 			'dari'       => $this->input->get('dari') ?: NULL,
 			'sampai'     => $this->input->get('sampai') ?: NULL,
@@ -36,14 +39,30 @@ class Dashboard extends Secured_Controller
 			}));
 		}
 
+		// Data khusus jika role USER_DEPT
+		$dept_mpr        = array();
+		$dept_candidates = array();
+		$dept_metrics    = array();
+		if ($role === 'USER_DEPT' && $dept !== NULL) {
+			$dept_mpr        = $this->dm->dept_requisitions($dept, 6);
+			$dept_candidates = $this->dm->dept_candidates_active($dept, 8);
+			$dept_metrics    = $this->dm->dept_summary_metrics($dept);
+		}
+
 		$this->load->view('layouts/main', array(
-			'title'    => 'Dashboard',
-			'_content' => 'dashboard/index',
-			'wide'     => TRUE,
-			'f'        => $f,
-			'd'        => $d,
-			'trend'    => $this->dm->funnel_trend(14, $f['dept']),
-			'opt'      => array(
+			'title'           => 'Dashboard — ' . ($role === 'USER_DEPT' ? 'Departemen' : 'Recruitment Ops'),
+			'_content'        => 'dashboard/index',
+			'wide'            => TRUE,
+			'user_role'       => $role,
+			'user_nama'       => $au['nama_snapshot'] ?? ($au['nama'] ?? ($au['username'] ?? 'User')),
+			'user_dept_nama'  => $au['departemen_snapshot'] ?? '',
+			'dept_mpr'        => $dept_mpr,
+			'dept_candidates' => $dept_candidates,
+			'dept_metrics'    => $dept_metrics,
+			'f'               => $f,
+			'd'               => $d,
+			'trend'           => $this->dm->funnel_trend(14, $f['dept']),
+			'opt'             => array(
 				'dept'    => $depts,
 				'posisi'  => $this->dm->positions($dept),
 				'outlet'  => $this->dm->outlets(),
@@ -51,7 +70,7 @@ class Dashboard extends Secured_Controller
 				'channel' => $this->dm->channels(),
 				'pic'     => $this->dm->roles(),
 			),
-			'tipe_tahap' => array('SCREENING','KONTAK','FORM','TEST','INTERVIEW','OFFER','ONBOARD'),
+			'tipe_tahap'    => array('SCREENING','KONTAK','FORM','TEST','INTERVIEW','OFFER','ONBOARD'),
 			'status_global' => array('In_Progress','On_Hold','Unreachable','Rejected','Withdrawn','Offer_Declined','No_Show','Hired','Talent_Pool'),
 		));
 	}

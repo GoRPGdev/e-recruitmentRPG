@@ -1,17 +1,12 @@
 /* =========================================================================
-   sp_Dashboard  --  data papan dashboard rekrutmen (read-only)
-   E-Recruitment RPG  --  modul Report (Kiki)
+   sp_Dashboard  --  agregat untuk dashboard eksekutif / HR
+   E-Recruitment RPG  --  modul Dashboard (Kahfi)
 
-   Semua parameter filter opsional (NULL = tidak difilter).
-   Mengembalikan 4 result set berurutan:
-     1. METRIK   : jumlah lamaran per status_global (kondisi kini)
-     2. FUNNEL   : jumlah lamaran per (tipe_tahap tahap-kini x status_global)
-     3. AGING    : lamaran 'Berjalan' yang lewat SLA tahap (fs.sla_hari)
-     4. WAKTU    : rata-rata lama_proses & hari_menunggu_approval
-
-   Perhitungan LIVE (join). Di atas ~5.000 lamaran, funnel sebaiknya pindah
-   baca RPT_FUNNEL_HARIAN (ERD sec.2). Trend historis dari tabel agregat itu
-   ditampilkan terpisah oleh model.
+   4 result set:
+     1. Metrik per status_global (In_Progress, Hired, Rejected, dll)
+     2. Funnel: tipe_tahap x status_global
+     3. Aging SLA: lamaran aktif yang melampaui sla_hari tahapnya
+     4. Rata-rata hari proses & hari menunggu approval BOD
 
    Deploy:  php tools/migrate.php proc
    ========================================================================= */
@@ -27,7 +22,7 @@ CREATE PROCEDURE dbo.sp_Dashboard
     @id_flow       INT         = NULL,
     @tipe_tahap    VARCHAR(20) = NULL,
     @status_global VARCHAR(20) = NULL,
-    @id_channel    INT         = NULL,
+    @id_channel    INT         = NULL,   -- dipertahankan opsional untuk kompatibilitas
     @role_pic      VARCHAR(20) = NULL
 AS
 BEGIN
@@ -59,7 +54,6 @@ BEGIN
       AND (@id_flow       IS NULL OR a.id_flow = @id_flow)
       AND (@tipe_tahap    IS NULL OR s.tipe_tahap = @tipe_tahap)
       AND (@status_global IS NULL OR a.status_global = @status_global)
-      AND (@id_channel    IS NULL OR a.id_channel = @id_channel)
       AND (@role_pic      IS NULL OR fs.role_pic = @role_pic);
 
     /* 1. METRIK */

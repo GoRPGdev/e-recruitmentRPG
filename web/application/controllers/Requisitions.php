@@ -115,7 +115,8 @@ class Requisitions extends Secured_Controller
 			log_akses_sensitif('GAJI', (int) $id_req);
 		}
 
-		$this->load->model('application_model');
+		$postings = $this->rm->postings_for_req($id_req);
+
 		$this->load->view('layouts/main', array(
 			'title'     => 'MPR ' . ($req['no_mpr'] ?: '#' . $req['id_req']),
 			'_content'  => 'requisitions/view',
@@ -123,9 +124,25 @@ class Requisitions extends Secured_Controller
 			'req'       => $req,
 			'approvals' => $this->rm->approvals($id_req),
 			'open_appr' => $this->rm->open_approval($id_req),
-			'channels'  => $this->application_model->list_channels(),
 			'can_kelola'=> has_permission('KELOLA_REKRUTMEN'),
+			'postings'  => $postings,
 		));
+	}
+
+	public function submit_hr($id_req = NULL)
+	{
+		$this->require_permission('BUAT_MPR');
+
+		if ( ! $id_req || $this->input->method() !== 'post') {
+			show_404();
+		}
+		try {
+			$this->rm->submit_to_hr($id_req, (int) $this->auth_user['id_user']);
+			$this->session->set_flashdata('ok', 'Permintaan MPR berhasil diajukan untuk Review HR.');
+		} catch (RuntimeException $e) {
+			$this->session->set_flashdata('error', $e->getMessage());
+		}
+		redirect('requisitions/view/' . (int) $id_req);
 	}
 
 	public function submit($id_req = NULL)
@@ -192,7 +209,7 @@ class Requisitions extends Secured_Controller
 		try {
 			$id_posting = $this->rm->create_posting(
 				$id_req,
-				(int) $this->input->post('id_channel'),
+				NULL,
 				$this->input->post('judul_posting', TRUE) ?: 'Lowongan',
 				$this->input->post('job_desc', TRUE),
 				$this->input->post('kualifikasi', TRUE)
@@ -203,5 +220,71 @@ class Requisitions extends Secured_Controller
 			$this->session->set_flashdata('error', $e->getMessage());
 			redirect('requisitions/view/' . (int) $id_req);
 		}
+	}
+
+	public function update_status($id_req = NULL)
+	{
+		$this->require_permission('KELOLA_REKRUTMEN');
+		if ( ! $id_req || $this->input->method() !== 'post') {
+			show_404();
+		}
+
+		$status_baru = $this->input->post('status_baru', TRUE);
+		$catatan     = $this->input->post('catatan', TRUE);
+
+		try {
+			$this->rm->update_status($id_req, $status_baru, $catatan, (int) $this->auth_user['id_user']);
+			$this->session->set_flashdata('ok', 'Status MPR berhasil diperbarui menjadi: ' . html_escape($status_baru));
+		} catch (RuntimeException $e) {
+			$this->session->set_flashdata('error', $e->getMessage());
+		}
+		redirect('requisitions/view/' . (int) $id_req);
+	}
+
+	public function toggle_posting($id_req = NULL, $id_posting = NULL)
+	{
+		$this->require_permission('KELOLA_REKRUTMEN');
+		if ( ! $id_req || ! $id_posting || $this->input->method() !== 'post') {
+			show_404();
+		}
+
+		try {
+			$form_aktif = $this->input->post('form_aktif');
+			$aktif_target = ($form_aktif !== NULL && $form_aktif !== '') ? (int) $form_aktif : NULL;
+
+			$status_akhir = $this->rm->toggle_posting_form($id_posting, $aktif_target, (int) $this->auth_user['id_user']);
+			$pesan = $status_akhir ? 'Form publik berhasil dibuka (menerima lamaran).' : 'Form publik berhasil ditutup.';
+			$this->session->set_flashdata('ok', $pesan);
+		} catch (RuntimeException $e) {
+			$this->session->set_flashdata('error', $e->getMessage());
+		}
+		redirect('requisitions/view/' . (int) $id_req);
+	}
+
+	public function cancel($id_req = NULL)
+	{
+		$this->require_any_permission(array('BUAT_MPR', 'KELOLA_REKRUTMEN'));
+		if ( ! $id_req || $this->input->method() !== 'post') {
+			show_404();
+		}
+
+		$req = $this->rm->get($id_req);
+		if ( ! $req) {
+			show_404();
+		}
+
+		$dept = current_user_dept();
+		if ($dept !== NULL && (int) $req['id_departemen'] !== (int) $dept) {
+			show_error('Akses ditolak: Anda hanya dapat membatalkan MPR dari departemen Anda.', 403, '403 Forbidden');
+		}
+
+		$alasan = $this->input->post('alasan_batal', TRUE);
+		try {
+			$this->rm->cancel_requisition($id_req, $alasan, (int) $this->auth_user['id_user']);
+			$this->session->set_flashdata('ok', 'Requisition / MPR berhasil dibatalkan.');
+		} catch (RuntimeException $e) {
+			$this->session->set_flashdata('error', $e->getMessage());
+		}
+		redirect('requisitions/view/' . (int) $id_req);
 	}
 }

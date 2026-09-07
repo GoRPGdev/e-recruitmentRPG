@@ -114,7 +114,9 @@ class Requisition_model extends CI_Model
 			$where .= ' AND id_departemen = ?';
 			$params[] = (int) $id_dept;
 		}
-		$q = $this->db->query("SELECT id_posisi, nama_posisi, level_posisi, default_flow, id_departemen FROM dbo.M_POSISI $where ORDER BY nama_posisi", $params);
+		$q = $this->db->query("SELECT id_posisi, nama_posisi, level_posisi, default_flow, id_departemen,
+		                              job_desc, kualifikasi, pendidikan_minimal, pengalaman_minimal_tahun
+		                       FROM dbo.M_POSISI $where ORDER BY nama_posisi", $params);
 		$r = $q->result_array(); $q->free_result(); return $r;
 	}
 
@@ -164,6 +166,13 @@ class Requisition_model extends CI_Model
 		return (int) $id_req;
 	}
 
+	public function submit_to_hr($id_req, $oleh_user)
+	{
+		$this->_call('{CALL dbo.sp_SubmitToHR(?,?)}', array(
+			(int) $id_req, (int) $oleh_user,
+		));
+	}
+
 	public function submit_to_bod($id_req, $oleh_user)
 	{
 		$id_app = 0;
@@ -197,6 +206,33 @@ class Requisition_model extends CI_Model
 			array(&$id_posting, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
 		));
 		return (int) $id_posting;
+	}
+
+	public function postings_for_req($id_req)
+	{
+		$q = $this->db->query(
+			'SELECT jp.*,
+			        (SELECT COUNT(*) FROM dbo.APPLICATIONS a WHERE a.id_posting = jp.id_posting) AS n_lamaran
+			 FROM dbo.JOB_POSTINGS jp
+			 WHERE jp.id_req = ?
+			 ORDER BY jp.id_posting DESC',
+			array((int) $id_req)
+		);
+		$rows = $q->result_array();
+		$q->free_result();
+		return $rows;
+	}
+
+	public function toggle_posting_form($id_posting, $form_aktif = NULL, $oleh_user = NULL)
+	{
+		$status_akhir = 0;
+		$this->_call('{CALL dbo.sp_TogglePostingForm(?,?,?,?)}', array(
+			(int) $id_posting,
+			$form_aktif !== NULL ? ($form_aktif ? 1 : 0) : NULL,
+			(int) $oleh_user,
+			array(&$status_akhir, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
+		));
+		return (bool) $status_akhir;
 	}
 
 	/* ================= SP: flow engine ============================== */
@@ -418,5 +454,42 @@ class Requisition_model extends CI_Model
 			$by_lamaran[$r['id_lamaran']] = $r;
 		}
 		return $by_lamaran;
+	}
+
+	public function update_status($id_req, $status_baru, $catatan, $oleh_user)
+	{
+		$this->_call('{CALL dbo.sp_UpdateRequisitionStatus(?,?,?,?)}', array(
+			(int) $id_req, (string) $status_baru, $catatan ?: NULL, (int) $oleh_user
+		));
+	}
+
+	public function cancel_requisition($id_req, $alasan, $oleh_user)
+	{
+		$this->_call('{CALL dbo.sp_CancelRequisition(?,?,?)}', array(
+			(int) $id_req, $alasan ?: NULL, (int) $oleh_user
+		));
+	}
+
+	/**
+	 * Mengambil kandidat berstatus final (Rejected, Hired, Withdrawn, Offer_Declined, No_Show, Talent_Pool)
+	 * untuk satu requisition / MPR.
+	 */
+	public function final_candidates($id_req)
+	{
+		$sql = "SELECT a.id_lamaran, a.id_kandidat, a.id_req, a.status_global, a.tanggal_lamar,
+		               c.nama_lengkap, c.no_wa_normal, c.email,
+		               s.nama_tahap AS tahap_terakhir,
+		               rm.label AS label_remark_terakhir
+		        FROM dbo.APPLICATIONS a
+		        JOIN dbo.CANDIDATES c        ON c.id_kandidat = a.id_kandidat
+		        LEFT JOIN dbo.M_STAGE s      ON s.id_stage = a.id_stage_sekarang
+		        LEFT JOIN dbo.M_REMARKS rm   ON rm.id_remark = a.id_remark_terakhir
+		        WHERE a.id_req = ?
+		          AND a.status_global IN ('Hired','Rejected','Withdrawn','Offer_Declined','No_Show','Talent_Pool')
+		        ORDER BY a.id_lamaran DESC";
+		$q = $this->db->query($sql, array((int) $id_req));
+		$rows = $q->result_array();
+		$q->free_result();
+		return $rows;
 	}
 }

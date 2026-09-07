@@ -21,14 +21,16 @@ class Posting_model extends CI_Model
 	public function list_postings($offset, $per)
 	{
 		$sql = 'WITH q AS (
-		            SELECT jp.id_posting, jp.url_slug, jp.judul_posting, jp.is_aktif,
+		            SELECT jp.id_posting, jp.id_req, jp.url_slug, jp.judul_posting, jp.is_aktif,
 		                   jp.form_aktif, jp.form_dibuka, jp.form_ditutup, jp.jumlah_submit,
-		                   p.nama_posisi, r.no_mpr, r.status_req,
+		                   p.nama_posisi, d.nama AS departemen, o.nama_outlet, r.no_mpr, r.status_req, r.tipe_penempatan,
 		                   (SELECT COUNT(*) FROM dbo.APPLICATIONS a WHERE a.id_posting = jp.id_posting) AS n_lamaran,
 		                   ROW_NUMBER() OVER (ORDER BY jp.id_posting DESC) AS rn
 		            FROM dbo.JOB_POSTINGS jp
 		            JOIN dbo.REQUISITIONS r ON r.id_req = jp.id_req
 		            JOIN dbo.M_POSISI p     ON p.id_posisi = r.id_posisi
+		            LEFT JOIN dbo.M_DEPARTEMEN d ON d.id_departemen = p.id_departemen
+		            LEFT JOIN dbo.M_OUTLET o     ON o.id_outlet = r.id_outlet
 		        )
 		        SELECT * FROM q WHERE rn BETWEEN ? AND ? ORDER BY rn';
 		$q = $this->db->query($sql, array((int) $offset, (int) $offset + (int) $per - 1));
@@ -40,10 +42,12 @@ class Posting_model extends CI_Model
 	public function get_posting($id_posting)
 	{
 		$q = $this->db->query(
-			'SELECT jp.*, p.nama_posisi, r.no_mpr
+			'SELECT jp.*, p.nama_posisi, d.nama AS departemen, o.nama_outlet, r.no_mpr, r.status_req, r.tipe_penempatan
 			 FROM dbo.JOB_POSTINGS jp
 			 JOIN dbo.REQUISITIONS r ON r.id_req = jp.id_req
 			 JOIN dbo.M_POSISI p     ON p.id_posisi = r.id_posisi
+			 LEFT JOIN dbo.M_DEPARTEMEN d ON d.id_departemen = p.id_departemen
+			 LEFT JOIN dbo.M_OUTLET o     ON o.id_outlet = r.id_outlet
 			 WHERE jp.id_posting = ?', array((int) $id_posting));
 		$row = $q->row_array();
 		$q->free_result();
@@ -63,6 +67,29 @@ class Posting_model extends CI_Model
 			array((int) $form_aktif ? 1 : 0, $dibuka ?: NULL, $ditutup ?: NULL, (int) $id_posting)
 		);
 		return $this->db->affected_rows() >= 0;
+	}
+
+	public function toggle_form($id_posting, $form_aktif = NULL, $oleh_user = NULL)
+	{
+		$status_akhir = 0;
+		$stmt = sqlsrv_query(
+			$this->db->conn_id,
+			'{CALL dbo.sp_TogglePostingForm(?,?,?,?)}',
+			array(
+				(int) $id_posting,
+				$form_aktif !== NULL ? ($form_aktif ? 1 : 0) : NULL,
+				(int) $oleh_user,
+				array(&$status_akhir, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT)
+			)
+		);
+		if ($stmt === FALSE) {
+			$e = sqlsrv_errors();
+			$last = $e ? end($e) : NULL;
+			throw new RuntimeException($last ? trim($last['message']) : 'Gagal mengubah status form.');
+		}
+		do { /* nothing */ } while (sqlsrv_next_result($stmt));
+		sqlsrv_free_stmt($stmt);
+		return (bool) $status_akhir;
 	}
 
 	/** Buat url_slug kalau belum ada. Slug = <posisi-slug>-<id_posting>. */
@@ -159,8 +186,6 @@ class Posting_model extends CI_Model
 	{
 		$this->db->query('UPDATE dbo.FORM_TOKENS SET dipakai_pada = GETDATE() WHERE id_token = ?', array((int) $id_token));
 	}
-
-	/* ================= dokumen aktif (untuk dropdown upload) ======= */
 
 	/* ================= JOB_POSTING_STATS ========================== */
 

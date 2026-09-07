@@ -2,9 +2,10 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Flow Builder: susun M_FLOW / M_FLOW_STAGE / M_REMARKS.
- * Wajib login + EDIT_FLOW_TEMPLATE (ERD sec.10.1 -- awalnya IT Admin).
- * Perubahan tidak menyentuh lamaran berjalan (di-snapshot).
+ * Flow Builder: Konfigurasi 1 Alur Seleksi Standar RPG (Universal Recruitment Flow)
+ * Wajib login + EDIT_FLOW_TEMPLATE (ERD sec.10.1).
+ * Perusahaan menggunakan 1 alur standar tunggal yang fleksibel diatur tahapannya oleh HR.
+ * Perubahan tahapan tidak menyentuh lamaran berjalan (di-snapshot ke APPLICATION_STAGES).
  */
 class Flowbuilder extends Secured_Controller
 {
@@ -17,95 +18,158 @@ class Flowbuilder extends Secured_Controller
 		$this->load->helper(array('form', 'url'));
 	}
 
+	/**
+	 * Helper untuk mendapatkan 1 Flow Standar Baku RPG
+	 */
+	private function _get_standard_flow()
+	{
+		$flows = $this->mm->list_flow();
+		$std_flow = NULL;
+		foreach ($flows as $f) {
+			if ($f['kode_flow'] === 'HQ_STAFF' && $f['is_aktif']) {
+				$std_flow = $f;
+				break;
+			}
+		}
+		if ( ! $std_flow) {
+			foreach ($flows as $f) {
+				if ($f['is_aktif']) {
+					$std_flow = $f;
+					break;
+				}
+			}
+		}
+		if ( ! $std_flow && ! empty($flows)) {
+			$std_flow = $flows[0];
+		}
+		return $std_flow;
+	}
+
+	/**
+	 * Halaman Utama: Editor 1 Alur Seleksi Standar RPG
+	 */
 	public function index()
 	{
+		$flow = $this->_get_standard_flow();
+		if ( ! $flow) {
+			show_error('Belum ada data flow seleksi yang terkonfigurasi di database.', 500);
+		}
+
+		$id_flow = (int) $flow['id_flow'];
+		$stages = $this->mm->flow_stages($id_flow);
+		$all_stages = $this->mm->all_stages();
+		$roles = $this->mm->all_roles();
+		$flow_docs_raw = $this->document_model->flow_required_docs($id_flow);
+		$all_docs = $this->mm->list_dokumen();
+
+		// Pemetaan dokumen per id_flow_stage
+		$docs_by_stage = array();
+		foreach ($flow_docs_raw as $fd) {
+			$fs_id = (int) $fd['id_flow_stage'];
+			if ( ! isset($docs_by_stage[$fs_id])) {
+				$docs_by_stage[$fs_id] = array();
+			}
+			if ($fd['id_dokumen']) {
+				$docs_by_stage[$fs_id][] = array(
+					'id_dokumen'   => (int) $fd['id_dokumen'],
+					'nama_dokumen' => $fd['nama_dokumen'],
+					'is_wajib'     => (bool) $fd['is_wajib'],
+				);
+			}
+		}
+
 		$this->load->view('layouts/main', array(
-			'title'    => 'Flow Builder',
-			'_content' => 'flow/index',
-			'wide'     => TRUE,
-			'flows'    => $this->mm->list_flow(),
+			'title'         => 'Alur Seleksi Rekrutmen (1 Flow Standar)',
+			'_content'      => 'flow/index',
+			'wide'          => TRUE,
+			'flow'          => $flow,
+			'stages'        => $stages,
+			'all_stages'    => $all_stages,
+			'roles'         => $roles,
+			'docs_by_stage' => $docs_by_stage,
+			'all_docs'      => $all_docs,
 		));
 	}
 
+	/**
+	 * Redirect edit/{id} ke halaman utama alur tunggal
+	 */
 	public function edit($id_flow = NULL)
 	{
-		$flow = $id_flow ? $this->mm->get_flow($id_flow) : NULL;
-		if ( ! $flow) {
-			show_404();
-		}
-		$this->load->view('layouts/main', array(
-			'title'      => 'Flow: ' . $flow['kode_flow'],
-			'_content'   => 'flow/edit',
-			'wide'       => TRUE,
-			'flow'       => $flow,
-			'stages'     => $this->mm->flow_stages($id_flow),
-			'all_stages' => $this->mm->all_stages(),
-			'roles'      => $this->mm->all_roles(),
-		));
+		redirect('flowbuilder');
 	}
 
+	/**
+	 * Simpan konfigurasi header alur standar RPG
+	 */
 	public function save_header()
 	{
 		if ($this->input->method() !== 'post') { show_404(); }
 		$uid = (int) ($this->auth_user['id_user'] ?? 0);
 		try {
-			$id = $this->mm->save_flow($this->input->post(NULL, TRUE), $uid);
-			$this->session->set_flashdata('ok', 'Flow disimpan.');
-			redirect('flowbuilder/edit/' . $id);
+			$this->mm->save_flow($this->input->post(NULL, TRUE), $uid);
+			$this->session->set_flashdata('ok', 'Konfigurasi Alur Rekrutmen Standar RPG berhasil disimpan.');
 		} catch (RuntimeException $e) {
 			$this->session->set_flashdata('error', $e->getMessage());
-			redirect('flowbuilder');
 		}
+		redirect('flowbuilder');
 	}
 
+	/**
+	 * Aksi mutasi tahapan alur (ADD, UPDATE, MOVE, REMOVE)
+	 */
 	public function stage_action($id_flow = NULL)
 	{
-		if ( ! $id_flow || $this->input->method() !== 'post') { show_404(); }
+		if ($this->input->method() !== 'post') { show_404(); }
+		if ( ! $id_flow) {
+			$flow = $this->_get_standard_flow();
+			$id_flow = $flow ? $flow['id_flow'] : NULL;
+		}
+		if ( ! $id_flow) { show_404(); }
+
 		$uid = (int) ($this->auth_user['id_user'] ?? 0);
 		$in = $this->input->post(NULL, TRUE);
 		$in['id_flow'] = (int) $id_flow;
+		$aksi = $in['aksi'] ?? '';
+
 		try {
 			$this->mm->flow_stage_action($in, $uid);
-			$this->session->set_flashdata('ok', 'Tahap flow diperbarui (versi naik).');
+			if ($aksi === 'ADD') {
+				$this->session->set_flashdata('ok', 'Tahap baru berhasil ditambahkan ke alur seleksi (versi naik).');
+			} elseif ($aksi === 'MOVE') {
+				$this->session->set_flashdata('ok', 'Urutan tahap seleksi berhasil diperbarui (versi naik).');
+			} elseif ($aksi === 'REMOVE') {
+				$this->session->set_flashdata('ok', 'Tahap seleksi berhasil dihapus dari alur (versi naik).');
+			} else {
+				$this->session->set_flashdata('ok', 'Perubahan tahap alur berhasil disimpan (versi naik).');
+			}
 		} catch (RuntimeException $e) {
 			$this->session->set_flashdata('error', $e->getMessage());
 		}
-		redirect('flowbuilder/edit/' . (int) $id_flow);
+		redirect('flowbuilder');
 	}
 
+	/**
+	 * Clone flow dinonaktifkan karena perusahaan menggunakan 1 flow tunggal
+	 */
 	public function clone_flow()
 	{
-		if ($this->input->method() !== 'post') { show_404(); }
-		$uid = (int) ($this->auth_user['id_user'] ?? 0);
-		try {
-			$id = $this->mm->clone_flow(
-				(int) $this->input->post('id_flow_sumber'),
-				$this->input->post('kode_flow_baru', TRUE),
-				$this->input->post('nama_flow_baru', TRUE),
-				$uid
-			);
-			$this->session->set_flashdata('ok', 'Template baru dibuat dari salinan.');
-			redirect('flowbuilder/edit/' . $id);
-		} catch (RuntimeException $e) {
-			$this->session->set_flashdata('error', $e->getMessage());
-			redirect('flowbuilder');
-		}
+		$this->session->set_flashdata('error', 'Sistem rekrutmen RPG menggunakan 1 alur standar tunggal. Fitur clone template dinonaktifkan.');
+		redirect('flowbuilder');
 	}
 
 	public function toggle($id_flow = NULL)
 	{
-		if ( ! $id_flow || $this->input->method() !== 'post') { show_404(); }
-		$this->mm->toggle_flow($id_flow, (int) $this->input->post('is_aktif'));
 		redirect('flowbuilder');
 	}
 
-	/* ---- master tahap seleksi (M_STAGE) ---- */
+	/* ---- Master Tahap Seleksi (M_STAGE) ---- */
 
 	public function stages()
 	{
 		$edit_id = (int) $this->input->get('edit');
 		$this->load->view('layouts/main', array(
-			'title'      => 'Tahap Seleksi',
+			'title'      => 'Katalog Tahap Seleksi',
 			'_content'   => 'flow/stages',
 			'wide'       => TRUE,
 			'rows'       => $this->mm->list_stage(),
@@ -120,7 +184,7 @@ class Flowbuilder extends Secured_Controller
 		$uid = (int) ($this->auth_user['id_user'] ?? 0);
 		try {
 			$this->mm->save_stage($this->input->post(NULL, TRUE), $uid);
-			$this->session->set_flashdata('ok', 'Tahap seleksi disimpan.');
+			$this->session->set_flashdata('ok', 'Tahap seleksi berhasil disimpan.');
 		} catch (RuntimeException $e) {
 			$this->session->set_flashdata('error', $e->getMessage());
 		}
@@ -133,23 +197,25 @@ class Flowbuilder extends Secured_Controller
 		$uid = (int) ($this->auth_user['id_user'] ?? 0);
 		try {
 			$this->mm->toggle_stage((int) $this->input->post('id'), (int) $this->input->post('is_aktif'), $uid);
-			$this->session->set_flashdata('ok', $this->input->post('is_aktif') ? 'Diaktifkan.' : 'Dinonaktifkan.');
+			$this->session->set_flashdata('ok', $this->input->post('is_aktif') ? 'Tahap diaktifkan.' : 'Tahap dinonaktifkan.');
 		} catch (RuntimeException $e) {
 			$this->session->set_flashdata('error', $e->getMessage());
 		}
 		redirect('flowbuilder/stages');
 	}
 
-	/* ---- dokumen wajib per tahap (M_FLOW_STAGE_DOKUMEN) ---- */
+	/* ---- Dokumen Wajib Per Tahap (M_FLOW_STAGE_DOKUMEN) ---- */
 
 	public function flow_docs($id_flow = NULL)
 	{
-		$flows = $this->mm->list_flow();
-		if ( ! $id_flow && $flows) {
-			$id_flow = $flows[0]['id_flow'];
+		if ( ! $id_flow) {
+			$flow = $this->_get_standard_flow();
+			$id_flow = $flow ? $flow['id_flow'] : NULL;
 		}
+		$flows = $this->mm->list_flow();
+
 		$this->load->view('layouts/main', array(
-			'title'    => 'Dokumen wajib per tahap',
+			'title'    => 'Dokumen Wajib Per Tahap',
 			'_content' => 'flow/docs',
 			'wide'     => TRUE,
 			'flows'    => $flows,
@@ -161,19 +227,28 @@ class Flowbuilder extends Secured_Controller
 
 	public function set_flow_doc($id_flow = NULL)
 	{
-		if ( ! $id_flow || $this->input->method() !== 'post') {
-			show_404();
+		if ($this->input->method() !== 'post') { show_404(); }
+		if ( ! $id_flow) {
+			$flow = $this->_get_standard_flow();
+			$id_flow = $flow ? $flow['id_flow'] : NULL;
 		}
+		if ( ! $id_flow) { show_404(); }
+
 		$this->document_model->set_flow_doc(
 			(int) $this->input->post('id_flow_stage'),
 			(int) $this->input->post('id_dokumen'),
 			$this->input->post('wajib')   // '1' | '0' | 'remove'
 		);
-		$this->session->set_flashdata('ok', 'Dokumen tahap diperbarui.');
+		$this->session->set_flashdata('ok', 'Konfigurasi dokumen tahap berhasil diperbarui.');
+
+		$back = $this->input->post('return_to');
+		if ($back === 'flowbuilder') {
+			redirect('flowbuilder');
+		}
 		redirect('flowbuilder/flow_docs/' . (int) $id_flow);
 	}
 
-	/* ---- remarks ---- */
+	/* ---- Remarks / Keputusan Seleksi ---- */
 
 	public function remarks($id_stage = NULL)
 	{
@@ -185,7 +260,7 @@ class Flowbuilder extends Secured_Controller
 		}
 
 		$this->load->view('layouts/main', array(
-			'title'       => 'Remark',
+			'title'       => 'Remark Keputusan',
 			'_content'    => 'flow/remarks',
 			'wide'        => TRUE,
 			'id_stage'    => $id_stage ? (int) $id_stage : NULL,
@@ -202,7 +277,7 @@ class Flowbuilder extends Secured_Controller
 		$uid = (int) ($this->auth_user['id_user'] ?? 0);
 		try {
 			$this->mm->save_remark($this->input->post(NULL, TRUE), $uid);
-			$this->session->set_flashdata('ok', 'Remark disimpan.');
+			$this->session->set_flashdata('ok', 'Remark keputusan berhasil disimpan.');
 		} catch (RuntimeException $e) {
 			$this->session->set_flashdata('error', $e->getMessage());
 		}

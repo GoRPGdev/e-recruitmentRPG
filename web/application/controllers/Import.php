@@ -2,7 +2,7 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Import file portal (CSV): upload -> preview + dedupe -> commit / discard.
+ * Import file pelamar (CSV): upload -> preview + dedupe -> commit / discard.
  * Wajib login + KELOLA_REKRUTMEN.
  *
  * Commit menjalankan sp_SubmitApplication per baris dalam SATU transaksi
@@ -28,17 +28,15 @@ class Import extends Secured_Controller
 			'title'    => 'Import File',
 			'_content' => 'import/index',
 			'reqs'     => $this->application_model->list_open_requisitions(),
-			'channels' => $this->application_model->list_channels(),
 			'recent'   => $this->import_model->list_recent(),
 		));
 	}
 
 	private function _upload()
 	{
-		$id_req     = (int) $this->input->post('id_req');
-		$id_channel = (int) $this->input->post('id_channel');
-		if ( ! $id_req || ! $id_channel) {
-			$this->session->set_flashdata('error', 'Pilih requisition dan channel.');
+		$id_req = (int) $this->input->post('id_req');
+		if ( ! $id_req) {
+			$this->session->set_flashdata('error', 'Pilih requisition.');
 			redirect('import');
 		}
 		if (empty($_FILES['file']['name']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
@@ -61,7 +59,7 @@ class Import extends Secured_Controller
 			redirect('import');
 		}
 
-		$id_batch = $this->import_model->create_batch($id_req, $id_channel, $_FILES['file']['name'],
+		$id_batch = $this->import_model->create_batch($id_req, NULL, $_FILES['file']['name'],
 			(int) $this->auth_user['id_user']);
 
 		// simpan file mentah
@@ -102,7 +100,6 @@ class Import extends Secured_Controller
 
 		$include = array_map('intval', (array) $this->input->post('include'));
 		$rows    = $this->import_model->list_rows($id_batch);
-		$chan    = $batch['nama_channel'] ?: 'JobStreet';
 		$conn    = $this->db->conn_id;
 
 		$ok = 0; $gagal = 0; $dup = 0;
@@ -118,7 +115,7 @@ class Import extends Secured_Controller
 					$res = $this->application_model->submit(array(
 						'id_req_manual'       => (int) $batch['id_req'],
 						'intake_method'       => 'IMPORT_FILE',
-						'nama_channel'        => $chan,
+						'nama_channel'        => NULL,
 						'id_import_batch'     => (int) $id_batch,
 						'nama_lengkap'        => isset($d['nama']) ? $d['nama'] : '',
 						'email'               => isset($d['email']) ? $d['email'] : NULL,
@@ -149,61 +146,67 @@ class Import extends Secured_Controller
 			redirect('import/preview/' . (int) $id_batch);
 		}
 
-		$this->import_model->finish_batch($id_batch, $ok, $gagal, $dup, 'Committed');
+		$status = ($gagal === 0 && $dup === 0) ? 'Committed' : 'Committed_Sebagian';
+		$this->import_model->finish_batch($id_batch, $ok, $gagal, $dup, $status);
 		$this->session->set_flashdata('ok', "Import selesai: $ok berhasil, $dup duplikat, $gagal gagal.");
 		redirect('import/preview/' . (int) $id_batch);
 	}
 
 	public function discard($id_batch = NULL)
 	{
-		if ( ! $id_batch || $this->input->method() !== 'post') {
+		$batch = $id_batch ? $this->import_model->get_batch($id_batch) : NULL;
+		if ( ! $batch || $this->input->method() !== 'post') {
 			show_404();
 		}
-		$this->import_model->discard($id_batch);
-		$this->session->set_flashdata('ok', 'Batch dibatalkan (belum ada lamaran dibuat).');
+		$this->import_model->finish_batch($id_batch, 0, 0, 0, 'Dibatalkan');
+		$this->session->set_flashdata('ok', 'Batch dibatalkan.');
 		redirect('import');
 	}
 
-	/* ---- CSV -------------------------------------------------------- */
-
-	private function _parse_csv($path)
+	private function _parse_csv($tmp)
 	{
-		$fh = fopen($path, 'r');
-		if ( ! $fh) {
-			throw new RuntimeException('File tidak bisa dibaca.');
+		$h = @fopen($tmp, 'r');
+		if ( ! $h) {
+			throw new RuntimeException('Gagal membuka file CSV.');
 		}
-		$head = fgetcsv($fh);
-		if ( ! $head) {
-			fclose($fh);
-			throw new RuntimeException('CSV kosong.');
+		$header = fgetcsv($h, 0, ',');
+		if ( ! $header || count($header) < 2) {
+			// coba delimiter titik koma
+			rewind($h);
+			$header = fgetcsv($h, 0, ';');
+			$delim = ';';
+		} else {
+			$delim = ',';
 		}
-		// normalisasi header
-		$head = array_map(function ($h) {
-			return strtolower(trim(str_replace("\xEF\xBB\xBF", '', (string) $h)));
-		}, $head);
-
-		foreach (Import_model::$HEADERS_WAJIB as $need) {
-			if ( ! in_array($need, $head, TRUE)) {
-				fclose($fh);
-				throw new RuntimeException('Kolom wajib "' . $need . '" tidak ada. Header: ' . implode(', ', $head));
+		if ( ! $header) {
+			fclose($h);
+			throw new RuntimeException('Header CSV kosong.');
+		}
+		// normalisasi header: lowercase, hapus spasi/BOM
+		$cols = array();
+		foreach ($header as $c) {
+			$clean = strtolower(trim($c));
+			$clean = preg_replace('/[\x{FEFF}]/u', '', $clean);
+			$cols[] = $clean;
+		}
+		foreach (Import_model::$HEADERS_WAJIB as $w) {
+			if ( ! in_array($w, $cols, TRUE)) {
+				fclose($h);
+				throw new RuntimeException("Kolom wajib '$w' tidak ditemukan di header CSV.");
 			}
 		}
 
-		$out = array();
-		while (($line = fgetcsv($fh)) !== FALSE) {
-			if (count(array_filter($line, 'strlen')) === 0) {
-				continue;
-			}
+		$rows = array();
+		while (($data = fgetcsv($h, 0, $delim)) !== FALSE) {
+			if (count($data) === 1 && $data[0] === NULL) { continue; }
 			$row = array();
-			foreach ($head as $i => $col) {
-				$row[$col] = isset($line[$i]) ? trim((string) $line[$i]) : '';
+			foreach ($cols as $idx => $name) {
+				$row[$name] = isset($data[$idx]) ? trim($data[$idx]) : '';
 			}
-			$out[] = $row;
-			if (count($out) > 2000) {
-				break;   // batas aman
-			}
+			if (empty($row['nama']) && empty($row['no_wa'])) { continue; }
+			$rows[] = $row;
 		}
-		fclose($fh);
-		return $out;
+		fclose($h);
+		return $rows;
 	}
 }

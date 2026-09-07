@@ -21,6 +21,39 @@ class Candidates extends Secured_Controller
 		$this->load->helper(array('url', 'form', 'rbac'));
 	}
 
+	public function index()
+	{
+		$page = max(1, (int) $this->input->get('page'));
+		$per  = 20;
+
+		$f = array(
+			'q'      => $this->input->get('q') ?: NULL,
+			'status' => $this->input->get('status') ?: NULL,
+			'posisi' => $this->input->get('posisi') ?: NULL,
+			'dept'   => $this->input->get('dept') ?: NULL,
+			'intake' => $this->input->get('intake') ?: NULL,
+			'dari'   => $this->input->get('dari') ?: NULL,
+			'sampai' => $this->input->get('sampai') ?: NULL,
+		);
+
+		$offset = ($page - 1) * $per + 1;
+		$total  = $this->candidate_model->count_list($f);
+		$rows   = $this->candidate_model->list_candidates($offset, $per, $f);
+
+		$this->load->view('layouts/main', array(
+			'title'       => 'Daftar Pelamar & Kandidat',
+			'_content'    => 'candidates/index',
+			'wide'        => TRUE,
+			'rows'        => $rows,
+			'page'        => $page,
+			'pages'       => max(1, (int) ceil($total / $per)),
+			'total'       => $total,
+			'f'           => $f,
+			'positions'   => $this->candidate_model->get_positions(),
+			'departments' => $this->candidate_model->get_departments(),
+		));
+	}
+
 	public function detail($id_lamaran = NULL)
 	{
 		if ( ! $id_lamaran) {
@@ -71,6 +104,20 @@ class Candidates extends Secured_Controller
 			log_akses_sensitif('GAJI', (int) $detail['id_req']);
 		}
 
+		$active_stage = NULL;
+		$remarks      = array();
+		if (!empty($stages)) {
+			foreach ($stages as $st) {
+				if ($st['status_tahap'] === 'Berjalan') {
+					$active_stage = $st;
+					break;
+				}
+			}
+		}
+		if ($active_stage) {
+			$remarks = $this->candidate_model->remarks_for_stage((int) $active_stage['id_stage']);
+		}
+
 		$this->load->view('layouts/main', array(
 			'title'            => 'Profil Kandidat — ' . $detail['nama_lengkap'],
 			'_content'         => 'candidates/detail',
@@ -80,6 +127,9 @@ class Candidates extends Secured_Controller
 			'health'           => $health,
 			'bank'             => $bank,
 			'stages'           => $stages,
+			'active_stage'     => $active_stage,
+			'remarks'          => $remarks,
+			'can_kelola'       => has_permission('KELOLA_REKRUTMEN'),
 			'documents'        => $documents,
 			'history'          => $history,
 			'contacts'         => $contacts,

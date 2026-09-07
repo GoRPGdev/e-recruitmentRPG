@@ -4,7 +4,6 @@
 	<p class="muted" style="margin-top:0">
 		<?= html_escape($batch['nama_file']) ?> &middot;
 		<?= html_escape(($batch['no_mpr'] ?: 'req #' . $batch['id_req']) . ' — ' . ($batch['nama_posisi'] ?: '')) ?> &middot;
-		channel <?= html_escape($batch['nama_channel'] ?: '-') ?> &middot;
 		status <strong><?= html_escape($batch['status']) ?></strong>
 	</p>
 

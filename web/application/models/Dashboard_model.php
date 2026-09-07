@@ -19,7 +19,7 @@ class Dashboard_model extends CI_Model
 			! empty($f['flow']) ? (int) $f['flow'] : NULL,
 			$f['tipe_tahap'] ?: NULL,
 			$f['status'] ?: NULL,
-			! empty($f['channel']) ? (int) $f['channel'] : NULL,
+			NULL, // id_channel dilepas
 			$f['pic'] ?: NULL,
 		);
 		$stmt = sqlsrv_query($this->db->conn_id, '{CALL dbo.sp_Dashboard(?,?,?,?,?,?,?,?,?,?)}', $params);
@@ -82,7 +82,7 @@ class Dashboard_model extends CI_Model
 	}
 	public function outlets()     { return $this->opt("SELECT id_outlet, nama_outlet FROM dbo.M_OUTLET WHERE is_aktif=1 ORDER BY nama_outlet"); }
 	public function flows()       { return $this->opt("SELECT id_flow, kode_flow FROM dbo.M_FLOW WHERE is_aktif=1 ORDER BY kode_flow"); }
-	public function channels()    { return $this->opt("SELECT id_channel, nama_channel FROM dbo.M_CHANNEL WHERE is_aktif=1 ORDER BY nama_channel"); }
+	public function channels()    { return array(); }
 	public function roles()       { return $this->opt("SELECT kode_role FROM dbo.M_ROLES WHERE is_aktif=1 ORDER BY kode_role"); }
 
 	/* =================== EXPORT KANDIDAT ========================= */
@@ -98,7 +98,7 @@ class Dashboard_model extends CI_Model
 			'a.id_lamaran', 'c.nama_lengkap', 'c.no_wa_normal', 'c.email',
 			'c.kota_domisili', 'c.pendidikan_terakhir',
 			'pos.nama_posisi', 'r.no_mpr', 'a.status_global', 'a.intake_method',
-			'ch.nama_channel', 'sglobal.nama_tahap AS tahap_kini',
+			'NULL AS nama_channel', 'sglobal.nama_tahap AS tahap_kini',
 			'a.screening_score', 'a.tanggal_lamar',
 		);
 		if (in_array('LIHAT_GAJI_PELAMAR', $perms, TRUE)) {
@@ -115,7 +115,6 @@ class Dashboard_model extends CI_Model
 		        JOIN dbo.CANDIDATES c    ON c.id_kandidat = a.id_kandidat
 		        JOIN dbo.REQUISITIONS r  ON r.id_req = a.id_req
 		        JOIN dbo.M_POSISI pos    ON pos.id_posisi = r.id_posisi
-		        LEFT JOIN dbo.M_CHANNEL ch ON ch.id_channel = a.id_channel
 		        LEFT JOIN dbo.M_STAGE sglobal ON sglobal.id_stage = a.id_stage_sekarang
 		        LEFT JOIN dbo.APPLICATION_PROFILE ap ON ap.id_lamaran = a.id_lamaran
 		        LEFT JOIN dbo.CANDIDATE_BANK cb ON cb.id_lamaran = a.id_lamaran
@@ -132,5 +131,84 @@ class Dashboard_model extends CI_Model
 		$q = $this->db->query($sql, $b);
 		$rows = $q->result_array(); $q->free_result();
 		return $rows;
+	}
+
+	/* =================== KHUSUS ROLE: USER_DEPT ========================= */
+
+	/**
+	 * Mengambil daftar pengajuan MPR terbaru milik departemen tertentu
+	 */
+	public function dept_requisitions($id_dept, $limit = 6)
+	{
+		$limit = (int) $limit;
+		$sql = "SELECT TOP $limit r.id_req, r.no_mpr, r.status_req, r.tipe_penempatan,
+		               r.jumlah_dibutuhkan, r.jumlah_disetujui, r.jumlah_terpenuhi,
+		               r.tanggal_pengajuan, p.nama_posisi, o.nama_outlet
+		        FROM dbo.REQUISITIONS r
+		        JOIN dbo.M_POSISI p      ON p.id_posisi = r.id_posisi
+		        LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
+		        WHERE p.id_departemen = ?
+		        ORDER BY r.id_req DESC";
+		$q = $this->db->query($sql, array((int) $id_dept));
+		$rows = $q->result_array();
+		$q->free_result();
+		foreach ($rows as &$r) {
+			if ($r['tanggal_pengajuan'] instanceof DateTime) {
+				$r['tanggal_pengajuan'] = $r['tanggal_pengajuan']->format('Y-m-d');
+			}
+		}
+		return $rows;
+	}
+
+	/**
+	 * Mengambil kandidat aktif yang sedang dalam proses seleksi untuk departemen tertentu
+	 */
+	public function dept_candidates_active($id_dept, $limit = 8)
+	{
+		$limit = (int) $limit;
+		$sql = "SELECT TOP $limit a.id_lamaran, a.id_req, a.status_global, a.tanggal_lamar,
+		               c.nama_lengkap, c.no_wa_normal, p.nama_posisi,
+		               st.nama_tahap AS tahap_kini, st.tipe_tahap
+		        FROM dbo.APPLICATIONS a
+		        JOIN dbo.CANDIDATES c   ON c.id_kandidat = a.id_kandidat
+		        JOIN dbo.REQUISITIONS r ON r.id_req = a.id_req
+		        JOIN dbo.M_POSISI p     ON p.id_posisi = r.id_posisi
+		        LEFT JOIN dbo.M_STAGE st ON st.id_stage = a.id_stage_sekarang
+		        WHERE p.id_departemen = ?
+		          AND a.status_global IN ('In_Progress', 'On_Hold')
+		        ORDER BY a.id_lamaran DESC";
+		$q = $this->db->query($sql, array((int) $id_dept));
+		$rows = $q->result_array();
+		$q->free_result();
+		foreach ($rows as &$r) {
+			if ($r['tanggal_lamar'] instanceof DateTime) {
+				$r['tanggal_lamar'] = $r['tanggal_lamar']->format('Y-m-d');
+			}
+		}
+		return $rows;
+	}
+
+	/**
+	 * Mengambil ringkasan metrik kuota dan pemenuhan untuk departemen
+	 */
+	public function dept_summary_metrics($id_dept)
+	{
+		$sql = "SELECT
+		            COUNT(*) AS total_mpr,
+		            ISNULL(SUM(jumlah_dibutuhkan), 0) AS total_dibutuhkan,
+		            ISNULL(SUM(jumlah_terpenuhi), 0) AS total_terpenuhi,
+		            ISNULL(SUM(CASE WHEN status_req IN ('Draft','Review_HR','Menunggu_BOD') THEN 1 ELSE 0 END), 0) AS mpr_pending,
+		            ISNULL(SUM(CASE WHEN status_req IN ('Approved','Sourcing') THEN 1 ELSE 0 END), 0) AS mpr_aktif,
+		            ISNULL(SUM(CASE WHEN status_req = 'Terpenuhi' THEN 1 ELSE 0 END), 0) AS mpr_selesai
+		        FROM dbo.REQUISITIONS r
+		        JOIN dbo.M_POSISI p ON p.id_posisi = r.id_posisi
+		        WHERE p.id_departemen = ?";
+		$q = $this->db->query($sql, array((int) $id_dept));
+		$row = $q->row_array();
+		$q->free_result();
+		return $row ?: array(
+			'total_mpr' => 0, 'total_dibutuhkan' => 0, 'total_terpenuhi' => 0,
+			'mpr_pending' => 0, 'mpr_aktif' => 0, 'mpr_selesai' => 0
+		);
 	}
 }

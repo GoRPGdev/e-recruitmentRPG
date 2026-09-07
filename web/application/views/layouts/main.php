@@ -165,7 +165,9 @@ button:active, .btn:active { transform: scale(0.99); }
   font-size: 11px;
   font-weight: 600;
   line-height: 1.35;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
+  max-width: 100%;
 }
 .tag.on, .tag.lulus, .tag.diterima, .tag--good { background: var(--good-soft); color: var(--good); }
 .tag.off, .tag.tidak_lulus, .tag.ditolak, .tag.batal, .tag--crit { background: var(--crit-soft); color: var(--crit); }
@@ -226,12 +228,13 @@ th, td {
 }
 th {
   font-family: "Archivo", sans-serif;
-  color: var(--text-faint);
+  color: var(--text-muted);
   font-weight: 700;
   text-transform: uppercase;
-  font-size: 10.5px;
-  letter-spacing: .06em;
+  font-size: 11px;
+  letter-spacing: .05em;
   background: var(--surface-2);
+  white-space: nowrap;
 }
 tr:hover td { background-color: color-mix(in srgb, var(--surface-2) 40%, transparent); }
 
@@ -239,7 +242,7 @@ tr:hover td { background-color: color-mix(in srgb, var(--surface-2) 40%, transpa
 div[style*="overflow-x:auto"],
 div[style*="overflow-x: auto"],
 .table-responsive-fit {
-  overflow-x: hidden !important;
+  overflow-x: visible !important;
   width: 100% !important;
   max-width: 100% !important;
 }
@@ -293,19 +296,22 @@ dialog::backdrop {
 #app {
   display: grid;
   grid-template-columns: 240px 1fr;
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
 }
 .sidebar {
   background: var(--surface);
   border-right: 1px solid var(--border);
-  position: sticky;
-  top: 0;
   height: 100vh;
+  max-height: 100vh;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 18px 14px;
   display: flex;
   flex-direction: column;
   z-index: 40;
+  flex-shrink: 0;
 }
 .brand {
   display: flex;
@@ -371,6 +377,78 @@ dialog::backdrop {
   color: var(--accent-ink);
   font-weight: 600;
 }
+.nav-item-collapsible {
+  margin-bottom: 2px;
+}
+.nav-chevron-btn {
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  opacity: .75;
+  transition: all .15s ease;
+}
+.nav-chevron-btn:hover {
+  opacity: 1;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+.nav-chevron-icon {
+  width: 13px;
+  height: 13px;
+  transition: transform .2s ease;
+}
+.nav-item-collapsible.open .nav-chevron-icon {
+  transform: rotate(180deg);
+}
+.nav-submenu {
+  margin-left: 18px;
+  padding-left: 8px;
+  border-left: 2px solid var(--border);
+  margin-top: 2px;
+  margin-bottom: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.nav-submenu.collapsed {
+  display: none !important;
+}
+.nav-subitem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px;
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-decoration: none !important;
+  transition: all .15s ease;
+}
+.nav-subitem:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.nav-subitem.active {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+.nav-subitem .sub-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text-faint);
+}
+.nav-subitem.active .sub-badge {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
 .nav-item svg {
   width: 17px;
   height: 17px;
@@ -426,6 +504,10 @@ dialog::backdrop {
 
 /* Main Area & Sticky Topbar */
 .main {
+  height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -503,9 +585,11 @@ dialog::backdrop {
 </head>
 <body>
 
-<?php if ($this->session->userdata('logged_in')):
+<?php
+  $seg1 = $this->uri->segment(1);
+  $is_public_route = in_array($seg1, array('lamar', 'auth'));
+  if ($this->session->userdata('logged_in') && ! $is_public_route):
     $au = (array) $this->session->userdata('auth_user');
-    $seg1 = $this->uri->segment(1);
     $initials = strtoupper(substr($au['nama'] ?? ($au['username'] ?? 'U'), 0, 2));
 ?>
 <div id="app">
@@ -529,6 +613,10 @@ dialog::backdrop {
       <a href="<?= site_url('requisitions') ?>" class="nav-item <?= in_array($seg1, array('requisitions', 'pipeline')) ? 'active' : '' ?>">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
         <span>MPR & Pipeline</span>
+      </a>
+      <a href="<?= site_url('candidates') ?>" class="nav-item <?= $seg1 === 'candidates' ? 'active' : '' ?>">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        <span>Daftar Pelamar</span>
       </a>
     </div>
 
@@ -563,10 +651,35 @@ dialog::backdrop {
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
         <span>Manajemen User</span>
       </a>
-      <a href="<?= site_url('master') ?>" class="nav-item <?= $seg1 === 'master' ? 'active' : '' ?>">
-        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
-        <span>Master Data</span>
-      </a>
+      <div class="nav-item-collapsible <?= $seg1 === 'master' ? 'open' : '' ?>" id="masterNavGroup">
+        <div class="nav-item <?= $seg1 === 'master' ? 'active' : '' ?>" style="display:flex; justify-content:space-between; align-items:center; padding-right:4px;">
+          <a href="<?= site_url('master') ?>" style="display:flex; align-items:center; gap:10px; color:inherit; text-decoration:none; flex:1">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+            <span>Master Data</span>
+          </a>
+          <button type="button" class="nav-chevron-btn" onclick="toggleMasterSubmenu(event)" title="Buka / Tutup Sub Menu">
+            <svg class="nav-chevron-icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+        </div>
+        <div class="nav-submenu <?= $seg1 === 'master' ? '' : 'collapsed' ?>" id="masterSubmenu">
+          <?php
+            $m_sub = $this->uri->segment(3) ?: ($seg1 === 'master' ? 'posisi' : '');
+            $m_list = array(
+              'posisi'     => 'Posisi',
+              'departemen' => 'Departemen',
+              'outlet'     => 'Outlet',
+              'dokumen'     => 'Dokumen',
+              'remark'      => 'Remark Alur',
+              'efek_status' => 'Efek Status',
+            );
+            foreach ($m_list as $mk => $ml):
+          ?>
+            <a href="<?= site_url('master/index/' . $mk) ?>" class="nav-subitem <?= ($seg1 === 'master' && $m_sub === $mk) ? 'active' : '' ?>">
+              <span><?= $ml ?></span>
+            </a>
+          <?php endforeach; ?>
+        </div>
+      </div>
       <a href="<?= site_url('flowbuilder') ?>" class="nav-item <?= $seg1 === 'flowbuilder' ? 'active' : '' ?>">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
         <span>Flow Builder</span>
@@ -644,5 +757,41 @@ dialog::backdrop {
   </div>
 <?php endif; ?>
 
+<script>
+function toggleMasterSubmenu(e) {
+  if (e) e.stopPropagation();
+  var group = document.getElementById('masterNavGroup');
+  var sub = document.getElementById('masterSubmenu');
+  if (!group || !sub) return;
+  var isCollapsed = sub.classList.contains('collapsed');
+  if (isCollapsed) {
+    sub.classList.remove('collapsed');
+    group.classList.add('open');
+  } else {
+    sub.classList.add('collapsed');
+    group.classList.remove('open');
+  }
+}
+
+function toggleMenu(e, id) {
+  e.stopPropagation();
+  var target = document.getElementById(id);
+  if (!target) return;
+  var isShown = target.style.display === 'block';
+  document.querySelectorAll('.mpr-dropdown').forEach(function(el) {
+    el.style.display = 'none';
+  });
+  if (!isShown) {
+    target.style.display = 'block';
+  }
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.mpr-menu-btn') && !e.target.closest('.mpr-dropdown')) {
+    document.querySelectorAll('.mpr-dropdown').forEach(function(el) {
+      el.style.display = 'none';
+    });
+  }
+});
+</script>
 </body>
 </html>

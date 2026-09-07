@@ -1,8 +1,8 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
 <main class="card">
-	<h1>Import File Portal</h1>
+	<h1>Import File Pelamar</h1>
 	<p class="muted" style="margin-top:0">
-		CSV dari JobStreet / Glints (Excel &rarr; Save As &rarr; CSV).
+		Format CSV (Excel &rarr; Save As &rarr; CSV).
 		Kolom wajib: <code>nama</code>, <code>no_wa</code>. Opsional:
 		<code>email</code>, <code>pendidikan</code>, <code>kota</code>,
 		<code>perusahaan_terakhir</code>, <code>gaji_diharapkan</code>.
@@ -20,15 +20,6 @@
 			<?php foreach ($reqs as $r): ?>
 				<option value="<?= (int) $r['id_req'] ?>">
 					<?= html_escape(($r['no_mpr'] ?: '#' . $r['id_req']) . ' — ' . $r['nama_posisi']) ?>
-				</option>
-			<?php endforeach; ?>
-		</select>
-
-		<label for="id_channel">Channel *</label>
-		<select id="id_channel" name="id_channel" required>
-			<?php foreach ($channels as $c): ?>
-				<option value="<?= (int) $c['id_channel'] ?>" <?= $c['nama_channel'] === 'JobStreet' ? 'selected' : '' ?>>
-					<?= html_escape($c['nama_channel']) ?>
 				</option>
 			<?php endforeach; ?>
 		</select>

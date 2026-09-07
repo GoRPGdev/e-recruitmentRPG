@@ -78,20 +78,24 @@ class Pipeline extends Secured_Controller
 			log_akses_sensitif('GAJI', (int) $id_req);
 		}
 
+		// Ambil kandidat dengan status final (Rejected, Hired, Withdrawn, dll.)
+		$final_candidates = $this->requisition_model->final_candidates($id_req);
+
 		$this->load->view('layouts/main', array(
-			'title'        => 'Pipeline — ' . ($req['no_mpr'] ?: '#' . $req['id_req']),
-			'_content'     => 'pipeline/board',
-			'wide'         => TRUE,
-			'req'          => $req,
-			'stages'       => $stages,
-			'remarks'      => $remarks,
-			'all_stages'   => $this->requisition_model->active_stages(),
-			'can_aksi'     => has_permission('KELOLA_REKRUTMEN'),
-			'interviews'   => $interviews,
-			'psikotes'     => $psikotes,
-			'offers'       => $offers,
-			'interviewers' => $interviewers,
-			'can_gaji'     => $can_gaji,
+			'title'            => 'Pipeline — ' . ($req['no_mpr'] ?: '#' . $req['id_req']),
+			'_content'         => 'pipeline/board',
+			'wide'             => TRUE,
+			'req'              => $req,
+			'stages'           => $stages,
+			'remarks'          => $remarks,
+			'all_stages'       => $this->requisition_model->active_stages(),
+			'can_aksi'         => has_permission('KELOLA_REKRUTMEN'),
+			'interviews'       => $interviews,
+			'psikotes'         => $psikotes,
+			'offers'           => $offers,
+			'interviewers'     => $interviewers,
+			'can_gaji'         => $can_gaji,
+			'final_candidates' => $final_candidates,
 		));
 	}
 
@@ -112,6 +116,11 @@ class Pipeline extends Secured_Controller
 			$this->session->set_flashdata('ok', 'Tahap diproses. Status: ' . $st);
 		} catch (RuntimeException $e) {
 			$this->session->set_flashdata('error', $e->getMessage());
+		}
+
+		$redirect = $this->input->post('redirect_to', TRUE);
+		if ($redirect && strpos($redirect, '://') === FALSE) {
+			redirect($redirect);
 		}
 		redirect('pipeline/index/' . (int) $id_req);
 	}
@@ -149,7 +158,7 @@ class Pipeline extends Secured_Controller
 		try {
 			$u = $this->requisition_model->log_contact(
 				(int) $this->input->post('id_lamaran'),
-				$this->input->post('metode'),
+				$this->input->post('metode') ?: 'WA',
 				$this->input->post('hasil'),
 				$this->input->post('catatan', TRUE),
 				(int) $this->auth_user['id_user']
@@ -159,6 +168,11 @@ class Pipeline extends Secured_Controller
 			$this->session->set_flashdata('error', $e->getMessage());
 		}
 		redirect('pipeline/index/' . (int) $id_req);
+	}
+
+	public function log_contact($id_req = NULL)
+	{
+		return $this->contact($id_req);
 	}
 
 	public function save_interview($id_req = NULL)
@@ -244,6 +258,38 @@ class Pipeline extends Secured_Controller
 			$this->session->set_flashdata('ok', 'Data penawaran kerja (offer) berhasil disimpan.');
 		} catch (RuntimeException $e) {
 			$this->session->set_flashdata('error', $e->getMessage());
+		}
+		redirect('pipeline/index/' . (int) $id_req);
+	}
+
+	public function cancel_hired($id_req = NULL)
+	{
+		$this->require_permission('KELOLA_REKRUTMEN');
+		if ( ! $id_req || $this->input->method() !== 'post') {
+			show_404();
+		}
+		$this->_get_req_scoped($id_req);
+		try {
+			$id_lamaran    = (int) $this->input->post('id_lamaran');
+			$status_tujuan = $this->input->post('status_tujuan') ?: 'Withdrawn';
+			$alasan        = $this->input->post('alasan', TRUE);
+			$buka_posting  = $this->input->post('buka_posting') ? 1 : 0;
+
+			$st = $this->requisition_model->cancel_hired(
+				$id_lamaran,
+				$status_tujuan,
+				$alasan,
+				(int) $this->auth_user['id_user'],
+				$buka_posting
+			);
+			$this->session->set_flashdata('ok', 'Status Hired berhasil dibatalkan. Status pelamar kini: ' . $st . '. Kuota dan status lowongan telah diperbarui.');
+		} catch (RuntimeException $e) {
+			$this->session->set_flashdata('error', $e->getMessage());
+		}
+
+		$redirect = $this->input->post('redirect_to', TRUE);
+		if ($redirect && strpos($redirect, '://') === FALSE) {
+			redirect($redirect);
 		}
 		redirect('pipeline/index/' . (int) $id_req);
 	}

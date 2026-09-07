@@ -22,7 +22,7 @@ class Candidate_model extends CI_Model
 		               o.nama_outlet,
 		               f.nama_flow, f.kode_flow,
 		               st.nama_tahap AS nama_tahap_kini, st.tipe_tahap AS tipe_tahap_kini,
-		               ch.nama_channel
+		               NULL AS nama_channel
 		        FROM dbo.APPLICATIONS a
 		        JOIN dbo.CANDIDATES c         ON c.id_kandidat = a.id_kandidat
 		        JOIN dbo.REQUISITIONS r       ON r.id_req = a.id_req
@@ -31,7 +31,7 @@ class Candidate_model extends CI_Model
 		        LEFT JOIN dbo.M_OUTLET o      ON o.id_outlet = r.id_outlet
 		        LEFT JOIN dbo.M_FLOW f        ON f.id_flow = a.id_flow
 		        LEFT JOIN dbo.M_STAGE st      ON st.id_stage = a.id_stage_sekarang
-		        LEFT JOIN dbo.M_CHANNEL ch    ON ch.id_channel = a.id_channel
+		        /* no channel join */
 		        WHERE a.id_lamaran = ?';
 		$q = $this->db->query($sql, array((int) $id_lamaran));
 		$row = $q->row_array();
@@ -188,5 +188,134 @@ class Candidate_model extends CI_Model
 		$row = $q->row_array();
 		$q->free_result();
 		return $row ? $row : NULL;
+	}
+
+	public function remarks_for_stage($id_stage)
+	{
+		$q = $this->db->query(
+			'SELECT id_remark, kode_remark, label, efek_status FROM dbo.M_REMARKS
+			 WHERE id_stage = ? AND is_aktif = 1 ORDER BY urutan, id_remark', array((int) $id_stage));
+		$r = $q->result_array(); $q->free_result(); return $r;
+	}
+
+	/* ---- List Kandidat Global & Filter ---- */
+
+	private function _list_where($f, &$b)
+	{
+		$w = array();
+		if ( ! empty($f['status'])) {
+			$w[] = 'a.status_global = ?';
+			$b[] = (string) $f['status'];
+		}
+		if ( ! empty($f['posisi'])) {
+			$w[] = 'r.id_posisi = ?';
+			$b[] = (int) $f['posisi'];
+		}
+		if ( ! empty($f['dept'])) {
+			$w[] = 'p.id_departemen = ?';
+			$b[] = (int) $f['dept'];
+		}
+		if ( ! empty($f['intake'])) {
+			$w[] = 'a.intake_method = ?';
+			$b[] = (string) $f['intake'];
+		}
+		if ( ! empty($f['dari'])) {
+			$w[] = 'a.tanggal_lamar >= ?';
+			$b[] = (string) $f['dari'];
+		}
+		if ( ! empty($f['sampai'])) {
+			$w[] = 'a.tanggal_lamar < DATEADD(DAY, 1, ?)';
+			$b[] = (string) $f['sampai'];
+		}
+		if ( ! empty($f['q'])) {
+			$keyword = '%' . trim((string) $f['q']) . '%';
+			$w[] = '(c.nama_lengkap LIKE ? OR c.email LIKE ? OR c.no_wa_normal LIKE ? OR r.no_mpr LIKE ?)';
+			$b[] = $keyword;
+			$b[] = $keyword;
+			$b[] = $keyword;
+			$b[] = $keyword;
+		}
+
+		// Scoping departemen bagi USER_DEPT
+		$dept = current_user_dept();
+		if ($dept !== NULL) {
+			$w[] = 'p.id_departemen = ?';
+			$b[] = (int) $dept;
+		}
+
+		return $w ? 'WHERE ' . implode(' AND ', $w) : '';
+	}
+
+	public function count_list($f = array())
+	{
+		$b = array();
+		$where = $this->_list_where((array) $f, $b);
+		$sql = "SELECT COUNT(*) AS n
+		        FROM dbo.APPLICATIONS a
+		        JOIN dbo.CANDIDATES c   ON c.id_kandidat = a.id_kandidat
+		        JOIN dbo.REQUISITIONS r ON r.id_req = a.id_req
+		        JOIN dbo.M_POSISI p     ON p.id_posisi = r.id_posisi
+		        $where";
+		$q = $this->db->query($sql, $b);
+		$res = (int) $q->row()->n;
+		$q->free_result();
+		return $res;
+	}
+
+	public function list_candidates($offset, $per, $f = array())
+	{
+		$b = array();
+		$where = $this->_list_where((array) $f, $b);
+		$b[] = (int) $offset;
+		$b[] = (int) $offset + (int) $per - 1;
+
+		$sql = "WITH q AS (
+		            SELECT a.id_lamaran, a.id_kandidat, a.id_req, a.status_global, a.tanggal_lamar,
+		                   a.intake_method, a.screening_score, a.id_stage_sekarang,
+		                   c.nama_lengkap, c.no_wa_normal, c.email, c.kota_domisili, c.pendidikan_terakhir,
+		                   r.no_mpr, r.tipe_penempatan,
+		                   p.id_posisi, p.nama_posisi, p.id_departemen,
+		                   d.nama AS nama_departemen,
+		                   o.nama_outlet,
+		                   st.nama_tahap AS nama_tahap_kini, st.tipe_tahap AS tipe_tahap_kini,
+		                   ROW_NUMBER() OVER (ORDER BY a.id_lamaran DESC) AS rn
+		            FROM dbo.APPLICATIONS a
+		            JOIN dbo.CANDIDATES c        ON c.id_kandidat = a.id_kandidat
+		            JOIN dbo.REQUISITIONS r      ON r.id_req = a.id_req
+		            JOIN dbo.M_POSISI p          ON p.id_posisi = r.id_posisi
+		            LEFT JOIN dbo.M_DEPARTEMEN d ON d.id_departemen = p.id_departemen
+		            LEFT JOIN dbo.M_OUTLET o     ON o.id_outlet = r.id_outlet
+		            LEFT JOIN dbo.M_STAGE st     ON st.id_stage = a.id_stage_sekarang
+		            $where
+		        )
+		        SELECT * FROM q WHERE rn BETWEEN ? AND ? ORDER BY rn";
+
+		$q = $this->db->query($sql, $b);
+		$rows = $q->result_array();
+		$q->free_result();
+		return $rows;
+	}
+
+	public function get_positions()
+	{
+		$dept = current_user_dept();
+		$w = 'WHERE is_aktif = 1';
+		$p = array();
+		if ($dept !== NULL) {
+			$w .= ' AND id_departemen = ?';
+			$p[] = (int) $dept;
+		}
+		$q = $this->db->query("SELECT id_posisi, nama_posisi FROM dbo.M_POSISI $w ORDER BY nama_posisi", $p);
+		$rows = $q->result_array();
+		$q->free_result();
+		return $rows;
+	}
+
+	public function get_departments()
+	{
+		$q = $this->db->query('SELECT id_departemen, nama FROM dbo.M_DEPARTEMEN WHERE is_aktif = 1 ORDER BY nama');
+		$rows = $q->result_array();
+		$q->free_result();
+		return $rows;
 	}
 }

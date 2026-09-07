@@ -2,25 +2,30 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Application_model -- intake lamaran.
- *
- * Untuk sp_SubmitApplication dipakai sqlsrv_query() LANGSUNG di atas
- * koneksi CI3 ($this->db->conn_id): binding parameter asli + OUTPUT param,
- * sesuai pola tools/test-koneksi.php bagian 7. Driver query() CI3 tidak
- * mendukung OUTPUT param.
+ * Application_model -- submit form publik (/lamar/<slug>) & get posting info.
+ * Mutasi lamaran memanggil dbo.sp_SubmitApplication via Stored Procedure.
  */
 class Application_model extends CI_Model
 {
+	/* ---- info posting publik ------------------------------------------- */
+
 	/**
 	 * Data posting dari slug -- untuk menampilkan "Anda melamar: <posisi>"
 	 * dan memvalidasi form masih terbuka.
+	 * Memuat informasi lengkap: posisi, departemen, outlet, job deskripsi, kualifikasi,
+	 * kriteria pendidikan dan pengalaman minimal.
 	 * @return array|null
 	 */
 	public function get_posting_by_slug($slug)
 	{
 		$sql = 'SELECT jp.id_posting, jp.id_req, jp.judul_posting, jp.url_slug,
 		               jp.form_aktif, jp.form_dibuka, jp.form_ditutup,
-		               r.status_req, p.nama_posisi, d.nama AS departemen,
+		               COALESCE(NULLIF(jp.job_desc, \'\'), r.job_desc) AS job_desc,
+		               COALESCE(NULLIF(jp.kualifikasi, \'\'), r.kualifikasi) AS kualifikasi,
+		               r.status_req, r.tipe_penempatan, r.pendidikan_minimal,
+		               r.pengalaman_minimal_tahun, r.status_karyawan,
+		               p.nama_posisi, d.nama AS departemen,
+		               o.nama_outlet, o.region AS region_outlet,
 		               CASE WHEN jp.form_aktif = 1
 		                    AND (jp.form_dibuka  IS NULL OR jp.form_dibuka  <= GETDATE())
 		                    AND (jp.form_ditutup IS NULL OR jp.form_ditutup >= GETDATE())
@@ -30,6 +35,7 @@ class Application_model extends CI_Model
 		        JOIN dbo.REQUISITIONS r ON r.id_req = jp.id_req
 		        JOIN dbo.M_POSISI p     ON p.id_posisi = r.id_posisi
 		        LEFT JOIN dbo.M_DEPARTEMEN d ON d.id_departemen = p.id_departemen
+		        LEFT JOIN dbo.M_OUTLET o     ON o.id_outlet = r.id_outlet
 		        WHERE jp.url_slug = ?';
 		$q = $this->db->query($sql, array((string) $slug));
 		$row = $q->row_array();
@@ -57,6 +63,8 @@ class Application_model extends CI_Model
 		);
 	}
 
+	/* ---- submit lamaran (sp_SubmitApplication) ------------------------- */
+
 	/**
 	 * Panggil dbo.sp_SubmitApplication.
 	 *
@@ -76,10 +84,14 @@ class Application_model extends CI_Model
 	{
 		$conn = $this->db->conn_id;
 
-		// URUTAN HARUS SAMA PERSIS dengan deklarasi parameter sp_SubmitApplication.
-		$g = function ($k, $d = NULL) use ($in) { return array_key_exists($k, $in) && $in[$k] !== '' ? $in[$k] : $d; };
+		// URUTAN HARUS SAMA PERSIS dengan deklarasi parameter sp_SubmitApplication (34 parameter).
+		$g = function ($k, $d = NULL) use ($in) {
+			return array_key_exists($k, $in) && $in[$k] !== '' ? $in[$k] : $d;
+		};
 
-		$id_lamaran = 0; $id_kandidat = 0; $is_baru = 0;
+		$id_lamaran = 0;
+		$id_kandidat = 0;
+		$is_baru = 0;
 
 		$params = array(
 			$g('url_slug'),
