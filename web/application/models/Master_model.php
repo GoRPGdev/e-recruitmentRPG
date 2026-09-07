@@ -300,6 +300,52 @@ class Master_model extends CI_Model
 		);
 	}
 
+	/* ================= LEVEL ORGANISASI (M_LEVEL_ORGANISASI) ======= */
+
+	public function list_level_organisasi($hanya_aktif = FALSE)
+	{
+		$sql = 'SELECT id_level_organisasi, kode_level, nama_level, urutan, keterangan, is_aktif,
+		               (SELECT COUNT(*) FROM dbo.M_POSISI p WHERE p.level_posisi = l.kode_level) AS n_posisi
+		        FROM dbo.M_LEVEL_ORGANISASI l';
+		if ($hanya_aktif) {
+			$sql .= ' WHERE is_aktif = 1';
+		}
+		$sql .= ' ORDER BY is_aktif DESC, urutan, kode_level';
+		return $this->db->query($sql)->result_array();
+	}
+
+	public function save_level_organisasi($in)
+	{
+		$id = ! empty($in['id_level_organisasi']) ? (int) $in['id_level_organisasi'] : (! empty($in['id']) ? (int) $in['id'] : NULL);
+		$kode = trim((string) $in['kode_level']);
+		$nama = trim((string) $in['nama_level']);
+		$keterangan = ! empty($in['keterangan']) ? trim((string) $in['keterangan']) : NULL;
+		$urutan = isset($in['urutan']) && $in['urutan'] !== '' ? (int) $in['urutan'] : 0;
+
+		if ($id) {
+			$this->db->query(
+				'UPDATE dbo.M_LEVEL_ORGANISASI
+				 SET kode_level = ?, nama_level = ?, urutan = ?, keterangan = ?
+				 WHERE id_level_organisasi = ?',
+				array($kode, $nama, $urutan, $keterangan, $id)
+			);
+		} else {
+			$this->db->query(
+				'INSERT INTO dbo.M_LEVEL_ORGANISASI (kode_level, nama_level, urutan, keterangan, is_aktif)
+				 VALUES (?, ?, ?, ?, 1)',
+				array($kode, $nama, $urutan, $keterangan)
+			);
+		}
+	}
+
+	public function toggle_level_organisasi($id, $is_aktif)
+	{
+		$this->db->query(
+			'UPDATE dbo.M_LEVEL_ORGANISASI SET is_aktif = ? WHERE id_level_organisasi = ?',
+			array($is_aktif ? 1 : 0, (int) $id)
+		);
+	}
+
 	/* ================= FLOW BUILDER (M_FLOW + M_FLOW_STAGE) ======= */
 
 	public function list_flow()

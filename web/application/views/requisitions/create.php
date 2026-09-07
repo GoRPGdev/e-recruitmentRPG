@@ -48,14 +48,7 @@
 		<label for="urgensi">Urgensi</label>
 		<input type="text" id="urgensi" name="urgensi" value="<?= set_value('urgensi') ?>" placeholder="Normal / Tinggi / Mendesak">
 
-		<label>
-			<input type="checkbox" name="butuh_psikotes" value="1" <?= set_checkbox('butuh_psikotes', '1') ?>> Butuh psikotes
-		</label>
-		<label>
-			<input type="checkbox" name="butuh_interview_bod" value="1" <?= set_checkbox('butuh_interview_bod', '1') ?>> Butuh interview BOD
-		</label>
-
-		<div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:14px; margin:14px 0">
+<div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:14px; margin:14px 0">
 			<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px">
 				<div style="font-weight:700; font-size:13.5px; color:var(--text)">Spesifikasi Jabatan & Standar Posisi</div>
 				<span class="muted" style="font-size:11.5px">Otomatis terisi dari data Master Posisi HR</span>
@@ -89,15 +82,7 @@
 			</div>
 		</div>
 
-		<?php if (can_sensitif('GAJI')): ?>
-		<label for="range_gaji_min">Range gaji min / max (SENSITIF)</label>
-		<div style="display:flex; gap:8px">
-			<input type="text" id="range_gaji_min" name="range_gaji_min" value="<?= set_value('range_gaji_min') ?>" inputmode="numeric" style="flex:1" placeholder="Gaji min (Rp)">
-			<input type="text" name="range_gaji_max" value="<?= set_value('range_gaji_max') ?>" inputmode="numeric" style="flex:1" placeholder="Gaji max (Rp)">
-		</div>
-		<?php endif; ?>
-
-		<button type="submit">Buat draft</button>
+<button type="submit">Buat draft</button>
 	<?= form_close() ?>
 </main>
 

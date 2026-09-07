@@ -327,12 +327,16 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 			<form method="get" action="<?= site_url('dashboard') ?>" style="margin:0">
 				<div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end">
 					<div>
-						<label style="margin:0 0 4px; font-size:11px; display:block" class="faint">PERIODE MULAI</label>
+						<label style="margin:0 0 4px; font-size:11px; display:block" class="faint">PERIODE MULAI (DARI)</label>
 						<input type="date" name="dari" value="<?= html_escape($g('dari')) ?>" style="width:130px; padding:6px 8px; font-size:12px">
 					</div>
 					<div>
-						<label style="margin:0 0 4px; font-size:11px; display:block" class="faint">PERIODE AKHIR</label>
+						<label style="margin:0 0 4px; font-size:11px; display:block" class="faint">PERIODE AKHIR (SAMPAI)</label>
 						<input type="date" name="sampai" value="<?= html_escape($g('sampai')) ?>" style="width:130px; padding:6px 8px; font-size:12px">
+					</div>
+					<div>
+						<label style="margin:0 0 4px; font-size:11px; display:block" class="faint">TANGGAL SPESIFIK</label>
+						<input type="date" name="tanggal" value="<?= html_escape($g('tanggal')) ?>" title="Isi jika ingin memfilter aktivitas tepat pada 1 hari tertentu saja" style="width:130px; padding:6px 8px; font-size:12px">
 					</div>
 					<?php
 					$fsel = array(
@@ -392,47 +396,121 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 			<?php endforeach; ?>
 		</div>
 
-		<!-- Funnel Konversi 7 Tahap & Efisiensi Waktu -->
-		<div style="display:grid; grid-template-columns:2fr 1fr; gap:18px; margin-bottom:22px; align-items:start">
-			<!-- Matriks Funnel -->
+		<!-- Funnel Konversi Dinamis (Posisi x Tahap) & Efisiensi Waktu -->
+		<div style="display:grid; grid-template-columns:2.2fr 1fr; gap:18px; margin-bottom:22px; align-items:start">
+			<!-- Matriks Funnel Dinamis (Posisi yang Dibuka x Tahap Seleksi) -->
 			<div class="dash-card" style="padding:18px 20px">
-				<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px">
+				<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px; flex-wrap:wrap; gap:10px">
 					<div>
-						<h2 style="font-size:15px; font-weight:700; margin:0 0 2px; color:var(--text)">Funnel Konversi Tahapan</h2>
-						<span class="muted" style="font-size:12px">Matriks pergerakan kandidat pada 7 tahap seleksi resmi</span>
+						<div style="display:flex; align-items:center; gap:8px">
+							<h2 style="font-size:15px; font-weight:700; margin:0; color:var(--text)">Matriks Funnel Konversi: Posisi &times; Tahapan</h2>
+							<span class="tag info" style="font-size:10px">Dinamis</span>
+						</div>
+						<div class="muted" style="font-size:12px; margin-top:2px">
+							Posisi lowongan (baris) &times; tahapan seleksi aktif (kolom).
+							<?php if (!empty($pos_stage_funnel['dari'])): ?>
+								Filter: <strong style="color:var(--text)"><?= html_escape($pos_stage_funnel['dari']) ?></strong>
+								<?php if ($pos_stage_funnel['dari'] !== $pos_stage_funnel['sampai']): ?>
+									s/d <strong style="color:var(--text)"><?= html_escape($pos_stage_funnel['sampai']) ?></strong>
+								<?php else: ?>
+									<span class="faint">(tanggal spesifik)</span>
+								<?php endif; ?>
+							<?php else: ?>
+								<span class="faint">Semua periode berjalan</span>
+							<?php endif; ?>
+						</div>
 					</div>
-					<span class="tag info" style="font-size:10.5px">Standard Flow</span>
+					<div style="text-align:right">
+						<span class="muted" style="font-size:11.5px">Total Terdata:</span>
+						<span class="mono" style="font-size:14px; font-weight:700; color:var(--accent); margin-left:4px">
+							<?= (int) ($pos_stage_funnel['total_all'] ?? 0) ?> kandidat
+						</span>
+					</div>
 				</div>
-				<div class="table-responsive-fit" style="overflow-x:auto">
-					<table class="dash-table">
-						<thead>
-							<tr>
-								<th>Tahapan</th>
-								<?php foreach ($fstat as $s): ?>
-									<th style="text-align:center"><?= html_escape($s) ?></th>
+
+				<?php if (empty($pos_stage_funnel['positions']) || empty($pos_stage_funnel['stages'])): ?>
+					<div style="padding:32px 16px; text-align:center; background:var(--surface-2); border-radius:8px">
+						<div style="font-size:13.5px; font-weight:600; color:var(--text); margin-bottom:4px">Tidak Ada Pergerakan Kandidat</div>
+						<div class="muted" style="font-size:12px">
+							Tidak ada posisi atau tahapan seleksi dengan perbaruan data pada tanggal atau rentang tanggal yang dipilih.
+						</div>
+					</div>
+				<?php else: ?>
+					<div class="table-responsive-fit" style="overflow-x:auto">
+						<table class="dash-table" style="white-space:nowrap">
+							<thead>
+								<tr>
+									<th style="min-width:180px; position:sticky; left:0; z-index:2; background:var(--surface-2)">
+										Posisi Lowongan
+									</th>
+									<?php foreach ($pos_stage_funnel['stages'] as $st_id => $st): ?>
+										<th style="text-align:center; min-width:90px; padding:8px 10px">
+											<div style="font-weight:700; color:var(--text); font-size:11.5px"><?= html_escape($st['nama_tahap']) ?></div>
+											<span class="tag <?= in_array($st['tipe_tahap'], array('OFFER', 'ONBOARD')) ? 'on' : (in_array($st['tipe_tahap'], array('INTERVIEW')) ? 'warn' : 'info') ?>" style="font-size:9.5px; padding:1px 5px; margin-top:3px; display:inline-block">
+												<?= html_escape($st['tipe_tahap']) ?>
+											</span>
+										</th>
+									<?php endforeach; ?>
+									<th style="text-align:right; width:70px">Total</th>
+								</tr>
+							</thead>
+							<tbody>
+								<?php foreach ($pos_stage_funnel['positions'] as $p_id => $pos): ?>
+									<tr>
+										<td style="position:sticky; left:0; z-index:1; background:var(--surface)">
+											<div style="font-weight:700; color:var(--text)">
+												<?= html_escape($pos['nama_posisi']) ?>
+											</div>
+											<div style="display:flex; align-items:center; gap:6px; margin-top:2px">
+												<?php if (!empty($pos['departemen'])): ?>
+													<span class="muted" style="font-size:11px"><?= html_escape($pos['departemen']) ?></span>
+												<?php endif; ?>
+												<?php if (!empty($pos['id_req'])): ?>
+													<span class="faint">&bull;</span>
+													<a href="<?= site_url('pipeline/index/' . (int) $pos['id_req']) ?>" style="font-size:10.5px; text-decoration:none; color:var(--accent); font-weight:600">
+														Buka Pipeline &rarr;
+													</a>
+												<?php endif; ?>
+											</div>
+										</td>
+										<?php foreach ($pos_stage_funnel['stages'] as $st_id => $st):
+											$cell = $pos_stage_funnel['matrix'][$p_id][$st_id] ?? NULL;
+											$cnt  = $cell ? (int) $cell['total'] : 0;
+										?>
+											<td style="text-align:center; padding:8px 6px">
+												<?php if ($cnt > 0): ?>
+													<span class="tag info" style="font-size:11px; font-weight:700; padding:2px 7px; min-width:26px; display:inline-block">
+														<?= $cnt ?>
+													</span>
+												<?php else: ?>
+													<span class="faint" style="font-size:11px">-</span>
+												<?php endif; ?>
+											</td>
+										<?php endforeach; ?>
+										<td style="text-align:right; font-weight:700" class="mono">
+											<?= (int) $pos['total'] ?>
+										</td>
+									</tr>
 								<?php endforeach; ?>
-								<th style="text-align:right">Total</th>
-							</tr>
-						</thead>
-						<tbody>
-							<?php foreach ($order as $tt):
-								if ( ! isset($fmat[$tt])) continue;
-								$tot = 0;
-							?>
-							<tr>
-								<td><strong style="color:var(--text)"><?= $tt ?></strong></td>
-								<?php foreach ($fstat as $s):
-									$v = $fmat[$tt][$s] ?? 0;
-									$tot += $v;
-								?>
-									<td style="text-align:center"><?= $v ? '<span class="tag ' . ($v > 0 ? 'info' : '') . '" style="font-size:10.5px">' . $v . '</span>' : '<span class="faint">-</span>' ?></td>
-								<?php endforeach; ?>
-								<td style="text-align:right; font-weight:700" class="mono"><?= $tot ?></td>
-							</tr>
-							<?php endforeach; ?>
-						</tbody>
-					</table>
-				</div>
+							</tbody>
+							<tfoot>
+								<tr style="background:var(--surface-2); font-weight:700; border-top:2px solid var(--border)">
+									<td style="position:sticky; left:0; z-index:1; background:var(--surface-2); color:var(--text)">
+										TOTAL SELURUHNYA
+									</td>
+									<?php foreach ($pos_stage_funnel['stages'] as $st_id => $st): ?>
+										<td style="text-align:center; color:var(--accent)" class="mono">
+											<?= (int) $st['total'] ?>
+										</td>
+									<?php endforeach; ?>
+									<td style="text-align:right; color:var(--accent)" class="mono">
+										<?= (int) ($pos_stage_funnel['total_all'] ?? 0) ?>
+									</td>
+								</tr>
+							</tfoot>
+						</table>
+					</div>
+				<?php endif; ?>
 			</div>
 
 			<!-- Durasi Proses & Kepatuhan UU PDP -->

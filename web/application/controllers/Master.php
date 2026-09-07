@@ -10,6 +10,7 @@ class Master extends Secured_Controller
 	private $types = array(
 		'posisi'     => array('label' => 'Posisi',     'pk' => 'id_posisi',     'desc' => 'Daftar jabatan, departemen induk, level organisasi, dan flow seleksi default.'),
 		'departemen' => array('label' => 'Departemen', 'pk' => 'id_departemen', 'tabel' => 'M_DEPARTEMEN', 'desc' => 'Unit divisi dan departemen operasional serta back-office RPG.'),
+			'level_organisasi' => array('label' => 'Level Organisasi', 'pk' => 'id_level_organisasi', 'tabel' => 'M_LEVEL_ORGANISASI', 'desc' => 'Tingkat jabatan dan struktur jenjang hierarki organisasi RPG.'),
 		'outlet'     => array('label' => 'Outlet',     'pk' => 'id_outlet',     'tabel' => 'M_OUTLET',     'desc' => 'Titik cabang, outlet gerai, unit brand, dan wilayah region penempatan.'),
 		'dokumen'     => array('label' => 'Dokumen',     'pk' => 'id_dokumen',     'tabel' => 'M_DOKUMEN',     'desc' => 'Katalog berkas persyaratan pelamar, kategori, dan tingkat sensitivitas PDP.'),
 		'remark'      => array('label' => 'Remark Alur', 'pk' => 'id_remark',    'tabel' => 'M_REMARKS',    'desc' => 'Daftar keputusan/alasan mutasi kandidat pada setiap tahap alur seleksi.'),
@@ -38,6 +39,7 @@ class Master extends Secured_Controller
 			'counts'   => array(
 				'posisi'     => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_POSISI WHERE is_aktif = 1")->row()->n,
 				'departemen' => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_DEPARTEMEN WHERE is_aktif = 1")->row()->n,
+					'level_organisasi' => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_LEVEL_ORGANISASI WHERE is_aktif = 1")->row()->n,
 				'outlet'     => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_OUTLET WHERE is_aktif = 1")->row()->n,
 				'dokumen'     => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_DOKUMEN WHERE is_aktif = 1")->row()->n,
 				'remark'      => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_REMARKS WHERE is_aktif = 1")->row()->n,
@@ -53,6 +55,7 @@ class Master extends Secured_Controller
 				$data['rows']  = $this->master_model->list_posisi();
 				$data['depts'] = $this->master_model->list_departemen();
 				$data['flows'] = $this->master_model->list_flow();
+				$data['levels'] = $this->master_model->list_level_organisasi(TRUE);
 				if ($edit_id) {
 					$q = $this->db->query('SELECT * FROM dbo.M_POSISI WHERE id_posisi = ?', array($edit_id));
 					$data['edit_row'] = $q->row_array() ?: NULL;
@@ -67,7 +70,15 @@ class Master extends Secured_Controller
 				}
 				break;
 
-			case 'outlet':
+			case 'level_organisasi':
+					$data['rows'] = $this->master_model->list_level_organisasi();
+					if ($edit_id) {
+						$q = $this->db->query('SELECT * FROM dbo.M_LEVEL_ORGANISASI WHERE id_level_organisasi = ?', array($edit_id));
+						$data['edit_row'] = $q->row_array() ?: NULL;
+					}
+					break;
+
+				case 'outlet':
 				$data['rows'] = $this->master_model->list_outlet();
 				if ($edit_id) {
 					$q = $this->db->query('SELECT * FROM dbo.M_OUTLET WHERE id_outlet = ?', array($edit_id));
@@ -118,6 +129,7 @@ class Master extends Secured_Controller
 			switch ($t) {
 				case 'posisi':     $this->master_model->save_posisi($p, $this->auth_user['id_user']); break;
 				case 'departemen': $this->master_model->save_departemen($p, $this->auth_user['id_user']); break;
+				case 'level_organisasi': $this->master_model->save_level_organisasi($p); break;
 				case 'outlet':     $this->master_model->save_outlet($p); break;
 				case 'dokumen':     $this->master_model->save_dokumen($p); break;
 				case 'remark':      $this->master_model->save_remark($p, $this->auth_user['id_user']); break;
@@ -144,11 +156,16 @@ class Master extends Secured_Controller
 				$this->master_model->toggle_departemen($id, $akt, $this->auth_user['id_user']);
 			} elseif ($t === 'remark') {
 				$this->master_model->toggle_remark($id, $akt, $this->auth_user['id_user']);
-			} elseif ($t === 'efek_status') {
-				$this->master_model->toggle_efek_status($id, $akt);
-			} else {
-				$this->master_model->toggle_flat($this->types[$t]['tabel'], $this->types[$t]['pk'], $id, $akt);
-			}
+				} elseif ($t === 'efek_status') {
+					$this->master_model->toggle_efek_status($id, $akt);
+				} elseif ($t === 'level_organisasi') {
+					$this->master_model->toggle_level_organisasi($id, $akt);
+				} elseif ($t === 'outlet') {
+					$this->master_model->toggle_outlet($id, $akt);
+				} elseif ($t === 'dokumen') {
+				} elseif ($t === 'dokumen') {
+					$this->master_model->toggle_dokumen($id, $akt);
+				}
 			$this->session->set_flashdata('ok', $akt ? 'Data berhasil diaktifkan kembali.' : 'Data berhasil dinonaktifkan.');
 		} catch (RuntimeException $e) {
 			$this->session->set_flashdata('error', $e->getMessage());

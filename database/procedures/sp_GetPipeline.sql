@@ -29,6 +29,9 @@ BEGIN
         aps.urutan,
         aps.status_tahap,
         aps.tanggal_mulai,
+        aps.catatan,
+        aps.id_remark,
+        rm.label AS label_remark,
         s.kode_stage,
         s.nama_tahap,
         s.tipe_tahap,
@@ -39,6 +42,7 @@ BEGIN
     JOIN dbo.CANDIDATES c        ON c.id_kandidat = a.id_kandidat
     JOIN dbo.APPLICATION_STAGES aps ON aps.id_lamaran = a.id_lamaran AND aps.id_stage = a.id_stage_sekarang
     JOIN dbo.M_STAGE s          ON s.id_stage = aps.id_stage
+    LEFT JOIN dbo.M_REMARKS rm  ON rm.id_remark = aps.id_remark
     LEFT JOIN dbo.M_FLOW_STAGE fs ON fs.id_flow = a.id_flow AND fs.id_stage = aps.id_stage
     WHERE a.id_req = @id_req
       AND a.status_global NOT IN ('Hired','Rejected','Withdrawn','Offer_Declined','No_Show','Talent_Pool')

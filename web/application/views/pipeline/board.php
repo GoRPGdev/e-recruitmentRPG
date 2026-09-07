@@ -22,7 +22,7 @@ foreach ($stages as $s) {
 ?>
 
 <style>
-/* CSS Modernisasi Pipeline & Modal */
+/* CSS Modernisasi Pipeline, Kolom, Catatan, & Modal */
 .pipeline-stat-card {
 	background: var(--surface);
 	border: 1px solid var(--border);
@@ -66,13 +66,54 @@ foreach ($stages as $s) {
 .candidate-row:last-child {
 	border-bottom: none;
 }
+.candidate-row td {
+	vertical-align: top;
+}
+
+/* Card Catatan Tahap */
+.pipeline-note-card {
+	background: var(--surface-2);
+	border: 1px solid var(--border);
+	border-radius: 7px;
+	padding: 8px 10px;
+	margin-bottom: 6px;
+	position: relative;
+}
+.pipeline-note-card:hover {
+	border-color: var(--border-strong);
+}
+.pipeline-note-card.empty {
+	background: transparent;
+	border: 1px dashed var(--border);
+	padding: 7px 10px;
+	color: var(--text-faint);
+	font-style: italic;
+	font-size: 11.5px;
+}
+.pipeline-note-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 6px;
+	margin-bottom: 4px;
+	flex-wrap: wrap;
+}
+.pipeline-note-content {
+	font-size: 12px;
+	color: var(--text);
+	line-height: 1.45;
+	word-break: break-word;
+	white-space: pre-wrap;
+}
+
+/* Tombol Aksi & Pill */
 .icon-pill {
 	display: inline-flex;
 	align-items: center;
 	gap: 5px;
-	font-size: 11px;
+	font-size: 11.5px;
 	font-weight: 600;
-	padding: 2px 7px;
+	padding: 4px 9px;
 	border-radius: 6px;
 	border: 1px solid var(--border);
 	background: var(--surface);
@@ -80,6 +121,7 @@ foreach ($stages as $s) {
 	text-decoration: none;
 	cursor: pointer;
 	transition: all .12s ease;
+	line-height: 1.2;
 }
 .icon-pill:hover {
 	border-color: var(--accent);
@@ -90,8 +132,8 @@ foreach ($stages as $s) {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 28px;
-	height: 28px;
+	width: 30px;
+	height: 30px;
 	border-radius: 6px;
 	border: 1px solid var(--border);
 	background: var(--surface);
@@ -103,6 +145,27 @@ foreach ($stages as $s) {
 	border-color: var(--accent);
 	color: var(--accent);
 	background: var(--surface-2);
+}
+.btn-advance-submit {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 6px 12px;
+	font-size: 11.5px;
+	font-weight: 600;
+	border-radius: 6px;
+	border: none;
+	background: var(--accent);
+	color: var(--accent-contrast);
+	cursor: pointer;
+	transition: background-color .15s ease, transform .05s ease;
+	white-space: nowrap;
+}
+.btn-advance-submit:hover {
+	background: var(--accent-ink);
+}
+.btn-advance-submit:active {
+	transform: scale(0.98);
 }
 
 /* Modal Dialog Standar RPG */
@@ -326,13 +389,11 @@ foreach ($stages as $s) {
 							<thead>
 								<tr style="background:var(--surface); font-size:11.5px; color:var(--text-muted); border-bottom:1px solid var(--border)">
 									<th style="width:34px; padding:10px 6px; text-align:center">#</th>
-									<th style="width:23%; padding:10px 10px; text-align:left">Kandidat</th>
-									<th style="width:13%; padding:10px 8px; text-align:left">Kontak WA</th>
-									<th style="width:9%; padding:10px 6px; text-align:center">Aging SLA</th>
-									<th style="width:10%; padding:10px 6px; text-align:center">Status</th>
-									<th style="width:18%; padding:10px 8px; text-align:left">Evaluasi / Asesmen</th>
+									<th style="width:25%; padding:10px 12px; text-align:left">Kandidat &amp; Kontak</th>
+									<th style="width:11%; padding:10px 8px; text-align:center">Durasi di Tahap</th>
+									<th style="width:35%; padding:10px 12px; text-align:left">Catatan &amp; Evaluasi Tahap</th>
 									<?php if ($can_aksi): ?>
-										<th style="width:27%; padding:10px 10px; text-align:left">Aksi &amp; Remark</th>
+										<th style="width:29%; padding:10px 12px; text-align:left">Aksi &amp; Transisi Alur</th>
 									<?php endif; ?>
 								</tr>
 							</thead>
@@ -351,131 +412,180 @@ foreach ($stages as $s) {
 									$latest_psi = ! empty($cur_psi) ? $cur_psi[0] : NULL;
 
 									$cur_off = isset($offers[$id_lamaran]) ? $offers[$id_lamaran] : NULL;
+
+									$has_catatan = ! empty($c['catatan']);
+									$has_remark  = ! empty($c['label_remark']);
 								?>
 								<tr class="candidate-row" data-overdue="<?= $hari > 7 ? '1' : '0' ?>"
-									data-search="<?= strtolower(html_escape($c['nama_lengkap'] . ' ' . $c['no_wa_normal'] . ' ' . $c['status_global'] . ' ' . ($latest_iv['hasil'] ?? '') . ' ' . ($latest_psi['hasil'] ?? ''))) ?>">
+									data-search="<?= strtolower(html_escape($c['nama_lengkap'] . ' ' . $c['no_wa_normal'] . ' ' . $c['status_global'] . ' ' . ($c['catatan'] ?? '') . ' ' . ($c['label_remark'] ?? '') . ' ' . ($latest_iv['hasil'] ?? '') . ' ' . ($latest_psi['hasil'] ?? ''))) ?>">
 
-									<td style="padding:10px 6px; text-align:center" class="muted mono"><?= $no++ ?></td>
+									<td style="padding:12px 6px; text-align:center" class="muted mono"><?= $no++ ?></td>
 
-									<!-- Kolom Kandidat -->
-									<td style="padding:10px 10px; word-break:break-word">
-										<div style="font-weight:600; font-size:13px; line-height:1.3">
+									<!-- Kolom 1: Kandidat & Kontak -->
+									<td style="padding:12px 12px; word-break:break-word">
+										<div style="font-weight:700; font-size:13.5px; line-height:1.3; margin-bottom:3px">
 											<a href="<?= site_url('candidates/detail/' . $id_lamaran) ?>" title="Buka Profil Pelamar" style="color:var(--text); text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
 												<?= html_escape($c['nama_lengkap']) ?>
 											</a>
 										</div>
-										<div class="faint" style="font-size:11px; margin-top:2px">
-											#<?= $id_lamaran ?>
-											<?php /* Sembunyikan skor CV */ if (false && $c['screening_score'] !== NULL): ?><?php if ($c['screening_score'] !== NULL): ?>
-												&middot; Skor CV: <strong class="mono"><?= (int)$c['screening_score'] ?></strong>
-											<?php endif; ?><?php endif; ?>
+										<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:5px">
+											<span class="mono faint" style="font-size:11px">#<?= $id_lamaran ?></span>
+											<span class="muted" style="font-size:11px">&bull;</span>
+											<span class="tag <?= $c['status_global'] === 'In_Progress' ? 'on' : ($c['status_global'] === 'Hired' ? 'on' : 'off') ?>" style="font-size:10px; padding:1px 6px">
+												<?= html_escape($c['status_global']) ?>
+											</span>
+											<?php if (! empty($c['intake_method'])): ?>
+												<span class="faint" style="font-size:10px; text-transform:uppercase"><?= html_escape($c['intake_method']) ?></span>
+											<?php endif; ?>
+										</div>
+										<div style="font-size:12px; margin-top:2px" class="mono">
+											<?php if ($c['no_wa_normal']): ?>
+												<a href="https://wa.me/<?= preg_replace('/[^0-9]/', '', $c['no_wa_normal']) ?>" target="_blank" rel="noopener noreferrer" style="color:var(--good); text-decoration:none; display:inline-flex; align-items:center; gap:4px; font-weight:600" title="Chat WhatsApp Pelamar">
+													<svg style="width:13px; height:13px; flex:none" fill="currentColor" viewBox="0 0 24 24">
+														<path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.18-2.586-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.275.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.043.072.043.419-.101.824z"/>
+													</svg>
+													<span><?= html_escape($c['no_wa_normal']) ?></span>
+												</a>
+											<?php else: ?>
+												<span class="faint">-</span>
+											<?php endif; ?>
 										</div>
 									</td>
 
-									<!-- Kolom Kontak WA -->
-									<td style="padding:10px 8px; font-size:12px; word-break:break-all" class="mono">
-										<?php if ($c['no_wa_normal']): ?>
-											<a href="https://wa.me/<?= preg_replace('/[^0-9]/', '', $c['no_wa_normal']) ?>" target="_blank" rel="noopener noreferrer" style="color:var(--accent); text-decoration:none; display:inline-flex; align-items:center; gap:3px" title="Chat WhatsApp">
-												<span><?= html_escape($c['no_wa_normal']) ?></span>
-												<svg style="width:11px; height:11px; flex:none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-											</a>
-										<?php else: ?>
-											<span class="faint">-</span>
-										<?php endif; ?>
-									</td>
-
-									<!-- Kolom Aging SLA -->
-									<td style="padding:10px 6px; text-align:center">
+									<!-- Kolom 2: Durasi di Tahap -->
+									<td style="padding:12px 8px; text-align:center">
 										<?php if ($hari > 7): ?>
-											<span class="tag off" title="Tertahan lebih dari 7 hari di tahap ini" style="font-size:10.5px; font-weight:700">
-												<?= $hari ?> hr !
+											<span class="tag off" title="Tertahan lebih dari 7 hari di tahap ini" style="font-size:11px; font-weight:700; padding:3px 8px">
+												<?= $hari ?> hari !
 											</span>
 										<?php elseif ($hari >= 4): ?>
-											<span class="tag warn" style="font-size:10.5px">
-												<?= $hari ?> hr
+											<span class="tag warn" style="font-size:11px; padding:3px 8px">
+												<?= $hari ?> hari
 											</span>
 										<?php else: ?>
-											<span class="tag info" style="font-size:10.5px">
-												<?= $hari ?> hr
+											<span class="tag info" style="font-size:11px; padding:3px 8px">
+												<?= $hari ?> hari
 											</span>
+										<?php endif; ?>
+										<?php if (! empty($c['tanggal_mulai'])): ?>
+											<div class="faint mono" style="font-size:10.5px; margin-top:4px">
+												Mulai: <?= html_escape(substr($c['tanggal_mulai'], 0, 10)) ?>
+											</div>
 										<?php endif; ?>
 									</td>
 
-									<!-- Kolom Status Global -->
-									<td style="padding:10px 6px; text-align:center">
-										<span class="tag <?= $c['status_global'] === 'In_Progress' ? 'on' : ($c['status_global'] === 'Hired' ? 'on' : 'off') ?>" style="font-size:10.5px">
-											<?= html_escape($c['status_global']) ?>
-										</span>
-									</td>
-
-									<!-- Kolom Evaluasi / Asesmen -->
-									<td style="padding:10px 8px; font-size:11.5px; word-break:break-word">
-										<?php if ($latest_iv): ?>
-											<div style="display:flex; align-items:center; gap:5px; margin-bottom:3px; flex-wrap:wrap">
-												<span class="faint" style="font-size:10.5px; font-weight:600">IV:</span>
-												<span class="tag <?= $latest_iv['hasil'] === 'Lulus' ? 'on' : ($latest_iv['hasil'] === 'Tidak_Lulus' ? 'off' : 'warn') ?>" style="font-size:9.5px; padding:1px 5px">
-													<?= html_escape($latest_iv['hasil'] ?: 'Jadwal') ?>
-												</span>
-												<?php if ($latest_iv['skor']): ?>
-													<span class="mono faint" style="font-size:10.5px">(<?= (int)$latest_iv['skor'] ?>)</span>
+									<!-- Kolom 3: Catatan & Evaluasi Tahap -->
+									<td style="padding:12px 12px">
+										<!-- Box Catatan Tahap Terkini -->
+										<?php if ($has_catatan || $has_remark): ?>
+											<div class="pipeline-note-card">
+												<div class="pipeline-note-header">
+													<div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap">
+														<span style="font-size:10.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em; display:inline-flex; align-items:center; gap:3px">
+															<svg style="width:11px; height:11px; color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
+															<span>Catatan Tahap</span>
+														</span>
+														<?php if ($has_remark): ?>
+															<span class="tag accent" style="font-size:10px; padding:1px 6px">
+																<?= html_escape($c['label_remark']) ?>
+															</span>
+														<?php endif; ?>
+													</div>
+													<?php if ($can_aksi): ?>
+														<button type="button" style="background:none; border:none; padding:0; color:var(--accent); font-size:11px; font-weight:600; cursor:pointer"
+															onclick='openAdvanceModal(<?= (int) $id_app_stage ?>, <?= (int) $id_stage ?>, <?= json_encode($c["nama_lengkap"]) ?>, <?= (int) ($c["id_remark"] ?? 0) ?>, <?= json_encode($c["catatan"] ?? "") ?>)'>
+															Edit
+														</button>
+													<?php endif; ?>
+												</div>
+												<div class="pipeline-note-content"><?= html_escape($c['catatan'] ?: 'Remark ditetapkan: ' . $c['label_remark']) ?></div>
+											</div>
+										<?php else: ?>
+											<div class="pipeline-note-card empty" style="display:flex; justify-content:space-between; align-items:center">
+												<span>Belum ada catatan di tahap ini.</span>
+												<?php if ($can_aksi): ?>
+													<button type="button" style="background:none; border:none; padding:0; color:var(--accent); font-size:11px; font-weight:600; cursor:pointer"
+														onclick='openAdvanceModal(<?= (int) $id_app_stage ?>, <?= (int) $id_stage ?>, <?= json_encode($c["nama_lengkap"]) ?>, 0, "")'>
+														+ Catatan
+													</button>
 												<?php endif; ?>
 											</div>
 										<?php endif; ?>
 
-										<?php /* Sembunyikan hasil psikotes */ if (false && $latest_psi): ?><?php if ($latest_psi): ?>
-											<div style="display:flex; align-items:center; gap:5px; margin-bottom:3px; flex-wrap:wrap">
-												<span class="faint" style="font-size:10.5px; font-weight:600">PSI:</span>
-												<span class="tag <?= $latest_psi['hasil'] === 'Lulus' ? 'on' : ($latest_psi['hasil'] === 'Tidak_Lulus' ? 'off' : 'warn') ?>" style="font-size:9.5px; padding:1px 5px">
-													<?= html_escape($latest_psi['hasil'] ?: 'Selesai') ?>
-												</span>
-												<?php if ($latest_psi['skor_total']): ?>
-													<span class="mono faint" style="font-size:10.5px">(<?= (int)$latest_psi['skor_total'] ?>)</span>
-												<?php endif; ?><?php endif; ?>
-											</div>
-										<?php endif; ?>
+										<!-- Ringkasan Asesmen Bertipe (Interview, Psikotes, Offering) -->
+										<div style="display:flex; flex-direction:column; gap:4px; margin-top:6px">
+											<?php if ($latest_iv): ?>
+												<div style="display:flex; align-items:center; gap:6px; font-size:11.5px; background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:4px 8px">
+													<span style="font-weight:700; color:var(--text-muted); font-size:10.5px">INTERVIEW:</span>
+													<span class="tag <?= $latest_iv['hasil'] === 'Lulus' ? 'on' : ($latest_iv['hasil'] === 'Tidak_Lulus' ? 'off' : 'warn') ?>" style="font-size:10px; padding:1px 6px">
+														<?= html_escape($latest_iv['hasil'] ?: 'Terjadwal') ?>
+													</span>
+													<?php if ($latest_iv['skor']): ?>
+														<span class="mono" style="font-size:11px; font-weight:600">Skor: <?= (int)$latest_iv['skor'] ?></span>
+													<?php endif; ?>
+													<?php if ($latest_iv['jadwal']): ?>
+														<span class="faint mono" style="font-size:11px"><?= html_escape(substr($latest_iv['jadwal'], 0, 16)) ?></span>
+													<?php endif; ?>
+												</div>
+											<?php endif; ?>
 
-										<?php if ($cur_off): ?>
-											<div style="display:flex; align-items:center; gap:5px; margin-bottom:3px; flex-wrap:wrap">
-												<span class="faint" style="font-size:10.5px; font-weight:600">OFFER:</span>
-												<span class="tag <?= $cur_off['status_offer'] === 'Accepted' ? 'on' : 'warn' ?>" style="font-size:9.5px; padding:1px 5px">
-													<?= html_escape($cur_off['status_offer']) ?>
-												</span>
-											</div>
-										<?php endif; ?>
-
-										<?php if ( ! $latest_iv && ! $latest_psi && ! $cur_off): ?>
-											<span class="faint" style="font-size:11px">- Belum ada -</span>
-										<?php endif; ?>
+											<?php if ($cur_off): ?>
+												<div style="display:flex; align-items:center; gap:6px; font-size:11.5px; background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:4px 8px">
+													<span style="font-weight:700; color:var(--text-muted); font-size:10.5px">OFFERING:</span>
+													<span class="tag <?= $cur_off['status_offer'] === 'Accepted' ? 'on' : 'warn' ?>" style="font-size:10px; padding:1px 6px">
+														<?= html_escape($cur_off['status_offer']) ?>
+													</span>
+													<?php if ($cur_off['tanggal_join_disepakati']): ?>
+														<span class="faint mono" style="font-size:11px">Join: <?= html_escape($cur_off['tanggal_join_disepakati']) ?></span>
+													<?php endif; ?>
+												</div>
+											<?php endif; ?>
+										</div>
 									</td>
 
-									<!-- Kolom Aksi & Remark -->
+									<!-- Kolom 4: Aksi & Transisi Alur -->
 									<?php if ($can_aksi): ?>
-									<td style="padding:10px 10px">
-										<div style="display:flex; flex-direction:column; gap:6px">
+									<td style="padding:12px 12px">
+										<div style="display:flex; flex-direction:column; gap:8px">
 											<!-- Form Eksekusi Alur Tahap (Advance Remark) -->
-											<?= form_open(site_url('pipeline/advance/' . (int) $req['id_req']), array('style' => 'display:flex; gap:4px; margin:0; align-items:center; width:100%')) ?>
+											<?= form_open(site_url('pipeline/advance/' . (int) $req['id_req']), array('style' => 'display:flex; flex-direction:column; gap:6px; margin:0; width:100%')) ?>
 												<input type="hidden" name="id_app_stage" value="<?= $id_app_stage ?>">
-												<select name="id_remark" required style="width:100%; padding:4px 6px; font-size:11.5px; border-radius:6px" onchange="toggleNoteInput(this)">
-													<option value="">- Pilih Remark Lanjutan -</option>
-													<?php if ( ! empty($remarks[$id_stage])): ?>
-														<?php foreach ($remarks[$id_stage] as $rmk): ?>
-															<option value="<?= (int) $rmk['id_remark'] ?>" data-efek="<?= html_escape($rmk['efek_status']) ?>">
-																<?= html_escape($rmk['label']) ?> (<?= html_escape($rmk['efek_status']) ?>)
-															</option>
-														<?php endforeach; ?>
-													<?php endif; ?>
-												</select>
-												<input type="text" name="catatan" placeholder="Catatan/alasan..." style="display:none; width:120px; padding:4px 6px; font-size:11px; border-radius:6px; margin:0">
-												<button type="button" class="action-icon-btn" title="Tulis catatan opsional" onclick="toggleNoteBtn(this)" style="flex:none">
-													<svg style="width:13px; height:13px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-												</button>
-												<button type="submit" class="btn btn-sm btn-primary" title="Proses Transisi Alur" style="padding:4px 8px; font-size:11px; flex:none">
-													<span>Lanjut &rarr;</span>
-												</button>
+
+												<div style="display:flex; gap:5px; align-items:center; width:100%">
+													<select name="id_remark" required style="flex:1; padding:6px 8px; font-size:12px; border-radius:6px; border:1px solid var(--border-strong); margin:0" onchange="handleRemarkChange(this)">
+														<option value="">- Pilih Remark Lanjutan -</option>
+														<?php if ( ! empty($remarks[$id_stage])): ?>
+															<?php foreach ($remarks[$id_stage] as $rmk): ?>
+																<option value="<?= (int) $rmk['id_remark'] ?>" data-efek="<?= html_escape($rmk['efek_status']) ?>">
+																	<?= html_escape($rmk['label']) ?> (<?= html_escape($rmk['efek_status']) ?>)
+																</option>
+															<?php endforeach; ?>
+														<?php endif; ?>
+													</select>
+
+													<button type="button" class="action-icon-btn" title="Beri catatan terperinci / dialog lengkap"
+														onclick='openAdvanceModal(<?= (int) $id_app_stage ?>, <?= (int) $id_stage ?>, <?= json_encode($c["nama_lengkap"]) ?>, <?= (int) ($c["id_remark"] ?? 0) ?>, <?= json_encode($c["catatan"] ?? "") ?>)'>
+														<svg style="width:14px; height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+													</button>
+												</div>
+
+												<!-- Area Input Catatan Cepat (Expandable saat dibutuhkan) -->
+												<div class="note-input-container" style="display:none; width:100%">
+													<textarea name="catatan" rows="2" placeholder="Catatan/alasan keputusan..." style="width:100%; padding:6px 8px; font-size:11.5px; border-radius:6px; border:1px solid var(--border-strong); margin:0; resize:vertical"><?= html_escape($c['catatan'] ?? '') ?></textarea>
+												</div>
+
+												<div style="display:flex; justify-content:space-between; align-items:center; gap:6px">
+													<button type="button" style="background:none; border:none; padding:2px 4px; font-size:11px; color:var(--text-muted); cursor:pointer; text-decoration:underline" onclick="toggleInlineNote(this)">
+														+ Tulis Catatan
+													</button>
+													<button type="submit" class="btn-advance-submit" title="Proses Transisi Alur">
+														<span>Proses &rarr;</span>
+													</button>
+												</div>
 											<?= form_close() ?>
 
 											<!-- Shortcut Tombol Evaluasi Bertipe -->
-											<div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap">
+											<div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap; border-top:1px solid var(--border); padding-top:6px">
 												<?php if ($s['tipe'] === 'INTERVIEW'): ?>
 													<button type="button" class="icon-pill" title="Jadwalkan atau catat evaluasi interview"
 														onclick='openInterviewModal(<?= json_encode(array(
@@ -485,18 +595,6 @@ foreach ($stages as $s) {
 														)) ?>)'>
 														<svg style="width:12px; height:12px; color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z"/></svg>
 														<span>Interview</span>
-													</button>
-												<?php endif; ?>
-
-												<?php if ($s['tipe'] === 'TEST'): ?>
-													<button type="button" class="icon-pill" title="Input hasil asesmen atau psikotes"
-														onclick='openPsikotesModal(<?= json_encode(array(
-															"id_app_stage" => $id_app_stage,
-															"nama" => $c["nama_lengkap"],
-															"psikotes" => $latest_psi
-														)) ?>)'>
-														<svg style="width:12px; height:12px; color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-														<span>Psikotes</span>
 													</button>
 												<?php endif; ?>
 
@@ -643,6 +741,47 @@ foreach ($stages as $s) {
 		</details>
 	</div>
 </div>
+
+<!-- ================= MODAL ADVANCE & CATATAN TAHAP LENGKAP ================= -->
+<dialog id="dlg-advance" class="rpg-modal">
+	<div class="rpg-modal-header">
+		<div>
+			<h3 id="dlg-adv-title" style="margin:0; font-size:15px; font-weight:700; color:var(--text)">
+				Proses Transisi Tahap &amp; Catatan
+			</h3>
+			<div id="dlg-adv-subtitle" class="muted" style="font-size:12px; margin-top:2px">Kandidat: -</div>
+		</div>
+		<button type="button" class="rpg-modal-close" onclick="document.getElementById('dlg-advance').close()">&times;</button>
+	</div>
+	<?= form_open(site_url('pipeline/advance/' . (int) $req['id_req']), array('style' => 'margin:0; display:flex; flex-direction:column; flex:1; min-height:0')) ?>
+		<input type="hidden" name="id_app_stage" id="adv-id-app-stage">
+		<div class="rpg-modal-body">
+			<div style="margin-bottom:16px">
+				<label for="adv-id-remark" style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">
+					Pilih Keputusan / Remark <span style="color:var(--crit)">*</span>
+				</label>
+				<select name="id_remark" id="adv-id-remark" required style="width:100%; font-size:13px; padding:8px 10px; border-radius:7px">
+					<!-- Diisi dinamis via openAdvanceModal -->
+				</select>
+				<div id="adv-remark-info" class="faint" style="font-size:11.5px; margin-top:4px">
+					Pilih remark untuk menerapkan efek status alur (Lulus, Tidak Lulus, On Hold, dsb).
+				</div>
+			</div>
+
+			<div>
+				<label for="adv-catatan" style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">
+					Catatan Evaluasi / Alasan Keputusan
+				</label>
+				<textarea name="catatan" id="adv-catatan" rows="4" style="width:100%; font-size:13px; padding:8px 10px; border-radius:7px" placeholder="Tuliskan catatan evaluasi, ulasan hasil seleksi, atau alasan mutasi alur kandidat..."></textarea>
+				<div class="faint" style="font-size:11px; margin-top:3px">Catatan ini akan tersimpan pada tahap kandidat dan riwayat seleksi.</div>
+			</div>
+		</div>
+		<div class="rpg-modal-footer">
+			<button type="button" class="btn btn-ghost" onclick="document.getElementById('dlg-advance').close()">Batal</button>
+			<button type="submit" class="btn btn-primary" style="padding:7px 18px; font-weight:600">Simpan &amp; Proses Tahap</button>
+		</div>
+	<?= form_close() ?>
+</dialog>
 
 <!-- ================= MODAL SISIP TAHAP AD-HOC ================= -->
 <dialog id="dlg-adhoc" class="rpg-modal">
@@ -808,59 +947,6 @@ foreach ($stages as $s) {
 	<?= form_close() ?>
 </dialog>
 
-<!-- ================= MODAL PSIKOTES ================= -->
-<dialog id="dlg-psikotes" class="rpg-modal">
-	<div class="rpg-modal-header">
-		<h3 id="dlg-psi-title" style="margin:0; font-size:15px; font-weight:700; color:var(--text)">
-			Hasil Psikotes &amp; Asesmen
-		</h3>
-		<button type="button" class="rpg-modal-close" onclick="document.getElementById('dlg-psikotes').close()">&times;</button>
-	</div>
-	<?= form_open(site_url('pipeline/save_psikotes/' . (int) $req['id_req']), array('style' => 'margin:0; display:flex; flex-direction:column; flex:1; min-height:0')) ?>
-		<input type="hidden" name="id_psikotes" id="psi-id-psikotes">
-		<input type="hidden" name="id_app_stage" id="psi-id-app-stage">
-
-		<div class="rpg-modal-body">
-			<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px">
-				<div>
-					<label for="psi-vendor" style="display:block; font-size:12px; font-weight:600; margin:0 0 4px">Alat / Vendor Tes</label>
-					<input type="text" name="vendor_tes" id="psi-vendor" placeholder="Mis. DISC, Papi Kostick" style="width:100%; font-size:12.5px; padding:6px 10px">
-				</div>
-				<div>
-					<label for="psi-tanggal" style="display:block; font-size:12px; font-weight:600; margin:0 0 4px">Tanggal Pelaksanaan</label>
-					<input type="date" name="tanggal_tes" id="psi-tanggal" style="width:100%; font-size:12.5px; padding:6px 10px">
-				</div>
-			</div>
-
-			<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px">
-				<div>
-					<label for="psi-skor" style="display:block; font-size:12px; font-weight:600; margin:0 0 4px">Skor Total</label>
-					<input type="number" name="skor_total" id="psi-skor" placeholder="Skor angka" style="width:100%; font-size:12.5px; padding:6px 10px">
-				</div>
-				<div>
-					<label for="psi-hasil" style="display:block; font-size:12px; font-weight:600; margin:0 0 4px">Hasil Evaluasi</label>
-					<select name="hasil" id="psi-hasil" style="width:100%; font-size:12.5px; padding:6px 10px">
-						<option value="">- Pilih Hasil -</option>
-						<option value="Lulus">Lulus</option>
-						<option value="Tidak_Lulus">Tidak Lulus</option>
-						<option value="Perlu_Review">Perlu Review</option>
-					</select>
-				</div>
-			</div>
-
-			<div>
-				<label for="psi-rekomendasi" style="display:block; font-size:12px; font-weight:600; margin:0 0 4px">Rekomendasi / Profil Singkat</label>
-				<textarea name="rekomendasi" id="psi-rekomendasi" rows="3" placeholder="Ulasan karakter, kepribadian, potensi, catatan kelemahan..." style="width:100%; font-size:12.5px; padding:6px 10px"></textarea>
-			</div>
-		</div>
-
-		<div class="rpg-modal-footer">
-			<button type="button" class="btn btn-ghost" onclick="document.getElementById('dlg-psikotes').close()">Batal</button>
-			<button type="submit" class="btn btn-primary" style="padding:7px 18px; font-weight:600">Simpan Psikotes</button>
-		</div>
-	<?= form_close() ?>
-</dialog>
-
 <!-- ================= MODAL OFFER ================= -->
 <dialog id="dlg-offer" class="rpg-modal">
 	<div class="rpg-modal-header">
@@ -923,6 +1009,9 @@ foreach ($stages as $s) {
 
 <!-- SCRIPT FILTER & MODAL HANDLER -->
 <script>
+// Kamus remarks per id_stage
+var stageRemarksMap = <?= json_encode($remarks) ?>;
+
 function filterPipelineRows() {
 	var query = (document.getElementById('pipeline-search').value || '').toLowerCase().trim();
 	var overdueOnly = document.getElementById('filter-overdue-only').checked;
@@ -943,24 +1032,55 @@ function filterPipelineRows() {
 	});
 }
 
-function toggleNoteInput(sel) {
+function handleRemarkChange(sel) {
 	var opt = sel.options[sel.selectedIndex];
 	var efek = opt ? opt.getAttribute('data-efek') : '';
-	var inp = sel.parentNode.querySelector('input[name="catatan"]');
-	if (!inp) return;
+	var form = sel.closest('form');
+	var noteContainer = form ? form.querySelector('.note-input-container') : null;
+	if (!noteContainer) return;
+
+	// Buka container catatan otomatis jika efek penolakan / on hold / dll
 	if (efek === 'TOLAK' || efek === 'ON_HOLD' || efek === 'WITHDRAWN' || efek === 'NO_SHOW' || efek === 'OFFER_DECLINED' || efek === 'TALENT_POOL') {
-		inp.style.display = 'inline-block';
-		inp.focus();
+		noteContainer.style.display = 'block';
+		var ta = noteContainer.querySelector('textarea');
+		if (ta) ta.focus();
 	}
 }
 
-function toggleNoteBtn(btn) {
-	var inp = btn.parentNode.querySelector('input[name="catatan"]');
-	if (!inp) return;
-	inp.style.display = (inp.style.display === 'none' || inp.style.display === '') ? 'inline-block' : 'none';
-	if (inp.style.display === 'inline-block') {
-		inp.focus();
+function toggleInlineNote(btn) {
+	var form = btn.closest('form');
+	if (!form) return;
+	var container = form.querySelector('.note-input-container');
+	if (!container) return;
+	var isHidden = container.style.display === 'none' || container.style.display === '';
+	container.style.display = isHidden ? 'block' : 'none';
+	if (isHidden) {
+		var ta = container.querySelector('textarea');
+		if (ta) ta.focus();
 	}
+}
+
+function openAdvanceModal(idAppStage, idStage, namaKandidat, currentRemarkId, currentCatatan) {
+	var dlg = document.getElementById('dlg-advance');
+	document.getElementById('dlg-adv-subtitle').textContent = 'Kandidat: ' + namaKandidat;
+	document.getElementById('adv-id-app-stage').value = idAppStage;
+	document.getElementById('adv-catatan').value = currentCatatan || '';
+
+	var sel = document.getElementById('adv-id-remark');
+	sel.innerHTML = '<option value="">- Pilih Keputusan / Remark -</option>';
+	var rmkList = stageRemarksMap[idStage] || [];
+	rmkList.forEach(function(r) {
+		var opt = document.createElement('option');
+		opt.value = r.id_remark;
+		opt.textContent = r.label + ' (' + r.efek_status + ')';
+		opt.setAttribute('data-efek', r.efek_status);
+		if (currentRemarkId && parseInt(currentRemarkId) === parseInt(r.id_remark)) {
+			opt.selected = true;
+		}
+		sel.appendChild(opt);
+	});
+
+	dlg.showModal();
 }
 
 function openAdHocModal(urut, cards) {
@@ -999,20 +1119,6 @@ function openInterviewModal(data) {
 	document.getElementById('iv-hasil').value = iv.hasil || '';
 	document.getElementById('iv-skor').value = iv.skor !== null && iv.skor !== undefined ? iv.skor : '';
 	document.getElementById('iv-catatan').value = iv.catatan || '';
-	dlg.showModal();
-}
-
-function openPsikotesModal(data) {
-	var dlg = document.getElementById('dlg-psikotes');
-	document.getElementById('dlg-psi-title').textContent = 'Psikotes: ' + data.nama;
-	document.getElementById('psi-id-app-stage').value = data.id_app_stage;
-	var psi = data.psikotes || {};
-	document.getElementById('psi-id-psikotes').value = psi.id_psikotes || '';
-	document.getElementById('psi-vendor').value = psi.vendor_tes || '';
-	document.getElementById('psi-tanggal').value = psi.tanggal_tes || '';
-	document.getElementById('psi-skor').value = psi.skor_total !== null && psi.skor_total !== undefined ? psi.skor_total : '';
-	document.getElementById('psi-hasil').value = psi.hasil || '';
-	document.getElementById('psi-rekomendasi').value = psi.rekomendasi || '';
 	dlg.showModal();
 }
 

@@ -211,4 +211,154 @@ class Dashboard_model extends CI_Model
 			'mpr_pending' => 0, 'mpr_aktif' => 0, 'mpr_selesai' => 0
 		);
 	}
+
+	/**
+	 * Matriks Funnel Dinamis: Posisi yang Dibuka (vertikal) x Tahapan Seleksi (horizontal).
+	 * Hanya posisi dan tahapan yang memiliki pembaruan/kandidat pada filter tanggal yang dimasukkan.
+	 * Mendukung filter tanggal tunggal ("sesuai tanggal saja") maupun rentang tanggal ("range tanggal").
+	 */
+	public function position_stage_funnel(array $f)
+	{
+		$dari   = ! empty($f['dari']) ? $f['dari'] : NULL;
+		$sampai = ! empty($f['sampai']) ? $f['sampai'] : NULL;
+
+		// Jika pengguna hanya memilih 1 tanggal pada 'dari', jadikan filter tanggal tunggal
+		if ($dari !== NULL && $sampai === NULL) {
+			$sampai = $dari;
+		} elseif ($dari === NULL && $sampai !== NULL) {
+			$dari = $sampai;
+		}
+
+		$where = "WHERE r.status_req NOT IN ('Dibatalkan')";
+		$params = array();
+
+		// Filter tanggal (tanggal lamar, awal/akhir tahap, atau jejak riwayat mutasi)
+		if ($dari !== NULL && $sampai !== NULL) {
+			$where .= " AND (
+				(a.tanggal_lamar >= ? AND a.tanggal_lamar <= ?)
+				OR (aps.tanggal_mulai IS NOT NULL AND CAST(aps.tanggal_mulai AS DATE) >= ? AND CAST(aps.tanggal_mulai AS DATE) <= ?)
+				OR (aps.tanggal_selesai IS NOT NULL AND CAST(aps.tanggal_selesai AS DATE) >= ? AND CAST(aps.tanggal_selesai AS DATE) <= ?)
+				OR EXISTS (
+					SELECT 1 FROM dbo.APPLICATION_HISTORY ah
+					WHERE ah.id_lamaran = a.id_lamaran
+					  AND CAST(ah.waktu AS DATE) >= ? AND CAST(ah.waktu AS DATE) <= ?
+				)
+			)";
+			$params[] = $dari; $params[] = $sampai;
+			$params[] = $dari; $params[] = $sampai;
+			$params[] = $dari; $params[] = $sampai;
+			$params[] = $dari; $params[] = $sampai;
+		}
+
+		if ( ! empty($f['dept'])) {
+			$where .= " AND p.id_departemen = ?";
+			$params[] = (int) $f['dept'];
+		}
+		if ( ! empty($f['posisi'])) {
+			$where .= " AND p.id_posisi = ?";
+			$params[] = (int) $f['posisi'];
+		}
+		if ( ! empty($f['outlet'])) {
+			$where .= " AND r.id_outlet = ?";
+			$params[] = (int) $f['outlet'];
+		}
+		if ( ! empty($f['status'])) {
+			$where .= " AND a.status_global = ?";
+			$params[] = $f['status'];
+		}
+
+		$sql = "SELECT
+					p.id_posisi,
+					p.nama_posisi,
+					d.nama AS nama_departemen,
+					MAX(r.id_req) AS id_req,
+					s.id_stage,
+					s.nama_tahap,
+					s.tipe_tahap,
+					MIN(COALESCE(fs.urutan, s.id_stage)) AS urutan,
+					a.status_global,
+					COUNT(DISTINCT a.id_lamaran) AS jumlah
+				FROM dbo.APPLICATIONS a
+				JOIN dbo.REQUISITIONS r        ON r.id_req = a.id_req
+				JOIN dbo.M_POSISI p            ON p.id_posisi = r.id_posisi
+				LEFT JOIN dbo.M_DEPARTEMEN d   ON d.id_departemen = p.id_departemen
+				LEFT JOIN dbo.APPLICATION_STAGES aps ON aps.id_lamaran = a.id_lamaran AND aps.id_stage = a.id_stage_sekarang
+				JOIN dbo.M_STAGE s             ON s.id_stage = a.id_stage_sekarang
+				LEFT JOIN dbo.M_FLOW_STAGE fs  ON fs.id_flow = a.id_flow AND fs.id_stage = s.id_stage
+				$where
+				GROUP BY p.id_posisi, p.nama_posisi, d.nama, s.id_stage, s.nama_tahap, s.tipe_tahap, a.status_global
+				ORDER BY p.nama_posisi, urutan";
+
+		$q = $this->db->query($sql, $params);
+		$rows = $q->result_array();
+		$q->free_result();
+
+		$positions = array();
+		$stages    = array();
+		$matrix    = array();
+		$total_all = 0;
+
+		foreach ($rows as $r) {
+			$pos_id   = (int) $r['id_posisi'];
+			$stage_id = (int) $r['id_stage'];
+			$jml      = (int) $r['jumlah'];
+			$st_glob  = $r['status_global'];
+
+			if ( ! isset($positions[$pos_id])) {
+				$positions[$pos_id] = array(
+					'id_posisi'   => $pos_id,
+					'nama_posisi' => $r['nama_posisi'],
+					'id_req'      => (int) $r['id_req'],
+					'departemen'  => $r['nama_departemen'] ?: '',
+					'total'       => 0,
+				);
+			}
+			$positions[$pos_id]['total'] += $jml;
+
+			if ( ! isset($stages[$stage_id])) {
+				$stages[$stage_id] = array(
+					'id_stage'   => $stage_id,
+					'nama_tahap' => $r['nama_tahap'],
+					'tipe_tahap' => $r['tipe_tahap'],
+					'urutan'     => (int) $r['urutan'],
+					'total'      => 0,
+				);
+			}
+			$stages[$stage_id]['total'] += $jml;
+
+			if ( ! isset($matrix[$pos_id][$stage_id])) {
+				$matrix[$pos_id][$stage_id] = array(
+					'total'    => 0,
+					'statuses' => array(),
+				);
+			}
+			$matrix[$pos_id][$stage_id]['total'] += $jml;
+			$matrix[$pos_id][$stage_id]['statuses'][$st_glob] =
+				($matrix[$pos_id][$stage_id]['statuses'][$st_glob] ?? 0) + $jml;
+
+			$total_all += $jml;
+		}
+
+		// Urutkan kolom tahapan berdasarkan urutan flow / id_stage
+		uasort($stages, function ($a, $b) {
+			if ($a['urutan'] === $b['urutan']) {
+				return $a['id_stage'] <=> $b['id_stage'];
+			}
+			return $a['urutan'] <=> $b['urutan'];
+		});
+
+		// Urutkan baris posisi berdasarkan nama_posisi
+		uasort($positions, function ($a, $b) {
+			return strcasecmp($a['nama_posisi'], $b['nama_posisi']);
+		});
+
+		return array(
+			'positions' => $positions,
+			'stages'    => $stages,
+			'matrix'    => $matrix,
+			'total_all' => $total_all,
+			'dari'      => $dari,
+			'sampai'    => $sampai,
+		);
+	}
 }

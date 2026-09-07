@@ -330,5 +330,33 @@
   3. Mendesain ulang `web/application/views/dashboard/index.php` menjadi 2 tata letak modular terpisah dan optimal untuk masing-masing role.
 - **Status:** Resolved & Verified.
 
+---
+
+### [PS-040] Transformasi Funnel Dashboard Menjadi Matriks Dinamis Posisi x Tahap Berbasis Filter Tanggal
+- **Problem:**
+  Tampilan "Funnel Konversi Tahapan" pada dashboard sebelumnya berbentuk tabel agregasi statis 7 tipe tahap standar RPG (`SCREENING` s/d `ONBOARD`) yang hanya mengelompokkan status global tanpa memperlihatkan distribusi posisi lowongan kerja yang sedang dibuka. Pengguna membutuhkan matriks operasional dinamis:
+  1. Baris (vertikal ke bawah): Posisi lowongan yang dibuka (`M_POSISI`).
+  2. Kolom (horizontal ke kanan): Proses atau tahapan seleksi aktif (`M_STAGE`).
+  3. Bersifat dinamis: Posisi maupun tahapan yang tidak memiliki kandidat atau aktivitas pembaruan pada filter waktu tidak ditampilkan.
+  4. Mendukung filter tanggal spesifik ("tanggal saja") maupun rentang tanggal ("range tanggal dari-sampai").
+- **Identifikasi:**
+  1. Pada `Dashboard_model.php`, dibuat method `position_stage_funnel(array $f)` yang melakukan agregasi relasional pelamar aktif berdasarkan kriteria tanggal multi-titik:
+     - `a.tanggal_lamar` (tanggal pengajuan berkas)
+     - `aps.tanggal_mulai` dan `aps.tanggal_selesai` (waktu pelaksanaan tahap kandidat)
+     - Log aktivitas transisi pada `dbo.APPLICATION_HISTORY.waktu`
+     Jika filter tanggal tunggal diisi (`tanggal`), rentang `dari` dan `sampai` disamakan ke tanggal tersebut.
+  2. Query SQL Server 2008 R2 kompatibel mengelompokkan data per `id_posisi`, `nama_posisi`, `nama_departemen`, `id_stage`, `nama_tahap`, `tipe_tahap`, dan urutan alur, lalu dipivot secara dinamis di level model PHP menjadi matriks `$matrix[$pos_id][$stage_id]`. Posisi dan tahapan tanpa aktivitas secara otomatis tereliminasi dari set data.
+  3. Tahapan diurutkan berdasarkan urutan alur (`urutan` / `id_stage`) dan posisi diurutkan secara alfabetis.
+  4. Pada controller `Dashboard.php`, parameter filter `tanggal`, `dari`, `sampai` diproses dan diteruskan ke model, lalu `$pos_stage_funnel` dikirimkan ke view.
+  5. Pada view `dashboard/index.php`:
+     - Menambahkan input tanggal spesifik pada filter bar dashboard.
+     - Mengganti tabel statis dengan tabel matriks dinamis `Posisi Lowongan x Tahapan Seleksi`, lengkap dengan sticky column, badge tipe tahap, shortcut langsung ke pipeline posisi terkait, badge jumlah pelamar per perpotongan sel, dan baris total kalkulasi keseluruhan.
+     - Menampilkan kondisi kosong (empty state) yang rapi dan informatif bila tidak terdapat pergerakan data pada tanggal yang dipilih.
+- **Solusi:**
+  1. Menambahkan method `position_stage_funnel(array $f)` di `web/application/models/Dashboard_model.php`.
+  2. Menyesuaikan pemrosesan filter dan view binding pada `web/application/controllers/Dashboard.php`.
+  3. Memperbarui tampilan matriks dan filter bar pada `web/application/views/dashboard/index.php`.
+- **Status:** Resolved & Verified.
+
 
 

@@ -67,19 +67,7 @@
 					Terpenuhi: <strong style="color:var(--good)"><?= (int) $req['jumlah_terpenuhi'] ?></strong>
 				</td>
 			</tr>
-			<?php if (can_sensitif('GAJI')): ?>
-			<tr>
-				<th>Range Gaji (Budget)</th>
-				<td>
-					<strong style="color:var(--accent)">
-						<?= ($req['range_gaji_min'] !== NULL || $req['range_gaji_max'] !== NULL)
-							? 'Rp ' . number_format((float) $req['range_gaji_min'], 0, ',', '.') . ' &mdash; Rp ' . number_format((float) $req['range_gaji_max'], 0, ',', '.')
-							: '<span class="faint">(Belum ditentukan)</span>' ?>
-					</strong>
-				</td>
-			</tr>
-			<?php endif; ?>
-		</table>
+</table>
 	</div>
 
 		<!-- Banner Aksi: Ajukan ke HR (Pemohon: Draft / Ditolak) -->

@@ -31,7 +31,8 @@ BEGIN
     BEGIN TRY
         IF @outer = 0 BEGIN TRANSACTION; ELSE SAVE TRANSACTION SavePos;
 
-        IF @level_posisi NOT IN ('MP','Staff','Staff_Krusial','Spv','Manager','Senior_Manager')
+        IF NOT EXISTS (SELECT 1 FROM dbo.M_LEVEL_ORGANISASI WHERE kode_level = @level_posisi AND is_aktif = 1)
+           AND @level_posisi NOT IN ('MP','Staff','Staff_Krusial','Spv','Manager','Senior_Manager')
             RAISERROR('level_posisi tidak valid.', 16, 1);
         IF NOT EXISTS (SELECT 1 FROM dbo.M_DEPARTEMEN WHERE id_departemen = @id_departemen)
             RAISERROR('Departemen tidak valid.', 16, 1);

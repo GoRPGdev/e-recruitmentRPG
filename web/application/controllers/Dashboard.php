@@ -17,9 +17,11 @@ class Dashboard extends Secured_Controller
 		$au   = current_user();
 		$role = $au['kode_role'] ?? 'SUPER_ADMIN';
 
+		$tgl_single = $this->input->get('tanggal') ?: NULL;
 		$f = array(
-			'dari'       => $this->input->get('dari') ?: NULL,
-			'sampai'     => $this->input->get('sampai') ?: NULL,
+			'dari'       => $this->input->get('dari') ?: $tgl_single,
+			'sampai'     => $this->input->get('sampai') ?: $tgl_single,
+			'tanggal'    => $tgl_single,
 			'dept'       => $dept !== NULL ? $dept : ($this->input->get('dept') ?: NULL),
 			'posisi'     => $this->input->get('posisi') ?: NULL,
 			'outlet'     => $this->input->get('outlet') ?: NULL,
@@ -31,6 +33,7 @@ class Dashboard extends Secured_Controller
 		);
 
 		$d = $this->dm->dashboard($f);
+		$pos_stage_funnel = $this->dm->position_stage_funnel($f);
 
 		$depts = $this->dm->departments();
 		if ($dept !== NULL) {
@@ -58,8 +61,9 @@ class Dashboard extends Secured_Controller
 			'user_dept_nama'  => $au['departemen_snapshot'] ?? '',
 			'dept_mpr'        => $dept_mpr,
 			'dept_candidates' => $dept_candidates,
-			'dept_metrics'    => $dept_metrics,
-			'f'               => $f,
+			'dept_metrics'     => $dept_metrics,
+			'pos_stage_funnel' => $pos_stage_funnel,
+			'f'                => $f,
 			'd'               => $d,
 			'trend'           => $this->dm->funnel_trend(14, $f['dept']),
 			'opt'             => array(

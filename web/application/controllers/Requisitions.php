@@ -76,14 +76,14 @@ class Requisitions extends Secured_Controller
 						'target_tanggal_join'      => $this->input->post('target_tanggal_join', TRUE),
 						'urgensi'                  => $this->input->post('urgensi', TRUE),
 						'id_flow'                  => $this->input->post('id_flow'),
-						'butuh_psikotes'           => $this->input->post('butuh_psikotes'),
-						'butuh_interview_bod'      => $this->input->post('butuh_interview_bod'),
+						'butuh_psikotes'           => 0,
+						'butuh_interview_bod'      => 0,
 						'pendidikan_minimal'       => $this->input->post('pendidikan_minimal', TRUE),
 						'pengalaman_minimal_tahun' => $this->input->post('pengalaman_minimal_tahun', TRUE),
 						'job_desc'                 => $this->input->post('job_desc', TRUE),
 						'kualifikasi'              => $this->input->post('kualifikasi', TRUE),
-						'range_gaji_min'           => can_sensitif('GAJI') ? $this->input->post('range_gaji_min', TRUE) : NULL,
-						'range_gaji_max'           => can_sensitif('GAJI') ? $this->input->post('range_gaji_max', TRUE) : NULL,
+						'range_gaji_min'           => NULL,
+						'range_gaji_max'           => NULL,
 						'preferensi_internal'      => $this->input->post('preferensi_internal', TRUE),
 					), (int) $this->auth_user['id_user']);
 					$this->session->set_flashdata('ok', 'MPR draft dibuat.');
