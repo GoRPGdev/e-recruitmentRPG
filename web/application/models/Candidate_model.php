@@ -246,6 +246,26 @@ class Candidate_model extends CI_Model
 		return $w ? 'WHERE ' . implode(' AND ', $w) : '';
 	}
 
+	public function stats_summary($f = array())
+	{
+		$b = array();
+		$where = $this->_list_where((array) $f, $b);
+		$sql = "SELECT
+		            COUNT(*) AS total,
+		            SUM(CASE WHEN a.status_global = 'In_Progress' THEN 1 ELSE 0 END) AS n_in_progress,
+		            SUM(CASE WHEN a.status_global = 'Hired' THEN 1 ELSE 0 END) AS n_hired,
+		            SUM(CASE WHEN a.status_global IN ('Rejected', 'Withdrawn', 'Offer_Declined', 'No_Show') THEN 1 ELSE 0 END) AS n_selesai,
+		            SUM(CASE WHEN a.status_global = 'Talent_Pool' THEN 1 ELSE 0 END) AS n_talent_pool
+		        FROM dbo.APPLICATIONS a
+		        JOIN dbo.CANDIDATES c   ON c.id_kandidat = a.id_kandidat
+		        JOIN dbo.REQUISITIONS r ON r.id_req = a.id_req
+		        JOIN dbo.M_POSISI p     ON p.id_posisi = r.id_posisi $where";
+		$q = $this->db->query($sql, $b);
+		$row = $q->row_array();
+		$q->free_result();
+		return $row ?: array('total' => 0, 'n_in_progress' => 0, 'n_hired' => 0, 'n_selesai' => 0, 'n_talent_pool' => 0);
+	}
+
 	public function count_list($f = array())
 	{
 		$b = array();

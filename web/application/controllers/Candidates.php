@@ -23,17 +23,21 @@ class Candidates extends Secured_Controller
 
 	public function index()
 	{
+		$per  = (int) $this->input->get('per') ?: 10;
+		if ($per < 5 || $per > 100) {
+			$per = 10;
+		}
 		$page = max(1, (int) $this->input->get('page'));
-		$per  = 20;
 
 		$f = array(
-			'q'      => $this->input->get('q') ?: NULL,
-			'status' => $this->input->get('status') ?: NULL,
-			'posisi' => $this->input->get('posisi') ?: NULL,
-			'dept'   => $this->input->get('dept') ?: NULL,
-			'intake' => $this->input->get('intake') ?: NULL,
-			'dari'   => $this->input->get('dari') ?: NULL,
-			'sampai' => $this->input->get('sampai') ?: NULL,
+			'q'          => $this->input->get('q') ?: NULL,
+			'status'     => $this->input->get('status') ?: NULL,
+			'posisi'     => $this->input->get('posisi') ?: NULL,
+			'dept'       => $this->input->get('dept') ?: NULL,
+			'status_mpr' => $this->input->get('status_mpr') ?: NULL,
+			'dari'       => $this->input->get('dari') ?: NULL,
+			'sampai'     => $this->input->get('sampai') ?: NULL,
+			'per'        => $per !== 10 ? $per : NULL,
 		);
 
 		$offset = ($page - 1) * $per + 1;
@@ -46,8 +50,10 @@ class Candidates extends Secured_Controller
 			'wide'        => TRUE,
 			'rows'        => $rows,
 			'page'        => $page,
+			'per'         => $per,
 			'pages'       => max(1, (int) ceil($total / $per)),
 			'total'       => $total,
+			'stats'       => $this->candidate_model->stats_summary($f),
 			'f'           => $f,
 			'positions'   => $this->candidate_model->get_positions(),
 			'departments' => $this->candidate_model->get_departments(),

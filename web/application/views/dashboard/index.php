@@ -11,25 +11,21 @@ $aging_count = count($d['aging'] ?? array());
 ?>
 
 <style>
-/* Override padding layout khusus view dashboard agar fit 1 layar penuh */
+/* Dashboard full-width alami mengikuti viewport */
 .view.wide {
-	padding: 12px 18px !important;
-	height: calc(100vh - 46px);
-	overflow: hidden;
-	display: flex;
-	flex-direction: column;
+	padding: 16px 20px !important;
+	width: 100%;
+	max-width: 100%;
 	box-sizing: border-box;
 }
 
-/* CSS 1-Layar Dashboard RPG */
+/* Container Dashboard RPG Full-Width */
 .dash-screen {
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
-	height: 100%;
-	min-height: 0;
+	gap: 14px;
+	width: 100%;
 	box-sizing: border-box;
-	overflow: hidden;
 }
 
 .dash-header-bar {
@@ -532,7 +528,7 @@ $aging_count = count($d['aging'] ?? array());
 			<div class="dash-title-group">
 				<span class="role-badge admin">Recruitment Hub</span>
 				<h1 class="dash-h1">Dashboard Operasional Rekrutmen</h1>
-				<span class="faint" style="font-size:11.5px">&bull; Monitoring Funnel 7-Tahap &amp; SLA RPG</span>
+				<span class="faint" style="font-size:11.5px">&bull; Monitoring Funnel 7-Tahap RPG</span>
 			</div>
 			<div style="display:flex; gap:6px; align-items:center">
 				<a class="btn btn-sm btn-ghost" href="<?= site_url('export/candidates' . '?' . http_build_query(array_filter($f))) ?>" style="padding:4px 8px; font-size:11.5px; display:inline-flex; align-items:center; gap:4px">
@@ -725,14 +721,14 @@ $aging_count = count($d['aging'] ?? array());
 				</div>
 			</div>
 
-			<!-- Panel Kanan: Tabbed Side Widgets (SLA & Kepatuhan, Peringatan Aging, Trend 14 Hari) -->
+			<!-- Panel Kanan: Tabbed Side Widgets (Metrik & Kepatuhan, Tertahan, Trend 14 Hari) -->
 			<div class="dash-box dash-tabs-panel">
 				<div class="dash-tabs-nav">
-					<button type="button" class="dash-tab-btn active" onclick="switchDashTab(this, 'tab-sla')">
-						SLA &amp; Metrik
+					<button type="button" class="dash-tab-btn active" onclick="switchDashTab(this, 'tab-metrik')">
+						Metrik &amp; Kepatuhan
 					</button>
 					<button type="button" class="dash-tab-btn" onclick="switchDashTab(this, 'tab-aging')">
-						Aging SLA
+						Tertahan (>7 Hari)
 						<?php if ($aging_count > 0): ?>
 							<span class="tag off" style="font-size:9.5px; padding:1px 5px"><?= $aging_count ?></span>
 						<?php endif; ?>
@@ -742,8 +738,8 @@ $aging_count = count($d['aging'] ?? array());
 					</button>
 				</div>
 
-				<!-- TAB 1: SLA, Kecepatan, & UU PDP -->
-				<div id="tab-sla" class="dash-tab-content active">
+				<!-- TAB 1: Kecepatan Proses & UU PDP -->
+				<div id="tab-metrik" class="dash-tab-content active">
 					<div style="margin-bottom:14px">
 						<div class="faint" style="font-size:10.5px; text-transform:uppercase; font-weight:700">Durasi Pemenuhan Lowongan</div>
 						<div class="mono" style="font-size:24px; font-weight:700; color:var(--accent); line-height:1.1; margin-top:2px">
@@ -771,12 +767,12 @@ $aging_count = count($d['aging'] ?? array());
 					</div>
 				</div>
 
-				<!-- TAB 2: Peringatan Aging SLA -->
+				<!-- TAB 2: Peringatan Tertahan (>7 Hari) -->
 				<div id="tab-aging" class="dash-tab-content">
 					<?php if ( ! $d['aging']): ?>
 						<div style="padding:24px 12px; text-align:center" class="muted">
-							<div style="color:var(--good); font-weight:700; font-size:13px; margin-bottom:2px">&#10003; SLA Aman</div>
-							<div style="font-size:11px">Semua kandidat berjalan dalam batas toleransi SLA M_STAGE.</div>
+							<div style="color:var(--good); font-weight:700; font-size:13px; margin-bottom:2px">&#10003; Proses Lancar</div>
+							<div style="font-size:11px">Tidak ada kandidat yang tertahan lebih dari 7 hari di tahap berjalan.</div>
 						</div>
 					<?php else: ?>
 						<table class="side-table">
@@ -784,7 +780,7 @@ $aging_count = count($d['aging'] ?? array());
 								<tr>
 									<th>Kandidat</th>
 									<th>Tahap</th>
-									<th style="text-align:center">Hari</th>
+									<th style="text-align:center">Lama</th>
 									<th style="text-align:right">Aksi</th>
 								</tr>
 							</thead>
@@ -799,7 +795,7 @@ $aging_count = count($d['aging'] ?? array());
 											<span class="tag info" style="font-size:9.5px; padding:1px 5px"><?= html_escape($a['tipe_tahap']) ?></span>
 										</td>
 										<td style="text-align:center; color:var(--crit); font-weight:700" class="mono">
-											<?= (int) $a['hari_di_tahap'] ?>/<?= (int) $a['sla_hari'] ?>d
+											<?= (int) $a['hari_di_tahap'] ?> hari
 										</td>
 										<td style="text-align:right">
 											<a href="<?= site_url('pipeline/index/' . (int) $a['id_req']) ?>" class="btn btn-sm btn-ghost" style="padding:2px 6px; font-size:10.5px">

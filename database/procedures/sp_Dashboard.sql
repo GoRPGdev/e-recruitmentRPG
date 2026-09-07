@@ -66,9 +66,9 @@ BEGIN
     GROUP BY tipe_tahap, status_global
     ORDER BY tipe_tahap, status_global;
 
-    /* 3. AGING SLA -- tahap berjalan lewat sla_hari */
+    /* 3. KANDIDAT TERTAHAN (>7 HARI) */
     SELECT
-        d.id_lamaran, d.id_req, d.tipe_tahap, d.sla_hari,
+        d.id_lamaran, d.id_req, d.tipe_tahap,
         DATEDIFF(DAY, d.tanggal_mulai, GETDATE()) AS hari_di_tahap,
         c.nama_lengkap, pos.nama_posisi
     FROM #dash d
@@ -77,8 +77,7 @@ BEGIN
     JOIN dbo.REQUISITIONS r ON r.id_req = d.id_req
     JOIN dbo.M_POSISI pos   ON pos.id_posisi = r.id_posisi
     WHERE d.status_tahap = 'Berjalan'
-      AND d.sla_hari IS NOT NULL
-      AND DATEDIFF(DAY, d.tanggal_mulai, GETDATE()) > d.sla_hari
+      AND DATEDIFF(DAY, d.tanggal_mulai, GETDATE()) > 7
     ORDER BY hari_di_tahap DESC;
 
     /* 4. WAKTU -- dua metrik terpisah (ERD sec.9 aturan 7) */

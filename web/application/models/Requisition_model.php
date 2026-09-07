@@ -39,6 +39,23 @@ class Requisition_model extends CI_Model
 		return $w ? 'WHERE ' . implode(' AND ', $w) : '';
 	}
 
+	public function stats_summary($f = array())
+	{
+		$b = array();
+		$where = $this->_list_where((array) $f, $b);
+		$sql = "SELECT 
+		            COUNT(*) AS total,
+		            SUM(CASE WHEN r.status_req IN ('Sourcing', 'Approved', 'Sourcing_Ulang') THEN 1 ELSE 0 END) AS n_aktif,
+		            SUM(CASE WHEN r.status_req IN ('Review_HR', 'Menunggu_BOD', 'Draft') THEN 1 ELSE 0 END) AS n_review,
+		            SUM(CASE WHEN r.status_req IN ('Terpenuhi', 'Terpenuhi_Sebagian') THEN 1 ELSE 0 END) AS n_terpenuhi
+		        FROM dbo.REQUISITIONS r
+		        JOIN dbo.M_POSISI p ON p.id_posisi = r.id_posisi $where";
+		$q = $this->db->query($sql, $b);
+		$row = $q->row_array();
+		$q->free_result();
+		return $row ?: array('total' => 0, 'n_aktif' => 0, 'n_review' => 0, 'n_terpenuhi' => 0);
+	}
+
 	public function count_list($f = array())
 	{
 		$b = array();

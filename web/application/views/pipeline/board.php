@@ -282,7 +282,7 @@ foreach ($stages as $s) {
 			<div class="mono" style="font-size:24px; font-weight:700; color:<?= $total_overdue > 0 ? 'var(--crit)' : 'var(--text-muted)' ?>; line-height:1.2">
 				<?= $total_overdue ?>
 			</div>
-			<div class="muted" style="font-size:11.5px">Memerlukan tindak lanjut SLA</div>
+			<div class="muted" style="font-size:11.5px">Perlu perhatian &amp; tindak lanjut</div>
 		</div>
 	</div>
 
@@ -570,14 +570,6 @@ foreach ($stages as $s) {
 														<span>Offer</span>
 													</button>
 												<?php endif; ?>
-
-												<?php if ($s['tipe'] === 'KONTAK'): ?>
-													<button type="button" class="icon-pill" title="Catat respon kontak WA"
-														onclick='openContactModal(<?= (int) $id_lamaran ?>, <?= json_encode($c["nama_lengkap"]) ?>)'>
-														<svg style="width:12px; height:12px; color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-														<span>Log WA</span>
-													</button>
-												<?php endif; ?>
 											</div>
 										</div>
 									</td>
@@ -780,42 +772,6 @@ foreach ($stages as $s) {
 	<?= form_close() ?>
 </dialog>
 
-<!-- ================= MODAL LOG KONTAK WA ================= -->
-<dialog id="dlg-contact" class="rpg-modal" style="max-width:440px">
-	<div class="rpg-modal-header">
-		<h3 id="dlg-contact-title" style="margin:0; font-size:15px; font-weight:700; color:var(--text)">
-			Log Kontak WA Pelamar
-		</h3>
-		<button type="button" class="rpg-modal-close" onclick="document.getElementById('dlg-contact').close()">&times;</button>
-	</div>
-	<?= form_open(site_url('pipeline/contact/' . (int) $req['id_req']), array('style' => 'margin:0; display:flex; flex-direction:column; flex:1; min-height:0')) ?>
-		<input type="hidden" name="id_lamaran" id="contact-id-lamaran">
-		<input type="hidden" name="metode" value="WA">
-		<div class="rpg-modal-body">
-			<div style="margin-bottom:14px">
-				<label for="contact-hasil" style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">
-					Hasil Hubungan Kontak <span style="color:var(--crit)">*</span>
-				</label>
-				<select name="hasil" id="contact-hasil" required style="width:100%; font-size:13px; padding:7px 10px">
-					<option value="Respon">Dibalas (Respon)</option>
-					<option value="Tidak_Respon">Tidak Respon</option>
-					<option value="Nomor_Salah">Nomor Salah</option>
-					<option value="Menolak">Menolak</option>
-				</select>
-			</div>
-			<div>
-				<label for="contact-catatan" style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">
-					Catatan Respon (Opsional)
-				</label>
-				<textarea name="catatan" id="contact-catatan" rows="2" style="font-size:13px; padding:7px 10px; width:100%" placeholder="Catatan jam telepon, alasan tolak, dll..."></textarea>
-			</div>
-		</div>
-		<div class="rpg-modal-footer">
-			<button type="button" class="btn btn-ghost" onclick="document.getElementById('dlg-contact').close()">Batal</button>
-			<button type="submit" class="btn btn-primary" style="padding:7px 18px; font-weight:600">Simpan Kontak</button>
-		</div>
-	<?= form_close() ?>
-</dialog>
 
 <!-- ================= MODAL INTERVIEW ================= -->
 <dialog id="dlg-interview" class="rpg-modal">
@@ -1015,13 +971,6 @@ function openAdHocModal(idLamaran, namaKandidat) {
 	document.getElementById('dlg-adhoc').showModal();
 }
 
-function openContactModal(idLamaran, namaLengkap) {
-	document.getElementById('dlg-contact-title').textContent = 'Log Kontak: ' + namaLengkap;
-	document.getElementById('contact-id-lamaran').value = idLamaran;
-	document.getElementById('contact-hasil').value = 'Respon';
-	document.getElementById('contact-catatan').value = '';
-	document.getElementById('dlg-contact').showModal();
-}
 
 function openInterviewModal(data) {
 	var dlg = document.getElementById('dlg-interview');

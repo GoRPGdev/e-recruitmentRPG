@@ -38,6 +38,7 @@ class Requisitions extends Secured_Controller
 			'pages'    => max(1, (int) ceil($total / $per)),
 			'f'        => $f,
 			'total'    => $total,
+				'stats'    => $this->rm->stats_summary($f),
 			'positions'=> $this->rm->positions(),
 			'depts'    => $this->rm->departments(),
 		));

@@ -14,13 +14,13 @@
 			<option <?= $flow['tipe_penempatan'] === 'OUTLET' ? 'selected' : '' ?>>OUTLET</option>
 		</select>
 		<label>Maks upaya kontak</label><input type="text" name="maks_upaya_kontak" value="<?= (int) $flow['maks_upaya_kontak'] ?>" inputmode="numeric">
-		<label>SLA total hari</label><input type="text" name="sla_total_hari" value="<?= $flow['sla_total_hari'] !== NULL ? (int) $flow['sla_total_hari'] : '' ?>" inputmode="numeric">
+		<input type="hidden" name="sla_total_hari" value="">
 		<button type="submit">Simpan header</button>
 	<?= form_close() ?>
 
 	<h2>Tahap</h2>
 	<div style="overflow-x:auto"><table>
-		<tr><th>#</th><th>Tahap</th><th>Tipe</th><th>Wajib</th><th>SLA</th><th>PIC</th><th>Aksi</th></tr>
+		<tr><th>#</th><th>Tahap</th><th>Tipe</th><th>Wajib</th><th>PIC</th><th>Aksi</th></tr>
 		<?php foreach ($stages as $s): ?>
 		<tr>
 			<td><?= (int) $s['urutan'] ?></td>
@@ -33,7 +33,7 @@
 					<label style="display:inline"><input type="checkbox" name="is_wajib" value="1" <?= $s['is_wajib'] ? 'checked' : '' ?> onchange="this.form.submit()"></label>
 			</td>
 			<td>
-					<input type="text" name="sla_hari" value="<?= $s['sla_hari'] !== NULL ? (int) $s['sla_hari'] : '' ?>" style="width:50px" inputmode="numeric">
+					<input type="hidden" name="sla_hari" value="">
 			</td>
 			<td>
 					<select name="role_pic" style="width:auto; padding:4px">

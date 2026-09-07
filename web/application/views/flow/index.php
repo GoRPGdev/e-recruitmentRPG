@@ -52,7 +52,7 @@
 				<span>&bull;</span>
 				<span>Maks. Kontak WA: <strong style="color:var(--text)"><?= (int) $flow['maks_upaya_kontak'] ?> Kali</strong></span>
 				<span>&bull;</span>
-				<span>SLA Keseluruhan: <strong style="color:var(--text)"><?= $flow['sla_total_hari'] ? (int) $flow['sla_total_hari'] . ' Hari Kerja' : 'Fleksibel' ?></strong></span>
+				<span>Waktu Alur: <strong style="color:var(--text)">Fleksibel</strong></span>
 			</div>
 		</div>
 		<div>
@@ -72,8 +72,7 @@
 					<th>Tahap Seleksi</th>
 					<th style="width:130px">Tipe Sumbu</th>
 					<th style="width:110px; text-align:center">Kewajiban</th>
-					<th style="width:90px; text-align:center">SLA Hari</th>
-					<th style="width:130px">PIC Role</th>
+										<th style="width:130px">PIC Role</th>
 					<th>Dokumen Terkait</th>
 					<th style="width:190px; text-align:right">Aksi Tahap</th>
 				</tr>
@@ -138,11 +137,6 @@
 						<?php else: ?>
 							<span class="tag off" style="font-size:11px">Opsional</span>
 						<?php endif; ?>
-					</td>
-
-					<!-- SLA Hari -->
-					<td style="text-align:center; font-weight:600">
-						<?= $s['sla_hari'] !== NULL ? (int) $s['sla_hari'] . ' h' : '<span class="muted">-</span>' ?>
 					</td>
 
 					<!-- PIC Role -->
@@ -243,8 +237,8 @@
 
 			<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:center">
 				<div>
-					<label for="add_sla_hari" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Target SLA (Hari Kerja)</label>
-					<input type="number" name="sla_hari" id="add_sla_hari" placeholder="Mis. 3" min="0" style="width:100%">
+					<label for="add_sla_hari" style="display:none">Target</label>
+					<input type="hidden" name="sla_hari" id="add_sla_hari" value="">
 				</div>
 				<div style="padding-top:18px">
 					<label style="display:inline-flex; align-items:center; gap:8px; font-size:12.5px; cursor:pointer">
@@ -272,7 +266,7 @@
 				Edit Parameter Tahap
 			</h3>
 			<span id="edit-stage-sub" class="muted" style="font-size:12px">
-				Perbarui aturan kewajiban, SLA hari, dan role PIC.
+				Perbarui aturan kewajiban dan role PIC.
 			</span>
 		</div>
 		<button type="button" onclick="closeEditStageModal()" style="background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer; line-height:1; padding:4px 8px; border-radius:6px" title="Tutup">&times;</button>
@@ -297,8 +291,8 @@
 
 			<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:center">
 				<div>
-					<label for="edt_sla_hari" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Target SLA (Hari Kerja)</label>
-					<input type="number" name="sla_hari" id="edt_sla_hari" placeholder="Mis. 2" min="0" style="width:100%">
+					<label for="edt_sla_hari" style="display:none">Target</label>
+					<input type="hidden" name="sla_hari" id="edt_sla_hari" value="">
 				</div>
 				<div style="padding-top:18px">
 					<label style="display:inline-flex; align-items:center; gap:8px; font-size:12.5px; cursor:pointer">
@@ -326,7 +320,7 @@
 				Pengaturan Parameter Alur Standar RPG
 			</h3>
 			<span class="muted" style="font-size:12px">
-				Ubah nama alur, batas kontak WhatsApp, dan target SLA keseluruhan.
+				Ubah nama alur dan batas kontak WhatsApp.
 			</span>
 		</div>
 		<button type="button" onclick="closeEditHeaderModal()" style="background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer; line-height:1; padding:4px 8px; border-radius:6px" title="Tutup">&times;</button>
@@ -350,9 +344,9 @@
 					<span class="muted" style="font-size:11px">Standar RPG: 3 kali</span>
 				</div>
 				<div>
-					<label for="hdr_sla_total" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">SLA Total Alur (Hari)</label>
-					<input type="number" name="sla_total_hari" id="hdr_sla_total" value="<?= $flow['sla_total_hari'] !== NULL ? (int) $flow['sla_total_hari'] : '' ?>" placeholder="Kosongkan jika fleksibel" min="1" style="width:100%">
-					<span class="muted" style="font-size:11px">Target SLA keseluruhan</span>
+					<label for="hdr_sla_total" style="display:none">Waktu</label>
+					<input type="hidden" name="sla_total_hari" id="hdr_sla_total" value="">
+					<span style="display:none"></span>
 				</div>
 			</div>
 
@@ -384,7 +378,7 @@ function openEditStageModal(data) {
 	document.getElementById('form-edit-stage').reset();
 	document.getElementById('edt_id_flow_stage').value = data.id_flow_stage || '';
 	document.getElementById('edt_role_pic').value = data.role_pic || '';
-	document.getElementById('edt_sla_hari').value = data.sla_hari !== null ? data.sla_hari : '';
+	if (document.getElementById('edt_sla_hari')) document.getElementById('edt_sla_hari').value = '';
 	document.getElementById('edt_is_wajib').checked = (data.is_wajib == 1);
 
 	document.getElementById('edit-stage-title').textContent = 'Edit Tahap: ' + (data.nama_tahap || '');
