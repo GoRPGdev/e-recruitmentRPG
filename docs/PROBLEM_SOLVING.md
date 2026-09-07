@@ -358,5 +358,25 @@
   3. Memperbarui tampilan matriks dan filter bar pada `web/application/views/dashboard/index.php`.
 - **Status:** Resolved & Verified.
 
+---
+
+### [PS-041] Redesign Tata Letak Dashboard RPG Menjadi Single-Screen Viewport (Fit 1 Layar Penuh)
+- **Problem:**
+  Sebelumnya tampilan dashboard memanjang ke bawah (vertical scrolling panjang) karena tumpukan elemen filter form besar, grid KPI tebal, tabel matriks funnel, card metrik SLA, card audit UU PDP, card peringatan aging kandidat, dan tabel tren 14 hari. Hal ini mengharuskan recruiter/manajemen melakukan scroll berkali-kali untuk melihat status menyeluruh.
+- **Identifikasi:**
+  1. Mengatur container dashboard dengan CSS flexbox `height: calc(100vh - 46px)` dan `overflow: hidden` pada container view, sehingga dashboard tampil pas dalam 1 layar tanpa memicu scrollbar browser utama.
+  2. Meringkas header dan filter bar menjadi satu baris horizontal kompak (`.dash-filter-strip`) yang memuat seluruh input filter (periode dari/sampai, tanggal tunggal, dropdown master, status, dan tombol aksi).
+  3. Mengubah 8 status KPI pelamar menjadi strip horizontal chip 8 kolom (`.dash-kpi-strip`) yang ramping dengan indikator warna tepi.
+  4. Membagi area kerja utama (mengisi sisa tinggi layar viewport) menjadi layout 2 kolom responsif:
+     - **Kolom Kiri (2.2fr)**: Matriks Funnel Dinamis (Posisi x Tahapan) dengan fitur internal scrolling, header baris pertama sticky (atas), dan kolom posisi lowongan sticky (kiri) sehingga nama posisi dan tahapan tetap terbaca saat tabel digeser.
+     - **Kolom Kanan (1fr)**: Panel tab terpadu (`.dash-tabs-panel`) dengan navigasi tab instan:
+       - *Tab 1: SLA & Metrik* (Waktu pemenuhan lowongan, durasi persetujuan BOD, dan compliance audit UU PDP).
+       - *Tab 2: Aging SLA* (Daftar kandidat yang melampaui batas SLA M_STAGE beserta badge jumlah kandidat).
+       - *Tab 3: Tren 14 Hari* (Volume kandidat harian per tahapan seleksi).
+  5. Untuk role `USER_DEPT`, tata letak disesuaikan dengan 4 KPI ringkas di bagian atas serta 2 panel sejajar (MPR Terbaru dan Antrean Kandidat) yang memiliki scroll internal mandiri.
+- **Solusi:**
+  Memperbarui `web/application/views/dashboard/index.php` dengan arsitektur CSS 1-layar, komponen tab interaktif ringan, dan sticky matrix scrolling.
+- **Status:** Resolved & Verified.
+
 
 

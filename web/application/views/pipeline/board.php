@@ -128,24 +128,6 @@ foreach ($stages as $s) {
 	color: var(--accent);
 	background: var(--surface-2);
 }
-.action-icon-btn {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 30px;
-	height: 30px;
-	border-radius: 6px;
-	border: 1px solid var(--border);
-	background: var(--surface);
-	color: var(--text-muted);
-	cursor: pointer;
-	transition: all .12s ease;
-}
-.action-icon-btn:hover {
-	border-color: var(--accent);
-	color: var(--accent);
-	background: var(--surface-2);
-}
 .btn-advance-submit {
 	display: inline-flex;
 	align-items: center;
@@ -173,7 +155,7 @@ foreach ($stages as $s) {
 	border: 1px solid var(--border);
 	border-radius: 14px;
 	padding: 0;
-	max-width: 580px;
+	max-width: 540px;
 	width: 94%;
 	max-height: 88vh;
 	background: var(--surface);
@@ -367,16 +349,6 @@ foreach ($stages as $s) {
 							(<?= $total_cards ?> kandidat)
 						</span>
 					</div>
-
-					<div style="display:flex; align-items:center; gap:8px">
-						<?php if ($can_aksi && $total_cards > 0): ?>
-							<button type="button" class="btn btn-sm btn-ghost" style="padding:4px 10px; font-size:11.5px; display:inline-flex; align-items:center; gap:5px"
-								onclick='openAdHocModal(<?= (int) $urut ?>, <?= json_encode($s["cards"]) ?>)'>
-								<svg style="width:12px; height:12px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-								<span>Sisip Tahap Ad-Hoc</span>
-							</button>
-						<?php endif; ?>
-					</div>
 				</div>
 
 				<?php if ( ! $total_cards): ?>
@@ -494,11 +466,11 @@ foreach ($stages as $s) {
 													<?php if ($can_aksi): ?>
 														<button type="button" style="background:none; border:none; padding:0; color:var(--accent); font-size:11px; font-weight:600; cursor:pointer"
 															onclick='openAdvanceModal(<?= (int) $id_app_stage ?>, <?= (int) $id_stage ?>, <?= json_encode($c["nama_lengkap"]) ?>, <?= (int) ($c["id_remark"] ?? 0) ?>, <?= json_encode($c["catatan"] ?? "") ?>)'>
-															Edit
+															Edit Catatan
 														</button>
 													<?php endif; ?>
 												</div>
-												<div class="pipeline-note-content"><?= html_escape($c['catatan'] ?: 'Remark ditetapkan: ' . $c['label_remark']) ?></div>
+												<div class="pipeline-note-content"><?= html_escape($c['catatan'] ?: 'Remark: ' . $c['label_remark']) ?></div>
 											</div>
 										<?php else: ?>
 											<div class="pipeline-note-card empty" style="display:flex; justify-content:space-between; align-items:center">
@@ -512,7 +484,7 @@ foreach ($stages as $s) {
 											</div>
 										<?php endif; ?>
 
-										<!-- Ringkasan Asesmen Bertipe (Interview, Psikotes, Offering) -->
+										<!-- Ringkasan Asesmen Bertipe (Interview & Offering) -->
 										<div style="display:flex; flex-direction:column; gap:4px; margin-top:6px">
 											<?php if ($latest_iv): ?>
 												<div style="display:flex; align-items:center; gap:6px; font-size:11.5px; background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:4px 8px">
@@ -547,45 +519,34 @@ foreach ($stages as $s) {
 									<?php if ($can_aksi): ?>
 									<td style="padding:12px 12px">
 										<div style="display:flex; flex-direction:column; gap:8px">
-											<!-- Form Eksekusi Alur Tahap (Advance Remark) -->
-											<?= form_open(site_url('pipeline/advance/' . (int) $req['id_req']), array('style' => 'display:flex; flex-direction:column; gap:6px; margin:0; width:100%')) ?>
+											<!-- Form Eksekusi Alur Tahap Cepat -->
+											<?= form_open(site_url('pipeline/advance/' . (int) $req['id_req']), array('style' => 'display:flex; gap:6px; align-items:center; margin:0; width:100%')) ?>
 												<input type="hidden" name="id_app_stage" value="<?= $id_app_stage ?>">
 
-												<div style="display:flex; gap:5px; align-items:center; width:100%">
-													<select name="id_remark" required style="flex:1; padding:6px 8px; font-size:12px; border-radius:6px; border:1px solid var(--border-strong); margin:0" onchange="handleRemarkChange(this)">
-														<option value="">- Pilih Remark Lanjutan -</option>
-														<?php if ( ! empty($remarks[$id_stage])): ?>
-															<?php foreach ($remarks[$id_stage] as $rmk): ?>
-																<option value="<?= (int) $rmk['id_remark'] ?>" data-efek="<?= html_escape($rmk['efek_status']) ?>">
-																	<?= html_escape($rmk['label']) ?> (<?= html_escape($rmk['efek_status']) ?>)
-																</option>
-															<?php endforeach; ?>
-														<?php endif; ?>
-													</select>
+												<select name="id_remark" required style="flex:1; padding:6px 8px; font-size:12px; border-radius:6px; border:1px solid var(--border-strong); margin:0">
+													<option value="">- Pilih Remark -</option>
+													<?php if ( ! empty($remarks[$id_stage])): ?>
+														<?php foreach ($remarks[$id_stage] as $rmk): ?>
+															<option value="<?= (int) $rmk['id_remark'] ?>">
+																<?= html_escape($rmk['label']) ?> (<?= html_escape($rmk['efek_status']) ?>)
+															</option>
+														<?php endforeach; ?>
+													<?php endif; ?>
+												</select>
 
-													<button type="button" class="action-icon-btn" title="Beri catatan terperinci / dialog lengkap"
-														onclick='openAdvanceModal(<?= (int) $id_app_stage ?>, <?= (int) $id_stage ?>, <?= json_encode($c["nama_lengkap"]) ?>, <?= (int) ($c["id_remark"] ?? 0) ?>, <?= json_encode($c["catatan"] ?? "") ?>)'>
-														<svg style="width:14px; height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-													</button>
-												</div>
-
-												<!-- Area Input Catatan Cepat (Expandable saat dibutuhkan) -->
-												<div class="note-input-container" style="display:none; width:100%">
-													<textarea name="catatan" rows="2" placeholder="Catatan/alasan keputusan..." style="width:100%; padding:6px 8px; font-size:11.5px; border-radius:6px; border:1px solid var(--border-strong); margin:0; resize:vertical"><?= html_escape($c['catatan'] ?? '') ?></textarea>
-												</div>
-
-												<div style="display:flex; justify-content:space-between; align-items:center; gap:6px">
-													<button type="button" style="background:none; border:none; padding:2px 4px; font-size:11px; color:var(--text-muted); cursor:pointer; text-decoration:underline" onclick="toggleInlineNote(this)">
-														+ Tulis Catatan
-													</button>
-													<button type="submit" class="btn-advance-submit" title="Proses Transisi Alur">
-														<span>Proses &rarr;</span>
-													</button>
-												</div>
+												<button type="submit" class="btn-advance-submit" title="Proses Transisi Alur">
+													<span>Proses &rarr;</span>
+												</button>
 											<?= form_close() ?>
 
-											<!-- Shortcut Tombol Evaluasi Bertipe -->
-											<div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap; border-top:1px solid var(--border); padding-top:6px">
+											<!-- Baris Aksi Per Kandidat: Sisip Tahap & Evaluasi Bertipe -->
+											<div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap">
+												<button type="button" class="icon-pill" title="Sisipkan tahap seleksi ad-hoc untuk kandidat ini"
+													onclick='openAdHocModal(<?= (int) $id_lamaran ?>, <?= json_encode($c["nama_lengkap"]) ?>)'>
+													<svg style="width:12px; height:12px; color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+													<span>Sisip Tahap</span>
+												</button>
+
 												<?php if ($s['tipe'] === 'INTERVIEW'): ?>
 													<button type="button" class="icon-pill" title="Jadwalkan atau catat evaluasi interview"
 														onclick='openInterviewModal(<?= json_encode(array(
@@ -617,11 +578,6 @@ foreach ($stages as $s) {
 														<span>Log WA</span>
 													</button>
 												<?php endif; ?>
-
-												<a href="<?= site_url('candidates/detail/' . $id_lamaran) ?>" class="icon-pill" style="color:var(--text-muted)" title="Buka Detail Pelamar">
-													<svg style="width:12px; height:12px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-													<span>Profil</span>
-												</a>
 											</div>
 										</div>
 									</td>
@@ -747,7 +703,7 @@ foreach ($stages as $s) {
 	<div class="rpg-modal-header">
 		<div>
 			<h3 id="dlg-adv-title" style="margin:0; font-size:15px; font-weight:700; color:var(--text)">
-				Proses Transisi Tahap &amp; Catatan
+				Catatan &amp; Detail Tahap
 			</h3>
 			<div id="dlg-adv-subtitle" class="muted" style="font-size:12px; margin-top:2px">Kandidat: -</div>
 		</div>
@@ -783,41 +739,38 @@ foreach ($stages as $s) {
 	<?= form_close() ?>
 </dialog>
 
-<!-- ================= MODAL SISIP TAHAP AD-HOC ================= -->
-<dialog id="dlg-adhoc" class="rpg-modal">
+<!-- ================= MODAL SISIP TAHAP AD-HOC (PER KANDIDAT) ================= -->
+<dialog id="dlg-adhoc" class="rpg-modal" style="max-width:480px">
 	<div class="rpg-modal-header">
-		<h3 style="margin:0; font-size:15px; font-weight:700; color:var(--text)">
-			Sisip Tahap Ad-Hoc Baru
-		</h3>
+		<div>
+			<h3 style="margin:0; font-size:15px; font-weight:700; color:var(--text)">
+				Sisip Tahap Ad-Hoc
+			</h3>
+			<div class="muted" style="font-size:12px; margin-top:2px">
+				Kandidat: <strong id="adhoc-nama-kandidat" style="color:var(--text)">-</strong>
+			</div>
+		</div>
 		<button type="button" class="rpg-modal-close" onclick="document.getElementById('dlg-adhoc').close()">&times;</button>
 	</div>
 	<?= form_open(site_url('pipeline/insert_stage/' . (int) $req['id_req']), array('style' => 'margin:0; display:flex; flex-direction:column; flex:1; min-height:0')) ?>
+		<input type="hidden" name="id_lamaran" id="adhoc-id-lamaran">
 		<div class="rpg-modal-body">
 			<div style="margin-bottom:14px">
 				<label for="adhoc-stage" style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">
 					Pilih Tahap yang Akan Disisipkan <span style="color:var(--crit)">*</span>
 				</label>
-				<select name="id_stage" id="adhoc-stage" required style="width:100%; font-size:13px; padding:7px 10px">
+				<select name="id_stage" id="adhoc-stage" required style="width:100%; font-size:13px; padding:8px 10px; border-radius:6px">
 					<?php foreach ($all_stages as $st): ?>
 						<option value="<?= (int) $st['id_stage'] ?>"><?= html_escape($st['nama_tahap']) ?> (<?= html_escape($st['tipe_tahap']) ?>)</option>
 					<?php endforeach; ?>
 				</select>
 			</div>
 
-			<div style="margin-bottom:14px">
-				<label for="adhoc-lamaran" style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">
-					Kandidat Penerima Tahap Ad-Hoc <span style="color:var(--crit)">*</span>
-				</label>
-				<select name="id_lamaran" id="adhoc-lamaran" required style="width:100%; font-size:13px; padding:7px 10px">
-					<!-- Diisi via openAdHocModal -->
-				</select>
-			</div>
-
 			<div>
 				<label for="adhoc-catatan" style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">
-					Catatan Tambahan
+					Catatan / Alasan Sisip Tahap
 				</label>
-				<textarea name="catatan" id="adhoc-catatan" rows="2" style="font-size:13px; padding:7px 10px; width:100%" placeholder="Alasan penambahan tahap..."></textarea>
+				<textarea name="catatan" id="adhoc-catatan" rows="3" style="font-size:12.5px; padding:8px 10px; width:100%; border-radius:6px" placeholder="Mis. Perlu wawancara tambahan dengan user / test teknis ulang..."></textarea>
 			</div>
 		</div>
 		<div class="rpg-modal-footer">
@@ -1032,34 +985,6 @@ function filterPipelineRows() {
 	});
 }
 
-function handleRemarkChange(sel) {
-	var opt = sel.options[sel.selectedIndex];
-	var efek = opt ? opt.getAttribute('data-efek') : '';
-	var form = sel.closest('form');
-	var noteContainer = form ? form.querySelector('.note-input-container') : null;
-	if (!noteContainer) return;
-
-	// Buka container catatan otomatis jika efek penolakan / on hold / dll
-	if (efek === 'TOLAK' || efek === 'ON_HOLD' || efek === 'WITHDRAWN' || efek === 'NO_SHOW' || efek === 'OFFER_DECLINED' || efek === 'TALENT_POOL') {
-		noteContainer.style.display = 'block';
-		var ta = noteContainer.querySelector('textarea');
-		if (ta) ta.focus();
-	}
-}
-
-function toggleInlineNote(btn) {
-	var form = btn.closest('form');
-	if (!form) return;
-	var container = form.querySelector('.note-input-container');
-	if (!container) return;
-	var isHidden = container.style.display === 'none' || container.style.display === '';
-	container.style.display = isHidden ? 'block' : 'none';
-	if (isHidden) {
-		var ta = container.querySelector('textarea');
-		if (ta) ta.focus();
-	}
-}
-
 function openAdvanceModal(idAppStage, idStage, namaKandidat, currentRemarkId, currentCatatan) {
 	var dlg = document.getElementById('dlg-advance');
 	document.getElementById('dlg-adv-subtitle').textContent = 'Kandidat: ' + namaKandidat;
@@ -1083,17 +1008,10 @@ function openAdvanceModal(idAppStage, idStage, namaKandidat, currentRemarkId, cu
 	dlg.showModal();
 }
 
-function openAdHocModal(urut, cards) {
-	var sel = document.getElementById('adhoc-lamaran');
-	sel.innerHTML = '';
-	if (cards && cards.length) {
-		cards.forEach(function(c) {
-			var opt = document.createElement('option');
-			opt.value = c.id_lamaran;
-			opt.textContent = c.nama_lengkap + ' (#' + c.id_lamaran + ')';
-			sel.appendChild(opt);
-		});
-	}
+function openAdHocModal(idLamaran, namaKandidat) {
+	document.getElementById('adhoc-id-lamaran').value = idLamaran;
+	document.getElementById('adhoc-nama-kandidat').textContent = namaKandidat + ' (#' + idLamaran + ')';
+	document.getElementById('adhoc-catatan').value = '';
 	document.getElementById('dlg-adhoc').showModal();
 }
 
