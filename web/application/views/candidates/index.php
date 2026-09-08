@@ -12,7 +12,7 @@
 		</div>
 	</div>
 
-	<!-- Ringkasan Metrik / Quick Stat Cards (Di Atas Filter) -->
+	<!-- Ringkasan Metrik / Quick Stat Cards (Di Atas Filter: 3 Status Operasional Utama) -->
 	<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:20px">
 		<div class="card" style="padding:14px 16px; display:flex; align-items:center; gap:12px; margin:0">
 			<div style="width:38px; height:38px; border-radius:10px; background:var(--surface-2); display:grid; place-items:center; flex:none; color:var(--accent)">
@@ -29,7 +29,7 @@
 				<svg style="width:18px; height:18px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
 			</div>
 			<div>
-				<div class="muted" style="font-size:11.5px; font-weight:600">Dalam Proses Seleksi</div>
+				<div class="muted" style="font-size:11.5px; font-weight:600">Sedang Proses</div>
 				<div style="font-size:20px; font-weight:700; color:var(--info); line-height:1.2; margin-top:2px"><?= (int) ($stats['n_in_progress'] ?? 0) ?> <span style="font-size:12px; font-weight:500; color:var(--text-muted)">aktif</span></div>
 			</div>
 		</div>
@@ -39,18 +39,18 @@
 				<svg style="width:18px; height:18px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
 			</div>
 			<div>
-				<div class="muted" style="font-size:11.5px; font-weight:600">Berhasil Diterima (Hired)</div>
+				<div class="muted" style="font-size:11.5px; font-weight:600">Diterima (Hired)</div>
 				<div style="font-size:20px; font-weight:700; color:var(--good); line-height:1.2; margin-top:2px"><?= (int) ($stats['n_hired'] ?? 0) ?> <span style="font-size:12px; font-weight:500; color:var(--text-muted)">orang</span></div>
 			</div>
 		</div>
 
 		<div class="card" style="padding:14px 16px; display:flex; align-items:center; gap:12px; margin:0">
-			<div style="width:38px; height:38px; border-radius:10px; background:var(--talent-soft); display:grid; place-items:center; flex:none; color:var(--talent)">
-				<svg style="width:18px; height:18px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+			<div style="width:38px; height:38px; border-radius:10px; background:var(--crit-soft); display:grid; place-items:center; flex:none; color:var(--crit)">
+				<svg style="width:18px; height:18px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
 			</div>
 			<div>
-				<div class="muted" style="font-size:11.5px; font-weight:600">Talent Pool &amp; Selesai</div>
-				<div style="font-size:20px; font-weight:700; color:var(--talent); line-height:1.2; margin-top:2px"><?= (int) (($stats['n_talent_pool'] ?? 0) + ($stats['n_selesai'] ?? 0)) ?> <span style="font-size:12px; font-weight:500; color:var(--text-muted)">arsip</span></div>
+				<div class="muted" style="font-size:11.5px; font-weight:600">Ditolak / Gugur</div>
+				<div style="font-size:20px; font-weight:700; color:var(--crit); line-height:1.2; margin-top:2px"><?= (int) ($stats['n_rejected'] ?? 0) ?> <span style="font-size:12px; font-weight:500; color:var(--text-muted)">kandidat</span></div>
 			</div>
 		</div>
 	</div>
@@ -67,11 +67,9 @@
 					<label for="f-status" style="font-size:11.5px; font-weight:600; margin:0 0 4px; display:block" class="eyebrow">Status Lamaran</label>
 					<select id="f-status" name="status" style="margin:0; width:100%; padding:6px 10px; font-size:13px; background:var(--surface)">
 						<option value="">Semua Status</option>
-						<?php
-						$all_statuses = array('In_Progress', 'Hired', 'Rejected', 'On_Hold', 'Unreachable', 'Withdrawn', 'Offer_Declined', 'No_Show', 'Talent_Pool');
-						foreach ($all_statuses as $st): ?>
-							<option value="<?= $st ?>" <?= ($f['status'] ?? '') === $st ? 'selected' : '' ?>><?= $st ?></option>
-						<?php endforeach; ?>
+						<option value="In_Progress" <?= ($f['status'] ?? '') === 'In_Progress' ? 'selected' : '' ?>>Sedang Proses</option>
+						<option value="Hired" <?= ($f['status'] ?? '') === 'Hired' ? 'selected' : '' ?>>Diterima (Hired)</option>
+						<option value="Rejected" <?= ($f['status'] ?? '') === 'Rejected' ? 'selected' : '' ?>>Ditolak / Gugur</option>
 					</select>
 				</div>
 				<div>
@@ -203,24 +201,23 @@
 									<?php endif; ?>
 								</td>
 
-								<!-- Kolom Status Lamaran -->
+								<!-- Kolom Status Lamaran (3 Kategori Operasional Bersih) -->
 								<td style="padding:12px 14px; text-align:center">
 									<?php
-									$st_class = 'off';
-									if (in_array($r['status_global'], array('Hired', 'Approved'))) {
+									$st = $r['status_global'];
+									if (in_array($st, array('Hired', 'Approved'))) {
 										$st_class = 'on';
-									} elseif ($r['status_global'] === 'In_Progress') {
+										$st_label = 'Diterima';
+									} elseif (in_array($st, array('In_Progress', 'On_Hold', 'Unreachable', 'Sourcing'))) {
 										$st_class = 'info';
-									} elseif (in_array($r['status_global'], array('On_Hold', 'Unreachable'))) {
-										$st_class = 'warn';
-									} elseif ($r['status_global'] === 'Talent_Pool') {
-										$st_class = 'talent';
-									} elseif ($r['status_global'] === 'Rejected') {
+										$st_label = 'Sedang Proses';
+									} else {
 										$st_class = 'off';
+										$st_label = 'Ditolak';
 									}
 									?>
-									<span class="tag <?= $st_class ?>" style="font-size:11px; white-space:normal; display:inline-block; max-width:100%">
-										<?= html_escape($r['status_global']) ?>
+									<span class="tag <?= $st_class ?>" style="font-size:11px; font-weight:600" title="Detail Sistem: <?= html_escape($st) ?>">
+										<?= $st_label ?>
 									</span>
 								</td>
 

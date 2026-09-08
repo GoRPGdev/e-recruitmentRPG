@@ -294,8 +294,16 @@ class Candidate_model extends CI_Model
 	{
 		$w = array();
 		if ( ! empty($f['status'])) {
-			$w[] = 'a.status_global = ?';
-			$b[] = (string) $f['status'];
+			if ($f['status'] === 'In_Progress') {
+				$w[] = "a.status_global IN ('In_Progress', 'On_Hold', 'Unreachable')";
+			} elseif ($f['status'] === 'Hired') {
+				$w[] = "a.status_global = 'Hired'";
+			} elseif ($f['status'] === 'Rejected') {
+				$w[] = "a.status_global IN ('Rejected', 'Withdrawn', 'Offer_Declined', 'No_Show', 'Talent_Pool')";
+			} else {
+				$w[] = 'a.status_global = ?';
+				$b[] = (string) $f['status'];
+			}
 		}
 		if ( ! empty($f['posisi'])) {
 			$w[] = 'r.id_posisi = ?';
@@ -348,10 +356,9 @@ class Candidate_model extends CI_Model
 		$where = $this->_list_where((array) $f, $b);
 		$sql = "SELECT
 		            COUNT(*) AS total,
-		            SUM(CASE WHEN a.status_global = 'In_Progress' THEN 1 ELSE 0 END) AS n_in_progress,
+		            SUM(CASE WHEN a.status_global IN ('In_Progress', 'On_Hold', 'Unreachable') THEN 1 ELSE 0 END) AS n_in_progress,
 		            SUM(CASE WHEN a.status_global = 'Hired' THEN 1 ELSE 0 END) AS n_hired,
-		            SUM(CASE WHEN a.status_global IN ('Rejected', 'Withdrawn', 'Offer_Declined', 'No_Show') THEN 1 ELSE 0 END) AS n_selesai,
-		            SUM(CASE WHEN a.status_global = 'Talent_Pool' THEN 1 ELSE 0 END) AS n_talent_pool
+		            SUM(CASE WHEN a.status_global IN ('Rejected', 'Withdrawn', 'Offer_Declined', 'No_Show', 'Talent_Pool') THEN 1 ELSE 0 END) AS n_rejected
 		        FROM dbo.APPLICATIONS a
 		        JOIN dbo.CANDIDATES c   ON c.id_kandidat = a.id_kandidat
 		        JOIN dbo.REQUISITIONS r ON r.id_req = a.id_req
@@ -359,7 +366,7 @@ class Candidate_model extends CI_Model
 		$q = $this->db->query($sql, $b);
 		$row = $q->row_array();
 		$q->free_result();
-		return $row ?: array('total' => 0, 'n_in_progress' => 0, 'n_hired' => 0, 'n_selesai' => 0, 'n_talent_pool' => 0);
+		return $row ?: array('total' => 0, 'n_in_progress' => 0, 'n_hired' => 0, 'n_rejected' => 0);
 	}
 
 	public function count_list($f = array())
