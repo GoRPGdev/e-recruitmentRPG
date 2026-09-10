@@ -732,7 +732,6 @@ dialog::backdrop {
               'posisi'     => 'Posisi',
               'departemen' => 'Departemen',
               'outlet'     => 'Outlet',
-              'dokumen'     => 'Dokumen',
               'remark'      => 'Remark Alur',
             );
             foreach ($m_list as $mk => $ml):

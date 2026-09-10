@@ -18,7 +18,7 @@ class Master extends Secured_Controller
 		'departemen'       => array('label' => 'Departemen',       'pk' => 'id_departemen',       'tabel' => 'M_DEPARTEMEN',       'desc' => 'Unit divisi dan departemen operasional serta back-office RPG.'),
 		'level_organisasi' => array('label' => 'Level Organisasi', 'pk' => 'id_level_organisasi', 'tabel' => 'M_LEVEL_ORGANISASI', 'desc' => 'Tingkat jabatan dan struktur jenjang hierarki organisasi RPG.'),
 		'outlet'           => array('label' => 'Outlet',           'pk' => 'id_outlet',           'tabel' => 'M_OUTLET',           'desc' => 'Titik cabang, outlet gerai, unit brand, dan wilayah region penempatan.'),
-		'dokumen'          => array('label' => 'Dokumen',          'pk' => 'id_dokumen',          'tabel' => 'M_DOKUMEN',          'desc' => 'Katalog berkas persyaratan pelamar, kategori, dan tingkat sensitivitas PDP.'),
+		'dokumen'          => array('label' => 'Dokumen',          'pk' => 'id_dokumen',          'tabel' => 'M_DOKUMEN',          'desc' => 'Katalog berkas persyaratan pelamar, kategori, dan tingkat sensitivitas PDP.', 'hidden' => TRUE),
 		'remark'           => array('label' => 'Remark Alur',      'pk' => 'id_remark',           'tabel' => 'M_REMARKS',          'desc' => 'Daftar keputusan/alasan mutasi kandidat pada setiap tahap alur seleksi.'),
 	);
 
