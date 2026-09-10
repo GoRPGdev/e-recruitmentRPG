@@ -2,7 +2,12 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Document_model -- verifikasi berkas kandidat + konfigurasi dokumen wajib per tahap.
+ * Model Document_model -- Model Verifikasi Berkas & Pengelolaan Dokumen Fisik
+ *
+ * Fungsi:
+ * - Menampilkan daftar berkas dokumen yang telah diunggah pelamar beserta status verifikasinya.
+ * - Memperbarui status verifikasi berkas (valid / revisi / ditolak) oleh Tim HR.
+ * - Mengambil path fisik file dan hash SHA-256 untuk streaming berkas terenkripsi aman.
  */
 class Document_model extends CI_Model
 {

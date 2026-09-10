@@ -34,7 +34,7 @@ BEGIN
         SELECT @st_global = status_global FROM dbo.APPLICATIONS WHERE id_lamaran = @id_lamaran;
         IF @st_global IS NULL
             RAISERROR('Lamaran tidak ditemukan.', 16, 1);
-        IF @st_global IN ('Hired','Rejected','Withdrawn','Offer_Declined','No_Show','Talent_Pool')
+        IF @st_global IN ('Hired','Rejected','Withdrawn','Offer_Declined','No_Show')
             RAISERROR('Lamaran sudah final, tidak bisa disisipi tahap.', 16, 1);
         IF NOT EXISTS (SELECT 1 FROM dbo.M_STAGE WHERE id_stage = @id_stage AND is_aktif = 1)
             RAISERROR('Tahap tidak valid / nonaktif.', 16, 1);

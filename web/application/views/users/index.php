@@ -1,4 +1,15 @@
-﻿<?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
+﻿<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+/**
+ * View: users/index.php -- Manajemen Akun Pengguna Internal & Hak Akses
+ *
+ * Fungsi:
+ * - Menampilkan daftar akun pengguna sistem, role penugasan, dan status keaktifan.
+ * - Mengelola pembuatan akun baru, pembaruan data kredensial, dan penonaktifan akun via SP.
+ * - Terproteksi hak akses administrator sistem (IT_ADMIN / HR_SPV).
+ */
+?>
 <div class="card" style="padding:22px 26px">
 	<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; flex-wrap:wrap; gap:12px">
 		<div>

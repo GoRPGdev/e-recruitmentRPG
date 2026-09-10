@@ -2,8 +2,12 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Helper penyimpanan file kandidat -- SELALU di luar webroot.
- * DB hanya menyimpan path, hash SHA-256, dan metadata (CLAUDE.md aturan 7).
+ * Helper storage_helper -- Utilitas Penyimpanan File Fisik Aman di Luar Webroot
+ *
+ * Fungsi:
+ * - Menangani penyimpanan berkas pelamar (CV, Ijazah, KTP, Pas Foto) di direktori aman di luar root web publik.
+ * - Memvalidasi ukuran dan ekstensi berkas yang diizinkan.
+ * - Menghitung hash SHA-256 berkas fisik untuk menjamin integritas data sesuai standar audit keamanan.
  */
 
 if ( ! function_exists('erec_storage_base')) {

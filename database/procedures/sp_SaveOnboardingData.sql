@@ -2,6 +2,7 @@
    sp_SaveOnboardingData.sql
    Menyimpan data kelengkapan formulir onboarding kandidat:
    - Data identitas & demografi tambahan di CANDIDATES
+   - Status tempat tinggal, keahlian komputer, & bahasa asing
    - Data rekening bank di CANDIDATE_BANK
    - Data riwayat penyakit di CANDIDATE_HEALTH (bila consent)
    - Catatan riwayat di APPLICATION_HISTORY
@@ -13,26 +14,31 @@ IF OBJECT_ID('dbo.sp_SaveOnboardingData') IS NOT NULL
 GO
 
 CREATE PROCEDURE dbo.sp_SaveOnboardingData
-    @id_lamaran         INT,
-    @token              VARCHAR(80),
+    @id_lamaran            INT,
+    @token                 VARCHAR(80),
     -- Data Identitas & Pribadi
-    @nama_panggilan     NVARCHAR(50)  = NULL,
-    @nik                VARCHAR(30)   = NULL,
-    @no_sim             VARCHAR(30)   = NULL,
-    @npwp               VARCHAR(40)   = NULL,
-    @agama              NVARCHAR(30)  = NULL,
-    @gol_darah          VARCHAR(5)    = NULL,
-    @tinggi_badan       INT           = NULL,
-    @berat_badan        INT           = NULL,
+    @nama_panggilan        NVARCHAR(50)  = NULL,
+    @nik                   VARCHAR(30)   = NULL,
+    @no_sim                VARCHAR(30)   = NULL,
+    @npwp                  VARCHAR(40)   = NULL,
+    @agama                 NVARCHAR(30)  = NULL,
+    @gol_darah             VARCHAR(5)    = NULL,
+    @tinggi_badan          INT           = NULL,
+    @berat_badan           INT           = NULL,
+    @status_tempat_tinggal NVARCHAR(50)  = NULL,
+    @keahlian_komputer     NVARCHAR(255) = NULL,
+    @bahasa_asing          NVARCHAR(255) = NULL,
     -- Rekening Bank
-    @nama_bank          NVARCHAR(80)  = NULL,
-    @no_rekening        VARCHAR(40)   = NULL,
-    @nama_pemilik_bank  NVARCHAR(150) = NULL,
+    @nama_bank             NVARCHAR(80)  = NULL,
+    @no_rekening           VARCHAR(40)   = NULL,
+    @nama_pemilik_bank     NVARCHAR(150) = NULL,
     -- Kesehatan (opsional)
-    @riwayat_penyakit   NVARCHAR(500) = NULL,
-    @consent_kesehatan  BIT           = 0,
+    @riwayat_penyakit      NVARCHAR(500) = NULL,
+    @consent_kesehatan     BIT           = 0,
     -- Audit & User
-    @ip_pengunggah      VARCHAR(45)   = NULL
+    @ip_pengunggah         VARCHAR(45)   = NULL,
+    -- Status Simpan (0 = Draft / Progres Sementara, 1 = Final Kirim)
+    @is_final              BIT           = 1
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -69,14 +75,17 @@ BEGIN
 
         -- 2. Update Data Identitas Tambahan di dbo.CANDIDATES
         UPDATE dbo.CANDIDATES
-        SET nama_panggilan = COALESCE(@nama_panggilan, nama_panggilan),
-            nik            = COALESCE(@nik, nik),
-            no_sim         = COALESCE(@no_sim, no_sim),
-            npwp           = COALESCE(@npwp, npwp),
-            agama          = COALESCE(@agama, agama),
-            gol_darah      = COALESCE(@gol_darah, gol_darah),
-            tinggi_badan   = COALESCE(@tinggi_badan, tinggi_badan),
-            berat_badan    = COALESCE(@berat_badan, berat_badan)
+        SET nama_panggilan        = COALESCE(@nama_panggilan, nama_panggilan),
+            nik                   = COALESCE(@nik, nik),
+            no_sim                = COALESCE(@no_sim, no_sim),
+            npwp                  = COALESCE(@npwp, npwp),
+            agama                 = COALESCE(@agama, agama),
+            gol_darah             = COALESCE(@gol_darah, gol_darah),
+            tinggi_badan          = COALESCE(@tinggi_badan, tinggi_badan),
+            berat_badan           = COALESCE(@berat_badan, berat_badan),
+            status_tempat_tinggal = COALESCE(@status_tempat_tinggal, status_tempat_tinggal),
+            keahlian_komputer     = COALESCE(@keahlian_komputer, keahlian_komputer),
+            bahasa_asing          = COALESCE(@bahasa_asing, bahasa_asing)
         WHERE id_kandidat = @id_kandidat;
 
         -- 3. Simpan / Update Data Rekening Bank di dbo.CANDIDATE_BANK
@@ -117,13 +126,16 @@ BEGIN
         END
 
         -- 5. Catat riwayat di APPLICATION_HISTORY
-        INSERT INTO dbo.APPLICATION_HISTORY (id_lamaran, jenis_event, catatan, oleh_user, waktu)
-        VALUES (@id_lamaran, 'DOKUMEN', N'Kandidat telah melengkapi formulir onboarding mandiri via web portal.', NULL, GETDATE());
+        IF @is_final = 1
+        BEGIN
+            INSERT INTO dbo.APPLICATION_HISTORY (id_lamaran, jenis_event, deskripsi, oleh_user, waktu)
+            VALUES (@id_lamaran, 'DOKUMEN', N'Kandidat telah melengkapi formulir onboarding mandiri via web portal.', NULL, GETDATE());
 
-        -- 6. Tandai Token Sebagai Sudah Terpakai
-        UPDATE dbo.FORM_TOKENS
-        SET dipakai_pada = GETDATE()
-        WHERE id_token = @id_token;
+            -- 6. Tandai Token Sebagai Sudah Terpakai (Hanya jika final)
+            UPDATE dbo.FORM_TOKENS
+            SET dipakai_pada = GETDATE()
+            WHERE id_token = @id_token;
+        END
 
         IF @outer = 0 COMMIT TRANSACTION;
     END TRY

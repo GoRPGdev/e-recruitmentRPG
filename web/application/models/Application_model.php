@@ -2,8 +2,12 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Application_model -- submit form publik (/lamar/<slug>) & get posting info.
- * Mutasi lamaran memanggil dbo.sp_SubmitApplication via Stored Procedure.
+ * Model Application_model -- Model Penerimaan Lamaran & Data Publik Pelamar
+ *
+ * Fungsi:
+ * - Membaca data detail job posting untuk formulir lamaran online berdasarkan URL slug.
+ * - Mengeksekusi mutasi pendaftaran lamaran baru melalui Stored Procedure T-SQL sp_SubmitApplication.
+ * - Menyimpan dokumen awal pelamar (CV) ke dalam database secara terikat parameter binding.
  */
 class Application_model extends CI_Model
 {
@@ -73,7 +77,7 @@ class Application_model extends CI_Model
 	 *   nama_lengkap, email, no_wa_raw, tempat_lahir, tanggal_lahir, jenis_kelamin,
 	 *   pendidikan_terakhir, nama_sekolah, jurusan, kota_domisili, alamat_lengkap,
 	 *   status_pernikahan, kontak_darurat_nama, kontak_darurat_telp, kontak_darurat_hub,
-	 *   consent_versi, setuju_talent_pool, riwayat_penyakit, consent_kesehatan,
+	 *   consent_versi, riwayat_penyakit, consent_kesehatan,
 	 *   perusahaan_terakhir, jabatan_terakhir, periode_kerja, gaji_terakhir,
 	 *   gaji_diharapkan, cv_hash, id_import_batch
 	 *

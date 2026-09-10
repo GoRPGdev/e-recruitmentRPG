@@ -1,4 +1,15 @@
-<?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+/**
+ * View: import/index.php -- Formulir Import Massal Data Kandidat (CSV)
+ *
+ * Fungsi:
+ * - Mengunggah file CSV berisikan data lamaran kandidat dari job fair atau sumber eksternal.
+ * - Menangani parsing, validasi nomor WhatsApp, dan deduplikasi data secara otomatis.
+ * - Menyajikan tinjauan awal (preview) sebelum data dieksekusi ke database.
+ */
+?>
 <main class="card">
 	<h1>Import File Pelamar</h1>
 	<p class="muted" style="margin-top:0">

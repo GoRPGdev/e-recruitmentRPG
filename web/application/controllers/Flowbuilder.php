@@ -2,10 +2,14 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Flow Builder: Konfigurasi 1 Alur Seleksi Standar RPG (Universal Recruitment Flow)
- * Wajib login + EDIT_FLOW_TEMPLATE (ERD sec.10.1).
- * Perusahaan menggunakan 1 alur standar tunggal yang fleksibel diatur tahapannya oleh HR.
- * Perubahan tahapan tidak menyentuh lamaran berjalan (di-snapshot ke APPLICATION_STAGES).
+ * Controller Flowbuilder -- Konfigurasi Alur Seleksi & Tahapan Rekrutmen RPG
+ *
+ * Fungsi:
+ * - Mengelola susunan urutan tahapan alur seleksi standar RPG dengan antarmuka drag-and-drop.
+ * - Mengatur remark keputusan dan efek status seleksi pada tiap tahapan.
+ * - Menentukan pengaturan dokumen wajib yang harus diunggah pelamar pada tahapan tertentu.
+ * - Menetapkan batas upaya kontak dan hak izin sisipan ad-hoc tahapan.
+ * - Proteksi akses: membutuhkan permission 'EDIT_FLOW_TEMPLATE'.
  */
 class Flowbuilder extends Secured_Controller
 {
@@ -57,7 +61,14 @@ class Flowbuilder extends Secured_Controller
 
 		$id_flow = (int) $flow['id_flow'];
 		$stages = $this->mm->flow_stages($id_flow);
-		$all_stages = $this->mm->all_stages();
+		$all_stages_raw = $this->mm->all_stages();
+
+		// Saring tahap: tahap yang sudah ada di flow tidak boleh muncul lagi di dropdown "+ Tambah Tahap"
+		$existing_stage_ids = array_column($stages, 'id_stage');
+		$all_stages = array_values(array_filter($all_stages_raw, function($st) use ($existing_stage_ids) {
+			return !in_array((int) $st['id_stage'], $existing_stage_ids);
+		}));
+
 		$roles = $this->mm->all_roles();
 		$flow_docs_raw = $this->document_model->flow_required_docs($id_flow);
 		$all_docs = $this->mm->list_dokumen();
@@ -150,6 +161,42 @@ class Flowbuilder extends Secured_Controller
 	}
 
 	/**
+	 * Endpoint AJAX untuk reorder urutan tahapan alur (Drag and Drop)
+	 */
+	public function reorder($id_flow = NULL)
+	{
+		if ($this->input->method() !== 'post') { show_404(); }
+		if ( ! $id_flow) {
+			$flow = $this->_get_standard_flow();
+			$id_flow = $flow ? $flow['id_flow'] : NULL;
+		}
+		if ( ! $id_flow) {
+			return $this->output
+				->set_content_type('application/json')
+				->set_output(json_encode(array('success' => FALSE, 'error' => 'Flow tidak ditemukan.')));
+		}
+
+		$order = $this->input->post('order');
+		if ( ! is_array($order) || empty($order)) {
+			return $this->output
+				->set_content_type('application/json')
+				->set_output(json_encode(array('success' => FALSE, 'error' => 'Data urutan kosong.')));
+		}
+
+		$uid = (int) ($this->auth_user['id_user'] ?? 0);
+		try {
+			$this->mm->reorder_flow_stages((int) $id_flow, $order, $uid);
+			return $this->output
+				->set_content_type('application/json')
+				->set_output(json_encode(array('success' => TRUE)));
+		} catch (RuntimeException $e) {
+			return $this->output
+				->set_content_type('application/json')
+				->set_output(json_encode(array('success' => FALSE, 'error' => $e->getMessage())));
+		}
+	}
+
+	/**
 	 * Clone flow dinonaktifkan karena perusahaan menggunakan 1 flow tunggal
 	 */
 	public function clone_flow()
@@ -198,6 +245,21 @@ class Flowbuilder extends Secured_Controller
 		try {
 			$this->mm->toggle_stage((int) $this->input->post('id'), (int) $this->input->post('is_aktif'), $uid);
 			$this->session->set_flashdata('ok', $this->input->post('is_aktif') ? 'Tahap diaktifkan.' : 'Tahap dinonaktifkan.');
+		} catch (RuntimeException $e) {
+			$this->session->set_flashdata('error', $e->getMessage());
+		}
+		redirect('flowbuilder/stages');
+	}
+
+	public function toggle_stage_sisipan()
+	{
+		if ($this->input->method() !== 'post') { show_404(); }
+		$uid = (int) ($this->auth_user['id_user'] ?? 0);
+		$id = (int) $this->input->post('id');
+		$val = (int) $this->input->post('is_sisipan_allowed');
+		try {
+			$this->mm->toggle_stage_sisipan($id, $val, $uid);
+			$this->session->set_flashdata('ok', $val ? 'Tahap diizinkan sebagai tahap sisipan.' : 'Tahap dikeluarkan dari daftar tahap sisipan.');
 		} catch (RuntimeException $e) {
 			$this->session->set_flashdata('error', $e->getMessage());
 		}
@@ -266,7 +328,7 @@ class Flowbuilder extends Secured_Controller
 			'id_stage'    => $id_stage ? (int) $id_stage : NULL,
 			'rows'        => $this->mm->remarks($id_stage ? (int) $id_stage : NULL),
 			'all_stages'  => $this->mm->all_stages(),
-			'efek'        => array('LANJUT','TOLAK','ON_HOLD','UNREACHABLE','WITHDRAWN','OFFER_DECLINED','NO_SHOW','HIRED','TALENT_POOL'),
+			'efek'        => array('LANJUT','HIRED','TOLAK'),
 			'edit_remark' => $edit_row,
 		));
 	}

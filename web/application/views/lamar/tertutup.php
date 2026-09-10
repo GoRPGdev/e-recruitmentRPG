@@ -16,9 +16,18 @@
 	<div style="width:54px; height:54px; border-radius:50%; background:var(--warn-soft); color:var(--warn); display:grid; place-items:center; margin:0 auto 16px; font-size:26px">
 		&#9888;
 	</div>
-	<h1 style="margin:0 0 8px; font-size:22px; font-weight:700">Lowongan Pekerjaan Ditutup</h1>
+	<?php
+	$is_expired = (!empty($posting['form_ditutup']) && strtotime($posting['form_ditutup']) < time());
+	?>
+	<h1 style="margin:0 0 8px; font-size:22px; font-weight:700">
+		<?= $is_expired ? 'Batas Waktu Pendaftaran Berakhir' : 'Lowongan Pekerjaan Ditutup' ?>
+	</h1>
 	<p style="font-size:14px; color:var(--text); margin:0 0 16px; line-height:1.5">
-		Pendaftaran untuk posisi <strong><?= html_escape($posting['nama_posisi']) ?></strong> saat ini sudah tidak menerima lamaran baru atau kuota pelamar telah terpenuhi.
+		<?php if ($is_expired): ?>
+			Pendaftaran untuk posisi <strong><?= html_escape($posting['nama_posisi']) ?></strong> telah melewati batas waktu yang ditentukan (berakhir pada <?= date('d M Y', strtotime($posting['form_ditutup'])) ?>).
+		<?php else: ?>
+			Pendaftaran untuk posisi <strong><?= html_escape($posting['nama_posisi']) ?></strong> saat ini sudah tidak menerima lamaran baru atau kuota pelamar telah terpenuhi.
+		<?php endif; ?>
 	</p>
 	<p class="muted" style="font-size:12.5px; margin:0">
 		Terima kasih atas ketertarikan Anda terhadap Ratu Pertiwi Group. Silakan nantikan pembukaan peluang karir lainnya di masa mendatang.

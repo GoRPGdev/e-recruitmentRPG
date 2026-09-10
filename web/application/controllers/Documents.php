@@ -2,10 +2,13 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Verifikasi berkas kandidat. Lihat: LIHAT_CV. Buka dokumen IDENTITAS/
- * FINANSIAL butuh permission khusus dan dicatat ke ACCESS_LOG_SENSITIF.
- * Konfigurasi "dokumen wajib per tahap" pindah ke Flow Builder
- * (flowbuilder/flow_docs, permission EDIT_FLOW_TEMPLATE).
+ * Controller Documents -- Manajemen & Verifikasi Dokumen Berkas Pelamar
+ *
+ * Fungsi:
+ * - Menampilkan daftar dokumen yang telah diunggah pelamar (KTP, CV, Ijazah, Transkrip, Pas Foto, Surat Sehat, dsb).
+ * - Menangani verifikasi berkas oleh Tim HR (status valid / revisi).
+ * - Streaming file fisik secara aman dari penyimpanan di luar webroot.
+ * - Proteksi akses data sensitif (KTP/KK/NPWP via ACCESS_LOG_SENSITIF) sesuai regulasi UU PDP.
  */
 class Documents extends Secured_Controller
 {

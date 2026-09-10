@@ -2,8 +2,13 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Posting_model -- kelola link form publik + token berkas personal.
- * Paginasi pakai pola ROW_NUMBER() (CLAUDE.md aturan 2), bukan limit().
+ * Model Posting_model -- Model Publikasi Lowongan Kerja & Manajemen Token Berkas
+ *
+ * Fungsi:
+ * - Menangani pembuatan dan pengaturan lowongan form publik berbasis URL slug via sp_CreatePosting.
+ * - Mengatur aktivasi buka/tutup form lamaran online per batch lowongan.
+ * - Mengelola penerbitan dan resolusi token pengunggahan berkas formulir pelamar.
+ * - Menerapkan paginasi berbasis CTE ROW_NUMBER() sesuai standar SQL Server 2008 R2.
  */
 class Posting_model extends CI_Model
 {
@@ -22,7 +27,8 @@ class Posting_model extends CI_Model
 	{
 		$sql = 'WITH q AS (
 		            SELECT jp.id_posting, jp.id_req, jp.url_slug, jp.judul_posting, jp.is_aktif,
-		                   jp.form_aktif, jp.form_dibuka, jp.form_ditutup, jp.jumlah_submit,
+		                   jp.form_aktif, jp.form_dibuka, jp.form_ditutup, jp.jumlah_submit, jp.batch_ke,
+			                   CASE WHEN jp.form_aktif = 1 AND jp.form_ditutup IS NOT NULL AND jp.form_ditutup < GETDATE() THEN 1 ELSE 0 END AS is_kadaluarsa,
 		                   p.nama_posisi, d.nama AS departemen, o.nama_outlet, r.no_mpr, r.status_req, r.tipe_penempatan,
 		                   (SELECT COUNT(*) FROM dbo.APPLICATIONS a WHERE a.id_posting = jp.id_posting) AS n_lamaran,
 		                   ROW_NUMBER() OVER (ORDER BY jp.id_posting DESC) AS rn
@@ -36,6 +42,16 @@ class Posting_model extends CI_Model
 		$q = $this->db->query($sql, array((int) $offset, (int) $offset + (int) $per - 1));
 		$rows = $q->result_array();
 		$q->free_result();
+
+		if ( ! empty($rows)) {
+			foreach ($rows as &$row) {
+				if (empty($row['url_slug']) && ! empty($row['id_posting'])) {
+					$row['url_slug'] = $this->ensure_slug((int) $row['id_posting']);
+				}
+			}
+			unset($row);
+		}
+
 		return $rows;
 	}
 
@@ -69,15 +85,16 @@ class Posting_model extends CI_Model
 		return $this->db->affected_rows() >= 0;
 	}
 
-	public function toggle_form($id_posting, $form_aktif = NULL, $oleh_user = NULL)
+	public function toggle_form($id_posting, $form_aktif = NULL, $oleh_user = NULL, $durasi_hari = 14)
 	{
 		$status_akhir = 0;
 		$stmt = sqlsrv_query(
 			$this->db->conn_id,
-			'{CALL dbo.sp_TogglePostingForm(?,?,?,?)}',
+			'{CALL dbo.sp_TogglePostingForm(?,?,?,?,?)}',
 			array(
 				(int) $id_posting,
 				$form_aktif !== NULL ? ($form_aktif ? 1 : 0) : NULL,
+				(int) $durasi_hari,
 				(int) $oleh_user,
 				array(&$status_akhir, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT)
 			)
@@ -90,6 +107,27 @@ class Posting_model extends CI_Model
 		do { /* nothing */ } while (sqlsrv_next_result($stmt));
 		sqlsrv_free_stmt($stmt);
 		return (bool) $status_akhir;
+	}
+
+	public function extend_posting($id_posting, $durasi_hari = 14, $oleh_user = NULL)
+	{
+		$stmt = sqlsrv_query(
+			$this->db->conn_id,
+			'{CALL dbo.sp_ExtendPosting(?,?,?)}',
+			array(
+				(int) $id_posting,
+				(int) $durasi_hari,
+				(int) $oleh_user
+			)
+		);
+		if ($stmt === FALSE) {
+			$e = sqlsrv_errors();
+			$last = $e ? end($e) : NULL;
+			throw new RuntimeException($last ? trim($last['message']) : 'Gagal memperpanjang lowongan.');
+		}
+		do { /* nothing */ } while (sqlsrv_next_result($stmt));
+		sqlsrv_free_stmt($stmt);
+		return TRUE;
 	}
 
 	/** Buat url_slug kalau belum ada. Slug = <posisi-slug>-<id_posting>. */

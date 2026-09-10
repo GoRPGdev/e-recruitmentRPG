@@ -1,6 +1,14 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
+/**
+ * Controller Auth -- Manajemen Autentikasi Sistem E-Recruitment RPG
+ *
+ * Fungsi:
+ * - Menangani proses otentikasi login pengguna berbasis role & departemen.
+ * - Memuat session, data snapshot user, dan perizinan akses (permissions RBAC).
+ * - Menangani proses logout dan pengalihan sesi aman.
+ */
 class Auth extends MY_Controller
 {
 	public function __construct()
@@ -18,6 +26,10 @@ class Auth extends MY_Controller
 	public function login()
 	{
 		if ($this->session->userdata('logged_in')) {
+			$au = (array) $this->session->userdata('auth_user');
+			if (($au['kode_role'] ?? '') === 'USER_DEPT') {
+				redirect('requisitions');
+			}
 			redirect('dashboard');
 		}
 
@@ -42,7 +54,11 @@ class Auth extends MY_Controller
 						),
 						'permissions' => $this->auth_model->get_permissions($user['id_user']),
 					));
-					redirect('dashboard');
+					if (($user['kode_role'] ?? '') === 'USER_DEPT') {
+						redirect('requisitions');
+					} else {
+						redirect('dashboard');
+					}
 				}
 
 				$this->session->set_flashdata('error', 'Username atau password salah.');

@@ -249,10 +249,12 @@ foreach ($stages as $s) {
 		</div>
 
 		<div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
-			<a href="<?= site_url('manual') ?>" class="btn btn-sm btn-primary" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; font-weight:600">
+			<?php if (!empty($can_aksi) && in_array($req['status_req'], array('Approved', 'Sourcing', 'Sourcing_Ulang', 'Terpenuhi_Sebagian'))): ?>
+			<a href="<?= site_url('manual/' . (int) $req['id_req']) ?>" class="btn btn-sm btn-primary" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; font-weight:600">
 				<svg style="width:14px; height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
 				<span>Tambah Pelamar</span>
 			</a>
+			<?php endif; ?>
 			<a href="<?= site_url('requisitions/view/' . (int) $req['id_req']) ?>" class="btn btn-sm btn-ghost" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px">
 				<svg style="width:14px; height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
 				<span>Detail MPR</span>
@@ -634,8 +636,6 @@ foreach ($stages as $s) {
 										$fc_badge = 'on';
 									} elseif ($fc_status === 'Withdrawn' || $fc_status === 'Offer_Declined') {
 										$fc_badge = 'warn';
-									} elseif ($fc_status === 'Talent_Pool') {
-										$fc_badge = 'info';
 									}
 									?>
 									<tr style="border-bottom:1px solid var(--border)">
@@ -968,7 +968,7 @@ function openAdvanceModal(idAppStage, idStage, namaKandidat, currentRemarkId, cu
 		if (r.efek_status === 'LANJUT' || r.efek_status === 'HIRED') {
 			opt.textContent = '✔ Lanjut: ' + r.label;
 			grpLanjut.appendChild(opt);
-		} else if (r.efek_status === 'TOLAK' || r.efek_status === 'WITHDRAWN' || r.efek_status === 'OFFER_DECLINED' || r.efek_status === 'NO_SHOW' || r.efek_status === 'TALENT_POOL') {
+		} else if (r.efek_status === 'TOLAK' || r.efek_status === 'WITHDRAWN' || r.efek_status === 'OFFER_DECLINED' || r.efek_status === 'NO_SHOW') {
 			opt.textContent = '✖ Tolak: ' + r.label;
 			grpReject.appendChild(opt);
 		} else {

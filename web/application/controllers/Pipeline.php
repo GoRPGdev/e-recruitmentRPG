@@ -2,8 +2,14 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Papan pipeline vertikal per requisition + aksi flow engine.
- * Lihat: LIHAT_KANDIDAT. Aksi (advance/contact): KELOLA_REKRUTMEN.
+ * Controller Pipeline -- Papan Seleksi Interaktif Pelamar per Requisition (MPR)
+ *
+ * Fungsi:
+ * - Menampilkan kandidat yang berada di setiap tahapan seleksi dalam bentuk papan alur terstruktur.
+ * - Menangani transisi pelamar ke tahap berikutnya (Advance Stage) berdasarkan remark evaluasi dan efek status.
+ * - Menangani pencatatan log kontak WhatsApp/Telepon pelamar dan penjadwalan sesi wawancara (interview).
+ * - Menangani penyisipan tahap ad-hoc yang diizinkan untuk kandidat tertentu.
+ * - Proteksi akses: membutuhkan permission 'LIHAT_KANDIDAT' (melihat) dan 'KELOLA_REKRUTMEN' (eksekusi mutasi).
  */
 class Pipeline extends Secured_Controller
 {

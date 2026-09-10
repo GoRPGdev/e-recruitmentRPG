@@ -3,7 +3,7 @@
    E-Recruitment RPG  --  modul Requisition (Kahfi)
 
    Aturan:
-     - Hanya MPR berstatus Draft, Menunggu_BOD, Sourcing, Sourcing_Ulang
+     - Hanya MPR berstatus Draft, Review_BOD, Sourcing, Sourcing_Ulang
        yang dapat dibatalkan.
      - MPR Terpenuhi tidak dapat dibatalkan.
      - Jika posting aktif ada, otomatis dinonaktifkan (form_aktif = 0).
@@ -48,14 +48,9 @@ BEGIN
         WHERE id_req = @id_req AND form_aktif = 1;
 
         -- Audit log
-        DECLARE @detail VARCHAR(1000) = 'Batal MPR ' + ISNULL(@no_mpr, '#' + CAST(@id_req AS VARCHAR(10)))
-                                      + ' (status awal: ' + @status + '). Alasan: ' + ISNULL(@alasan, '-');
-        EXEC dbo.sp_AuditLog
-            @tabel = 'REQUISITIONS',
-            @id_baris = @id_req,
-            @aksi = 'BATAL_MPR',
-            @id_user = @oleh_user,
-            @detail = @detail;
+        DECLARE @n_lama VARCHAR(MAX) = 'status_req=' + @status,
+                @n_baru VARCHAR(MAX) = 'status_req=Dibatalkan; alasan=' + ISNULL(@alasan, '-');
+        EXEC dbo.sp_AuditLog 'REQUISITIONS', @id_req, 'UPDATE', @n_lama, @n_baru, @oleh_user;
 
         IF @outer = 0 COMMIT TRANSACTION;
     END TRY

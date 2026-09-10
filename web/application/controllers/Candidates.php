@@ -2,14 +2,14 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Candidates -- Layar Detail Profil Kandidat (G3).
- * Proteksi umum: LIHAT_KANDIDAT.
- * Proteksi scoping: USER_DEPT hanya bisa melihat kandidat departemennya (G4b).
- * Proteksi data sensitif:
- *   - Gaji terakhir & harapan: LIHAT_GAJI_PELAMAR -> ACCESS_LOG_SENSITIF (GAJI)
- *   - Riwayat kesehatan: LIHAT_KESEHATAN -> ACCESS_LOG_SENSITIF (KESEHATAN)
- *   - No rekening bank: LIHAT_FINANSIAL -> ACCESS_LOG_SENSITIF (FINANSIAL)
- *   - Range gaji / offer: LIHAT_GAJI -> ACCESS_LOG_SENSITIF (GAJI)
+ * Controller Candidates -- Manajemen Data & Detail Profil Kandidat Pelamar
+ *
+ * Fungsi:
+ * - Menampilkan daftar master kandidat dan riwayat lamaran (dengan filter status & pencarian).
+ * - Menampilkan profil lengkap pelamar (identitas, riwayat kerja, pendidikan, keluarga, dsb).
+ * - Menyediakan fitur cetak / export PDF Formulir Aplikasi Calon Karyawan (print_form).
+ * - Menghasilkan token & tautan formulir onboarding mandiri untuk kandidat lolos seleksi.
+ * - Proteksi akses berbasis hak akses (RBAC) & kepatuhan privasi data sensitif (UU PDP).
  */
 class Candidates extends Secured_Controller
 {
@@ -93,6 +93,9 @@ class Candidates extends Secured_Controller
 		$onboarding_token = $this->candidate_model->get_onboarding_token($id_lamaran);
 		$experiences      = $this->candidate_model->get_work_experiences($id_lamaran);
 		$families         = $this->candidate_model->get_family_members($detail['id_kandidat']);
+		$trainings        = $this->candidate_model->get_trainings($detail['id_kandidat']);
+		$references       = $this->candidate_model->get_references($detail['id_kandidat']);
+		$questionnaire    = $this->candidate_model->get_questionnaire($id_lamaran);
 
 		// Evaluasi izin akses data sensitif & pencatatan log
 		$can_gaji_pelamar = can_sensitif('GAJI_PELAMAR');
@@ -154,6 +157,9 @@ class Candidates extends Secured_Controller
 			'onboarding_token' => $onboarding_token,
 			'experiences'      => $experiences,
 			'families'         => $families,
+			'trainings'        => $trainings,
+			'references'       => $references,
+			'questionnaire'    => $questionnaire,
 		));
 	}
 
@@ -173,10 +179,188 @@ class Candidates extends Secured_Controller
 			show_404();
 		}
 
-		$uid = (int) $this->session->userdata('id_user');
-		$token = $this->candidate_model->create_onboarding_token((int) $id_lamaran, $uid, 14);
+		$au = $this->session->userdata('auth_user');
+		$uid = ! empty($au['id_user']) ? (int) $au['id_user'] : (! empty($this->auth_user['id_user']) ? (int) $this->auth_user['id_user'] : NULL);
 
-		$this->session->set_flashdata('success', 'Tautan formulir onboarding baru berhasil dibuat (masa aktif 14 hari).');
+		$force_new = (bool) $this->input->get('force_new');
+		$existing_token = $this->candidate_model->get_onboarding_token((int) $id_lamaran);
+
+		$token = NULL;
+		$is_existing = FALSE;
+		$kadaluarsa_text = '';
+
+		// Jika sudah ada token aktif dan user tidak meminta buat ulang paksa, pakai token yang ada
+		if ( ! $force_new && $existing_token && ! empty($existing_token['valid'])) {
+			$token = $existing_token['token'];
+			$is_existing = TRUE;
+			$kadaluarsa_text = ! empty($existing_token['kadaluarsa_pada'])
+				? date('d M Y', strtotime($existing_token['kadaluarsa_pada']))
+				: 'Tanpa batas waktu';
+			$msg = 'Tautan formulir pelamar aktif ditemukan (berlaku s/d ' . $kadaluarsa_text . ').';
+		} else {
+			try {
+				$token = $this->candidate_model->create_onboarding_token((int) $id_lamaran, $uid, 14);
+				$kadaluarsa_text = date('d M Y', time() + 14 * 86400);
+				$msg = 'Tautan formulir pelamar baru berhasil dibuat (masa aktif 14 hari).';
+			} catch (Exception $e) {
+				if ($this->input->is_ajax_request() || $this->input->get('format') === 'json') {
+					return $this->output
+						->set_content_type('application/json')
+						->set_status_header(500)
+						->set_output(json_encode(array(
+							'success' => FALSE,
+							'message' => 'Gagal membuat tautan formulir: ' . $e->getMessage()
+						)));
+				}
+				$this->session->set_flashdata('error', 'Gagal membuat tautan formulir: ' . $e->getMessage());
+				redirect('candidates/detail/' . (int) $id_lamaran);
+			}
+		}
+
+		$this->session->set_flashdata('ok', $msg);
+
+		$onboarding_url = site_url('onboarding/' . $token);
+		$no_wa = preg_replace('/[^0-9]/', '', (string) ($detail['no_wa_normal'] ?? ''));
+		$wa_msg = "Halo " . ($detail['nama_lengkap'] ?? 'Kandidat') . ", terima kasih telah melamar di Ratu Pertiwi Group! Mohon untuk melengkapi formulir data pelamar Anda melalui tautan resmi berikut: " . $onboarding_url . " . Terima kasih.";
+		$wa_link = $no_wa ? 'https://wa.me/' . $no_wa . '?text=' . rawurlencode($wa_msg) : '';
+
+		if ($this->input->is_ajax_request() || $this->input->get('format') === 'json') {
+			return $this->output
+				->set_content_type('application/json')
+				->set_output(json_encode(array(
+					'success'        => TRUE,
+					'token'          => $token,
+					'is_existing'    => $is_existing,
+					'onboarding_url' => $onboarding_url,
+					'nama_lengkap'   => $detail['nama_lengkap'],
+					'no_wa'          => $detail['no_wa_normal'],
+					'wa_link'        => $wa_link,
+					'kadaluarsa'     => $kadaluarsa_text,
+					'message'        => $msg
+				)));
+		}
+
+		$redirect_to = $this->input->get('redirect_to');
+		if ($redirect_to) {
+			redirect($redirect_to);
+		}
 		redirect('candidates/detail/' . (int) $id_lamaran);
+	}
+
+	/**
+	 * Streaming Pas Foto pelamar dari storage luar webroot
+	 */
+	public function photo($id_lamaran = NULL)
+	{
+		if ( ! $id_lamaran) {
+			show_404();
+		}
+		$detail = $this->candidate_model->get_detail($id_lamaran);
+		if ( ! $detail || empty($detail['foto_path']) || ! is_file($detail['foto_path'])) {
+			show_404();
+		}
+		$dept = current_user_dept();
+		if ($dept !== NULL && (int) $detail['id_departemen'] !== (int) $dept) {
+			show_error('Akses ditolak: Kandidat bukan dari lowongan departemen Anda.', 403, '403 Forbidden');
+		}
+
+		$mime = 'image/jpeg';
+		if (function_exists('finfo_open')) {
+			$finfo = new finfo(FILEINFO_MIME_TYPE);
+			$mime = $finfo->file($detail['foto_path']);
+		}
+		$this->output
+			->set_content_type($mime)
+			->set_header('Content-Disposition: inline; filename="foto_' . (int) $id_lamaran . '.' . pathinfo($detail['foto_path'], PATHINFO_EXTENSION) . '"')
+			->set_header('Content-Length: ' . filesize($detail['foto_path']))
+			->set_output(file_get_contents($detail['foto_path']));
+	}
+
+	/**
+	 * Shortcut: buka CV pelamar langsung dari id_lamaran
+	 * Dipakai oleh pipeline board & daftar pelamar agar tidak perlu buka detail dulu.
+	 */
+	public function cv($id_lamaran = NULL)
+	{
+		if ( ! $id_lamaran) {
+			show_404();
+		}
+		$detail = $this->candidate_model->get_detail($id_lamaran);
+		if ( ! $detail) {
+			show_404();
+		}
+		$dept = current_user_dept();
+		if ($dept !== NULL && (int) $detail['id_departemen'] !== (int) $dept) {
+			show_error('Akses ditolak.', 403, '403 Forbidden');
+		}
+		$docs = $this->candidate_model->get_documents($id_lamaran);
+		$cv = NULL;
+		foreach ($docs as $d) {
+			if (strtoupper($d['nama_dokumen'] ?? '') === 'CV' || stripos($d['nama_dokumen'] ?? '', 'cv') !== false) {
+				$cv = $d;
+				break;
+			}
+		}
+		if ( ! $cv) {
+			/* ponytail: fallback ke halaman detail jika CV belum terdaftar */
+			$this->session->set_flashdata('error', 'Dokumen CV belum diunggah untuk pelamar ini.');
+			redirect('candidates/detail/' . (int) $id_lamaran);
+			return;
+		}
+		redirect('documents/open/' . (int) $cv['id_cand_doc']);
+	}
+
+	/**
+	 * Cetak / Export PDF Formulir Pelamar Lengkap (Format Dokumen Resmi RPG A-I)
+	 */
+	public function print_form($id_lamaran = NULL)
+	{
+		if ( ! $id_lamaran) {
+			show_404();
+		}
+
+		$detail = $this->candidate_model->get_detail($id_lamaran);
+		if ( ! $detail) {
+			show_404();
+		}
+
+		// Scoping USER_DEPT
+		$dept = current_user_dept();
+		if ($dept !== NULL && (int) $detail['id_departemen'] !== (int) $dept) {
+			show_error('Akses ditolak: Kandidat bukan dari lowongan departemen Anda.', 403, '403 Forbidden');
+		}
+
+		$profile       = $this->candidate_model->get_profile($id_lamaran);
+		$health        = $this->candidate_model->get_health($detail['id_kandidat']);
+		$bank          = $this->candidate_model->get_bank($id_lamaran);
+		$experiences   = $this->candidate_model->get_work_experiences($id_lamaran);
+		$families      = $this->candidate_model->get_family_members($detail['id_kandidat']);
+		$trainings     = $this->candidate_model->get_trainings($detail['id_kandidat']);
+		$references    = $this->candidate_model->get_references($detail['id_kandidat']);
+		$questionnaire = $this->candidate_model->get_questionnaire($id_lamaran);
+
+		// Log akses data sensitif saat mencetak
+		if (can_sensitif('GAJI_PELAMAR')) {
+			log_akses_sensitif('GAJI_PELAMAR', (int) $id_lamaran);
+		}
+		if (can_sensitif('FINANSIAL')) {
+			log_akses_sensitif('FINANSIAL', (int) $detail['id_kandidat']);
+		}
+		if (can_sensitif('KESEHATAN')) {
+			log_akses_sensitif('KESEHATAN', (int) $detail['id_kandidat']);
+		}
+
+		$this->load->view('candidates/print_form', array(
+			'title'         => 'Formulir Aplikasi Calon Karyawan — ' . $detail['nama_lengkap'],
+			'c'             => $detail,
+			'profile'       => $profile,
+			'health'        => $health,
+			'bank'          => $bank,
+			'experiences'   => $experiences,
+			'families'      => $families,
+			'trainings'     => $trainings,
+			'references'    => $references,
+			'questionnaire' => $questionnaire,
+		));
 	}
 }

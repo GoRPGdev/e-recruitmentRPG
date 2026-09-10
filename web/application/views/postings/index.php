@@ -1,4 +1,15 @@
-<?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+/**
+ * View: postings/index.php -- Pengelolaan Lowongan Kerja Publik (Job Postings)
+ *
+ * Fungsi:
+ * - Menampilkan daftar lowongan kerja aktif dan terbit berdasarkan dokumen MPR yang disetujui.
+ * - Mengatur status publikasi lowongan (buka / tutup tautan pendaftaran).
+ * - Menghasilkan tautan publik, QR code, dan token pelacakan sumber kampanye rekrutmen.
+ */
+?>
 
 <div style="margin-bottom:24px">
 	<!-- Page Header -->
@@ -15,13 +26,6 @@
 			<p class="muted" style="margin:4px 0 0; font-size:13.5px">
 				Kelola link formulir lamaran online publik, jendela waktu tayang, dan pemantauan pelamar masuk per posisi.
 			</p>
-		</div>
-
-		<div style="display:flex; align-items:center; gap:8px">
-			<a href="<?= site_url('requisitions/create') ?>" class="btn btn-primary" style="display:inline-flex; align-items:center; gap:6px; font-weight:600; padding:8px 16px; border-radius:8px">
-				<svg style="width:15px; height:15px" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-				<span>+ Buat MPR Baru</span>
-			</a>
 		</div>
 	</div>
 
@@ -211,7 +215,15 @@
 
 							<!-- Status Form (Toggle Status) -->
 							<td style="padding:12px 14px; border-bottom:1px solid var(--border); text-align:center">
-								<?php if ($r['form_aktif']): ?>
+								<?php
+								$is_kadaluarsa = !empty($r['is_kadaluarsa']) || (!empty($r['form_aktif']) && !empty($r['form_ditutup']) && strtotime($r['form_ditutup']) < time());
+								?>
+								<?php if ($is_kadaluarsa): ?>
+									<span class="tag warn" style="font-size:11.5px; padding:3px 9px; font-weight:700">
+										Kadaluarsa
+									</span>
+									<span class="muted" style="font-size:11px; display:block; margin-top:3px; color:var(--crit)">Lewat deadline</span>
+								<?php elseif ($r['form_aktif']): ?>
 									<span class="tag on" style="font-size:11.5px; padding:3px 9px; font-weight:700">
 										&#10003; Terbuka
 									</span>
@@ -244,12 +256,6 @@
 
 									<div id="menu-post-<?= (int) $r['id_posting'] ?>" class="mpr-dropdown"
 									     style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:var(--surface); border:1px solid var(--border); border-radius:8px; box-shadow:var(--shadow); min-width:170px; z-index:99; text-align:left; overflow:hidden">
-										<!-- Kelola Pengaturan Form -->
-										<a href="<?= site_url('postings/form_settings/' . (int) $r['id_posting']) ?>"
-										   style="display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:12.5px; color:var(--text); text-decoration:none; border-bottom:1px solid var(--surface-2)">
-											<svg style="width:13px; height:13px; flex:none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-											<span>Kelola Form</span>
-										</a>
 
 										<!-- Statistik Portal Funnel -->
 										<a href="<?= site_url('postings/stats/' . (int) $r['id_posting']) ?>"
@@ -271,8 +277,8 @@
 										<?php $disabled = in_array($r['status_req'], array('Dibatalkan', 'Kadaluarsa')); ?>
 										<?php if (!$disabled || $r['form_aktif']): ?>
 											<?= form_open(site_url('postings/toggle/' . (int) $r['id_posting']), array('style' => 'margin:0; padding:0')) ?>
-												<input type="hidden" name="form_aktif" value="<?= $r['form_aktif'] ? '0' : '1' ?>">
-												<?php if ($r['form_aktif']): ?>
+												<input type="hidden" name="form_aktif" value="<?= ($r['form_aktif'] && !$is_kadaluarsa) ? '0' : '1' ?>">
+												<?php if ($r['form_aktif'] && !$is_kadaluarsa): ?>
 													<button type="submit" style="width:100%; border:none; background:none; display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:12.5px; color:var(--warn-ink); text-align:left; cursor:pointer"
 													        onclick="return confirm('Tutup form lamaran publik ini?')">
 														<svg style="width:13px; height:13px; flex:none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
@@ -281,9 +287,20 @@
 												<?php else: ?>
 													<button type="submit" style="width:100%; border:none; background:none; display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:12.5px; color:var(--accent-ink); text-align:left; cursor:pointer">
 														<svg style="width:13px; height:13px; flex:none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-														<span>Buka Form</span>
+														<span><?= $is_kadaluarsa ? 'Buka Kembali' : 'Buka Form' ?></span>
 													</button>
 												<?php endif; ?>
+											<?= form_close() ?>
+
+											<!-- Perpanjang Lowongan (Sourcing Ulang) -->
+											<?= form_open(site_url('postings/extend/' . (int) $r['id_posting']), array('style' => 'margin:0; padding:0; border-top:1px solid var(--surface-2)')) ?>
+												<input type="hidden" name="durasi_hari" value="14">
+												<input type="hidden" name="redirect_to" value="postings">
+												<button type="submit" style="width:100%; border:none; background:none; display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:12.5px; color:var(--accent); text-align:left; cursor:pointer"
+												        onclick="return confirm('Perpanjang lowongan +14 hari? Status MPR akan beralih menjadi Sourcing Ulang.')">
+													<svg style="width:13px; height:13px; flex:none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+													<span>Perpanjang (+14 Hari)</span>
+												</button>
 											<?= form_close() ?>
 										<?php endif; ?>
 									</div>

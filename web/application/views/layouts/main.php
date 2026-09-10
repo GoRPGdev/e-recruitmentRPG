@@ -1,4 +1,15 @@
-<?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+/**
+ * Layout View: layouts/main.php -- Kerangka Template Utama Aplikasi E-Recruitment RPG
+ *
+ * Fungsi:
+ * - Menyediakan struktur tata letak induk HTML5 (Header, Top Navigation Bar, Kontainer Konten, Footer).
+ * - Menangani styling global berbasis design tokens CSS, integrasi Google Fonts, dan utilitas responsif.
+ * - Merender menu navigasi dinamis berlandaskan hak akses (RBAC) pengguna aktif.
+ */
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -17,7 +28,6 @@
   --crit: #b23b3b; --crit-soft: #f6e1df;
   --info: #3a6ea5; --info-soft: #e2ecf5;
   --hold: #7c6316; --hold-soft: #f3ecd3;
-  --talent: #6b4fa0; --talent-soft: #ece4f6;
   --shadow-sm: 0 1px 2px rgba(20,30,25,.06);
   --shadow: 0 1px 2px rgba(20,30,25,.06), 0 10px 26px rgba(20,30,25,.07);
   --radius: 10px;
@@ -33,7 +43,6 @@
     --crit: #e08585; --crit-soft: #3a201f;
     --info: #7aa9d6; --info-soft: #182a38;
     --hold: #d8b866; --hold-soft: #322a15;
-    --talent: #b6a0e0; --talent-soft: #241c33;
     --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px rgba(0,0,0,.38);
   }
@@ -48,7 +57,6 @@
   --crit: #e08585; --crit-soft: #3a201f;
   --info: #7aa9d6; --info-soft: #182a38;
   --hold: #d8b866; --hold-soft: #322a15;
-  --talent: #b6a0e0; --talent-soft: #241c33;
   --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
   --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px rgba(0,0,0,.38);
 }
@@ -174,7 +182,6 @@ button:active, .btn:active { transform: scale(0.99); }
 .tag.warn, .tag.nego, .tag.review, .tag--warn { background: var(--warn-soft); color: var(--warn); }
 .tag.info, .tag--info { background: var(--info-soft); color: var(--info); }
 .tag.hold, .tag--hold { background: var(--hold-soft); color: var(--hold); }
-.tag.talent, .tag--talent { background: var(--talent-soft); color: var(--talent); }
 .tag.accent, .tag--accent { background: var(--accent-soft); color: var(--accent-ink); }
 
 /* Alerts / Flash */
@@ -198,6 +205,45 @@ button:active, .btn:active { transform: scale(0.99); }
   border: 1px solid color-mix(in srgb, var(--good) 30%, transparent);
   color: var(--good);
 }
+.flash.info {
+  background: var(--info-soft);
+  border: 1px solid color-mix(in srgb, var(--info) 30%, transparent);
+  color: var(--info);
+}
+.flash.warn {
+  background: var(--warn-soft);
+  border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent);
+  color: var(--warn);
+}
+
+/* Global Floating Toast */
+#global-toast-container {
+  position: fixed; top: 20px; right: 20px; z-index: 99999;
+  display: flex; flex-direction: column; gap: 8px;
+  pointer-events: none; max-width: 420px; width: calc(100% - 40px);
+}
+.g-toast {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 18px; border-radius: 10px;
+  font-size: 13.5px; font-weight: 500; pointer-events: auto;
+  box-shadow: 0 6px 24px rgba(0,0,0,.15);
+  animation: toastIn .3s ease forwards;
+  opacity: 0; transform: translateX(30px);
+}
+.g-toast.ok   { background: var(--good-soft); border: 1px solid color-mix(in srgb, var(--good) 30%, transparent); color: var(--good); }
+.g-toast.err  { background: var(--crit-soft); border: 1px solid color-mix(in srgb, var(--crit) 30%, transparent); color: var(--crit); }
+.g-toast.info { background: var(--info-soft); border: 1px solid color-mix(in srgb, var(--info) 30%, transparent); color: var(--info); }
+.g-toast.warn { background: var(--warn-soft); border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); color: var(--warn); }
+.g-toast.removing { animation: toastOut .25s ease forwards; }
+.g-toast .toast-icon { flex: none; width: 18px; height: 18px; }
+.g-toast .toast-msg { flex: 1; line-height: 1.4; }
+.g-toast .toast-close {
+  flex: none; background: none; border: none; color: inherit; opacity: .5;
+  cursor: pointer; padding: 2px; font-size: 16px; line-height: 1;
+}
+.g-toast .toast-close:hover { opacity: 1; }
+@keyframes toastIn { to { opacity: 1; transform: translateX(0); } }
+@keyframes toastOut { to { opacity: 0; transform: translateX(30px); } }
 
 /* Global Anti-Overflow & Responsiveness */
 * { box-sizing: border-box; }
@@ -594,11 +640,13 @@ dialog::backdrop {
   if ($this->session->userdata('logged_in') && ! $is_public_route):
     $au = (array) $this->session->userdata('auth_user');
     $initials = strtoupper(substr($au['nama'] ?? ($au['username'] ?? 'U'), 0, 2));
+    $is_user_dept = (($au['kode_role'] ?? '') === 'USER_DEPT');
+    $brand_href = $is_user_dept ? site_url('requisitions') : site_url('dashboard');
 ?>
 <div id="app">
   <!-- Sidebar -->
   <aside class="sidebar" id="appSidebar">
-    <a href="<?= site_url('dashboard') ?>" class="brand">
+    <a href="<?= $brand_href ?>" class="brand">
       <div class="brand-mark">RPG</div>
       <div>
         <div class="brand-name">e-Recruitment</div>
@@ -608,11 +656,13 @@ dialog::backdrop {
 
     <!-- Nav Group: Operasional -->
     <div class="nav-group">
-      <span class="eyebrow">Operasional</span>
+      <span class="eyebrow"><?= $is_user_dept ? 'Menu Utama' : 'Operasional' ?></span>
+      <?php if ( ! $is_user_dept): ?>
       <a href="<?= site_url('dashboard') ?>" class="nav-item <?= in_array($seg1, array('', 'dashboard')) ? 'active' : '' ?>">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
         <span>Dashboard</span>
       </a>
+      <?php endif; ?>
       <a href="<?= site_url('requisitions') ?>" class="nav-item <?= in_array($seg1, array('requisitions', 'pipeline')) ? 'active' : '' ?>">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
         <span>MPR & Pipeline</span>
@@ -630,6 +680,7 @@ dialog::backdrop {
       <?php endif; ?>
     </div>
 
+    <?php if ( ! $is_user_dept): ?>
     <!-- Nav Group: Intake & Pelamar -->
     <div class="nav-group">
       <span class="eyebrow">Intake & Pelamar</span>
@@ -683,7 +734,6 @@ dialog::backdrop {
               'outlet'     => 'Outlet',
               'dokumen'     => 'Dokumen',
               'remark'      => 'Remark Alur',
-              'efek_status' => 'Efek Status',
             );
             foreach ($m_list as $mk => $ml):
           ?>
@@ -698,6 +748,7 @@ dialog::backdrop {
         <span>Flow Builder</span>
       </a>
     </div>
+    <?php endif; ?>
 
     <!-- Footer Profile -->
     <div class="sidebar-footer">
@@ -722,14 +773,6 @@ dialog::backdrop {
       </button>
       <div class="topbar-title"><?= isset($title) ? html_escape($title) : 'e-Recruitment RPG' ?></div>
       <div class="topbar-spacer"></div>
-      <div class="env-pill">
-        <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:currentColor"></span>
-        DEV SQL 2008 R2
-      </div>
-      <a href="<?= site_url('requisitions/create') ?>" class="btn btn-sm btn-primary">
-        <svg style="width:13px; height:13px" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-        <span>+ Buat MPR</span>
-      </a>
     </header>
 
     <main class="view<?= ! empty($wide) ? ' wide' : '' ?>">
@@ -805,6 +848,64 @@ document.addEventListener('click', function(e) {
     });
   }
 });
+
+/* ===== Auto-fade inline flash messages ===== */
+(function() {
+  var flashes = document.querySelectorAll('main .flash.ok, main .flash.err, .wrap-public .flash.ok, .wrap-public .flash.err');
+  flashes.forEach(function(el) {
+    setTimeout(function() {
+      el.style.transition = 'opacity .4s ease, max-height .4s ease, margin .4s ease, padding .4s ease';
+      el.style.opacity = '0';
+      el.style.maxHeight = '0';
+      el.style.marginBottom = '0';
+      el.style.paddingTop = '0';
+      el.style.paddingBottom = '0';
+      el.style.overflow = 'hidden';
+      setTimeout(function() { el.remove(); }, 450);
+    }, 4000);
+  });
+})();
+</script>
+
+<!-- Global Toast Container -->
+<div id="global-toast-container"></div>
+<script>
+var _toastIcons = {
+  ok:   '<svg class="toast-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>',
+  err:  '<svg class="toast-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>',
+  info: '<svg class="toast-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+  warn: '<svg class="toast-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+};
+
+/**
+ * showToast(message, type, duration)
+ * type: 'ok' | 'err' | 'info' | 'warn'  (default 'ok')
+ * duration: ms before auto-dismiss (default 4000, 0 = sticky)
+ */
+function showToast(message, type, duration) {
+  type = type || 'ok';
+  duration = (duration === undefined || duration === null) ? 4000 : duration;
+  var container = document.getElementById('global-toast-container');
+  if (!container) return;
+
+  var el = document.createElement('div');
+  el.className = 'g-toast ' + type;
+  el.innerHTML = (_toastIcons[type] || _toastIcons.info) +
+    '<span class="toast-msg">' + message + '</span>' +
+    '<button class="toast-close" onclick="dismissToast(this.parentNode)" title="Tutup">&times;</button>';
+  container.appendChild(el);
+
+  if (duration > 0) {
+    setTimeout(function() { dismissToast(el); }, duration);
+  }
+  return el;
+}
+
+function dismissToast(el) {
+  if (!el || el.classList.contains('removing')) return;
+  el.classList.add('removing');
+  setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 260);
+}
 </script>
 </body>
 </html>

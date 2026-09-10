@@ -140,14 +140,56 @@
 					<span class="muted">Total Submit Form</span>
 					<span style="font-weight:700; color:var(--accent)"><?= (int) $posting['jumlah_submit'] ?> kali</span>
 				</div>
-				<div style="display:flex; justify-content:space-between">
+				<?php
+				$is_kadaluarsa = !empty($posting['form_aktif']) && !empty($posting['form_ditutup']) && strtotime($posting['form_ditutup']) < time();
+				?>
+				<div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:6px">
 					<span class="muted">Status Form</span>
-					<?php if ($posting['form_aktif']): ?>
+					<?php if ($is_kadaluarsa): ?>
+						<span class="tag warn" style="font-size:11px; font-weight:700">Kadaluarsa</span>
+					<?php elseif ($posting['form_aktif']): ?>
 						<span class="tag on" style="font-size:11px">&#10003; Terbuka</span>
 					<?php else: ?>
 						<span class="tag off" style="font-size:11px">Ditutup</span>
 					<?php endif; ?>
 				</div>
+				<div style="display:flex; justify-content:space-between; align-items:center">
+					<span class="muted">Batas Waktu</span>
+					<div style="text-align:right">
+						<?php if (!empty($posting['form_ditutup'])): ?>
+							<span style="font-weight:600; font-size:12px"><?= date('d M Y', strtotime($posting['form_ditutup'])) ?></span>
+							<?php if ($posting['form_aktif'] && !$is_kadaluarsa): ?>
+								<?php $sisa = max(0, (int) ceil((strtotime($posting['form_ditutup']) - time()) / 86400)); ?>
+								<div class="faint" style="font-size:10.5px"><?= $sisa ?> hari lagi</div>
+							<?php elseif ($is_kadaluarsa): ?>
+								<div style="font-size:10.5px; color:var(--crit); font-weight:600">Lewat batas</div>
+							<?php endif; ?>
+						<?php else: ?>
+							<span class="faint">Tanpa batas</span>
+						<?php endif; ?>
+					</div>
+				</div>
+			</div>
+
+			<!-- Tombol Perpanjang Batas Waktu / Sourcing Ulang -->
+			<div style="margin-top:12px; padding:12px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px">
+				<div style="font-size:12px; font-weight:700; margin-bottom:6px">Perpanjang Lowongan (Sourcing Ulang)</div>
+				<p class="muted" style="font-size:11px; margin:0 0 8px; line-height:1.4">
+					Menambah masa aktif lowongan publik dan secara otomatis mengubah status MPR menjadi <strong>Sourcing Ulang</strong>.
+				</p>
+				<?= form_open(site_url('postings/extend/' . (int) $posting['id_posting'])) ?>
+					<div style="display:flex; gap:6px">
+						<select name="durasi_hari" style="font-size:12px; padding:5px 8px; flex:1; border:1px solid var(--border); border-radius:6px; background:var(--surface)">
+							<option value="7">+7 Hari</option>
+							<option value="14" selected>+14 Hari</option>
+							<option value="30">+30 Hari</option>
+						</select>
+						<button type="submit" class="btn btn-sm btn-primary" style="font-size:11.5px; padding:5px 12px" onclick="return confirm('Perpanjang lowongan ini? Status MPR akan beralih menjadi Sourcing Ulang.')">
+							Perpanjang &rarr;
+						</button>
+					</div>
+				<?= form_close() ?>
+			</div>
 			</div>
 		</div>
 	</div>

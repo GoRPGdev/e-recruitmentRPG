@@ -37,7 +37,7 @@ BEGIN
 
         IF @st_global IS NULL
             RAISERROR('Lamaran tidak ditemukan.', 16, 1);
-        IF @st_global IN ('Hired','Rejected','Withdrawn','Offer_Declined','No_Show','Talent_Pool')
+        IF @st_global IN ('Hired','Rejected','Withdrawn','Offer_Declined','No_Show')
             RAISERROR('Lamaran sudah final.', 16, 1);
 
         SET @upaya_ke = ISNULL((SELECT MAX(upaya_ke) FROM dbo.APPLICATION_CONTACTS WHERE id_lamaran = @id_lamaran), 0) + 1;

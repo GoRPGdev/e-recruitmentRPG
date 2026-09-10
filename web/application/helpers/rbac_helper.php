@@ -2,8 +2,12 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Helper RBAC. Daftar permission efektif disimpan di session saat login
- * (Auth::login -> Auth_model::get_permissions -> sp_GetUserPermissions).
+ * Helper rbac_helper -- Utilitas Role-Based Access Control (RBAC) & Privasi Data
+ *
+ * Fungsi:
+ * - Membaca data pengguna aktif (current_user) dan scoping departemen (current_user_dept).
+ * - Memeriksa izin hak akses pengguna (has_permission, has_any_permission).
+ * - Memeriksa izin melihat data sensitif (can_sensitif) dan mencatat log audit akses (log_akses_sensitif) ke ACCESS_LOG_SENSITIF.
  */
 
 if ( ! function_exists('current_user')) {

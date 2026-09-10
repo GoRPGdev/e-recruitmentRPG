@@ -39,3 +39,9 @@ tools/out/
 
 # scratch uji lokal
 _*
+
+# TestSprite & PDF acuan
+.testsprite*
+*.pdf
+.claude/
+

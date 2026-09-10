@@ -1,4 +1,14 @@
-<?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+/**
+ * View: documents/index.php -- Antarmuka Verifikasi Berkas & Kelengkapan Dokumen
+ *
+ * Fungsi:
+ * - Menampilkan daftar dokumen kandidat yang perlu diverifikasi HR (KTP, Ijazah, KK, Sertifikat).
+ * - Mengatur status verifikasi dokumen (Proses, Done, Ditolak).
+ */
+?>
 <main class="card">
 	<h1>Verifikasi Berkas</h1>
 

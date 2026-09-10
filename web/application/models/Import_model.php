@@ -2,11 +2,12 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Import_model -- import file portal (CSV) ke IMPORT_BATCHES / IMPORT_BATCH_ROWS.
- * Commit = loop sp_SubmitApplication dalam SATU transaksi (pola savepoint).
+ * Model Import_model -- Model Impor Massal Data Pelamar CSV
  *
- * Header CSV yang dikenali (case-insensitive): nama, email, no_wa
- * (opsional: pendidikan, kota, perusahaan_terakhir, gaji_diharapkan).
+ * Fungsi:
+ * - Menangani parsing struktur file CSV dan pencatatan ke IMPORT_BATCHES & IMPORT_BATCH_ROWS.
+ * - Melakukan normalisasi nomor telepon/WhatsApp dan deduplikasi berbasis no_wa serta email.
+ * - Mengeksekusi commit batch ke tabel lamaran melalui sp_SubmitApplication dengan pola savepoint transaksi.
  */
 class Import_model extends CI_Model
 {

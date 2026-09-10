@@ -1,4 +1,15 @@
-<?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+/**
+ * View: lamar/form.php -- Formulir Aplikasi Pendaftaran Lowongan Publik Pelamar (Tahap 1)
+ *
+ * Fungsi:
+ * - Antarmuka publik responsif bagi calon pelamar untuk mendaftar pada lowongan posisi aktif.
+ * - Mengumpulkan identitas awal, informasi kontak, kualifikasi pendidikan, dan berkas CV fisik.
+ * - Dilengkapi validasi keamanan client-side dan server-side serta pencegahan duplikasi data.
+ */
+?>
 
 <!-- Header Publik / Identitas Karir RPG -->
 <div style="text-align:center; margin-bottom:24px">
@@ -288,16 +299,8 @@
 			<label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; font-weight:500">
 				<input type="checkbox" name="consent" value="1" <?= set_checkbox('consent', '1') ?> required style="margin-top:3px">
 				<span>
-					<strong>Persetujuan Pemrosesan Data Pelamar (Wajib) *</strong><br>
-					Saya menyatakan bahwa seluruh data yang saya berikan adalah benar dan dapat dipertanggungjawabkan. Saya menyetujui data saya diproses oleh Ratu Pertiwi Group untuk keperluan evaluasi seleksi rekrutmen sesuai kebijakan privasi (versi <?= html_escape($this->config->item('erec_consent_versi')) ?>).
-				</span>
-			</label>
-
-			<label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; font-weight:500">
-				<input type="checkbox" name="talent_pool" value="1" <?= set_checkbox('talent_pool', '1') ?> style="margin-top:3px">
-				<span>
-					<strong>Simpan untuk Posisi Lain di Masa Depan (Talent Pool)</strong><br>
-					Saya bersedia data saya disimpan oleh Ratu Pertiwi Group untuk dipertimbangkan pada peluang karir lain yang sesuai di kemudian hari.
+					<strong>Pernyataan Kebenaran Data &amp; Persetujuan Pemrosesan Pelamar (Wajib) *</strong><br>
+					Saya menyatakan bahwa seluruh data yang saya berikan adalah benar dan dapat dipertanggungjawabkan. Saya menyetujui data saya diproses oleh Ratu Pertiwi Group untuk keperluan evaluasi seleksi rekrutmen sesuai ketentuan perlindungan data pribadi (versi <?= html_escape($this->config->item('erec_consent_versi')) ?>).
 				</span>
 			</label>
 		</div>

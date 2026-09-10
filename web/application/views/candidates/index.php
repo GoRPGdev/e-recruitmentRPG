@@ -1,4 +1,15 @@
-<?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+/**
+ * View: candidates/index.php -- Daftar Database Kandidat & Manajemen Pelamar Masuk
+ *
+ * Fungsi:
+ * - Menampilkan daftar seluruh berkas pelamar dengan fitur pencarian dan filter mendalam (posisi, status, tanggal).
+ * - Menampilkan ringkasan metrik cepat status operasional kandidat (In Progress, Hired, Rejected).
+ * - Menyediakan pagination dan aksi cepat (lihat detail, proses seleksi, export data).
+ */
+?>
 
 <div style="margin-bottom:24px">
 	<!-- Page Header -->
@@ -178,11 +189,11 @@
 									</div>
 									<div class="muted" style="font-size:12px; margin-top:2px">
 										<?= html_escape($r['nama_departemen'] ?: '-') ?> &middot;
-										<span class="mono"><?= html_escape($r['no_mpr'] ?: '#' . $r['id_req']) ?></span> <?php if (in_array($r['status_req'] ?? '', array('Sourcing', 'Approved', 'Sourcing_Ulang'))): ?><span class="tag on" style="font-size:9.5px; padding:1px 5px; font-weight:700" title="Status: <?= html_escape($r['status_req'] ?? '') ?>">● Jalan</span><?php else: ?><span class="tag off" style="font-size:9.5px; padding:1px 5px; font-weight:700" title="Status: <?= html_escape($r['status_req'] ?? 'Closed') ?>">✕ Closed</span><?php endif; ?>
+										<span class="mono"><?= html_escape($r['no_mpr'] ?: '#' . $r['id_req']) ?></span> <?php if (in_array($r['status_req'] ?? '', array('Sourcing', 'Approved', 'Sourcing_Ulang'))): ?><span class="tag on" style="font-size:9.5px; padding:1px 5px; font-weight:700" title="Status: <?= html_escape($r['status_req'] ?? '') ?>">Jalan</span><?php else: ?><span class="tag off" style="font-size:9.5px; padding:1px 5px; font-weight:700" title="Status: <?= html_escape($r['status_req'] ?? 'Closed') ?>">Closed</span><?php endif; ?>
 									</div>
 									<div style="margin-top:4px">
 										<span class="tag" style="font-size:10px; padding:1px 6px">
-											<?= html_escape($r['intake_method'] ?: 'FORM_PUBLIC') ?>
+											<?= html_escape(label_intake($r['intake_method'] ?: 'FORM_PUBLIC')) ?>
 										</span>
 									</div>
 								</td>
@@ -196,6 +207,15 @@
 										<div class="faint" style="font-size:11px; margin-top:2px">
 											<?= html_escape($r['tipe_tahap_kini'] ?: '-') ?>
 										</div>
+										<?php if (! empty($r['form_dipakai_pada'])): ?>
+											<div style="margin-top:4px">
+												<span class="tag on" style="font-size:10px; padding:1px 6px" title="Form pelamar diisi pada <?= html_escape(substr($r['form_dipakai_pada'], 0, 10)) ?>">Form Terisi</span>
+											</div>
+										<?php elseif (! empty($r['form_token_ada']) && empty($r['form_revoked'])): ?>
+											<div style="margin-top:4px">
+												<span class="tag info" style="font-size:10px; padding:1px 6px" title="Link form aktif, menunggu diisi kandidat">Menunggu Isi</span>
+											</div>
+										<?php endif; ?>
 									<?php else: ?>
 										<span class="muted">-</span>
 									<?php endif; ?>
@@ -236,17 +256,36 @@
 											&#8942;
 										</button>
 										<div id="menu-cand-<?= (int) $r['id_lamaran'] ?>" class="mpr-dropdown"
-											style="display:none; position:absolute; right:0; top:calc(100% + 4px); z-index:99; min-width:160px; background:var(--surface); border:1px solid var(--border); border-radius:8px; box-shadow:var(--shadow); text-align:left; overflow:hidden">
-											<a href="<?= site_url('candidates/detail/' . (int) $r['id_lamaran']) ?>"
-												style="display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:12.5px; color:var(--text); text-decoration:none; border-bottom:1px solid var(--surface-2)">
-												<svg style="width:13px; height:13px; flex:none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-												<span>Profil Lengkap</span>
+											style="display:none; position:absolute; right:0; top:calc(100% + 4px); z-index:99; min-width:180px; background:var(--surface); border:1px solid var(--border); border-radius:8px; box-shadow:var(--shadow); text-align:left; overflow:hidden">
+											<a href="<?= site_url('candidates/cv/' . (int) $r['id_lamaran']) ?>" target="_blank"
+										style="display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:12.5px; color:var(--text); text-decoration:none; border-bottom:1px solid var(--surface-2)">
+										<svg style="width:13px; height:13px; flex:none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+												<span>Lihat CV</span>
+									</a>
+									<a href="<?= site_url('candidates/detail/' . (int) $r['id_lamaran']) ?>"
+										style="display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:12.5px; color:var(--text); text-decoration:none; border-bottom:1px solid var(--surface-2)">
+										<svg style="width:13px; height:13px; flex:none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+										<span>Profil Lengkap</span>
 											</a>
 											<a href="<?= site_url('pipeline/index/' . (int) $r['id_req']) ?>"
 												style="display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:12.5px; color:var(--accent); font-weight:600; text-decoration:none">
 												<svg style="width:13px; height:13px; flex:none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
 												<span>Buka di Pipeline</span>
 											</a>
+											<?php
+											$is_form_stage = (strtoupper(trim($r['tipe_tahap_kini'] ?? '')) === 'FORM'
+												|| stripos($r['nama_tahap_kini'] ?? '', 'form') !== FALSE
+												|| strtoupper(trim($r['tipe_tahap_kini'] ?? '')) === 'ONBOARD'
+												|| stripos($r['nama_tahap_kini'] ?? '', 'onboard') !== FALSE);
+											?>
+											<?php if ($is_form_stage && has_permission('KELOLA_REKRUTMEN')): ?>
+												<a href="<?= site_url('candidates/generate_onboarding_link/' . (int) $r['id_lamaran'] . '?redirect_to=' . rawurlencode(current_url() . (!empty($_SERVER['QUERY_STRING']) ? '?' . $_SERVER['QUERY_STRING'] : ''))) ?>"
+													onclick="openOnboardingModal(event, <?= (int) $r['id_lamaran'] ?>, '<?= html_escape(addslashes($r['nama_lengkap'])) ?>'); return false;"
+													style="display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:12.5px; color:var(--good); font-weight:600; text-decoration:none; border-top:1px solid var(--surface-2)">
+													<svg style="width:13px; height:13px; flex:none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+													<span>Generate Link Form Pelamar</span>
+												</a>
+											<?php endif; ?>
 										</div>
 									</div>
 								</td>
@@ -302,3 +341,262 @@
 		</div>
 	</div>
 </div>
+
+<!-- ================= MODAL DIALOG POPUP GENERATE LINK ONBOARDING ================= -->
+<style>
+	#dlg-onboarding-link {
+		border: 1px solid var(--border);
+		border-radius: 14px;
+		padding: 0;
+		max-width: 520px;
+		width: 92%;
+		background: var(--surface);
+		color: var(--text);
+		box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
+		overflow: hidden;
+	}
+	#dlg-onboarding-link[open] {
+		display: flex;
+		flex-direction: column;
+	}
+	#dlg-onboarding-link::backdrop {
+		background: rgba(12, 18, 14, 0.55);
+		backdrop-filter: blur(3px);
+	}
+	.ob-modal-header {
+		padding: 16px 20px;
+		border-bottom: 1px solid var(--border);
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		background: var(--surface-2);
+	}
+	.ob-modal-body {
+		padding: 20px;
+	}
+	.ob-modal-footer {
+		padding: 12px 20px;
+		border-top: 1px solid var(--border);
+		display: flex;
+		justify-content: flex-end;
+		gap: 8px;
+		background: var(--surface-2);
+	}
+</style>
+
+<dialog id="dlg-onboarding-link">
+	<div class="ob-modal-header">
+		<div style="display:flex; align-items:center; gap:10px">
+			<div style="width:34px; height:34px; border-radius:8px; background:var(--accent-soft); display:grid; place-items:center; color:var(--accent)">
+				<svg style="width:18px; height:18px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+			</div>
+			<div>
+				<h3 style="margin:0; font-size:15px; font-weight:700">Tautan Formulir Pelamar</h3>
+				<div class="muted" id="ob-modal-subtitle" style="font-size:12px">Kandidat Ratu Pertiwi Group</div>
+			</div>
+		</div>
+		<button type="button" onclick="closeOnboardingModal()" class="btn btn-sm btn-ghost" style="padding:4px 8px; font-size:16px; line-height:1" title="Tutup">&times;</button>
+	</div>
+
+		<div class="ob-modal-body">
+		<!-- State Loading -->
+		<div id="ob-state-loading" style="display:none; text-align:center; padding:30px 10px">
+			<div style="font-size:24px; margin-bottom:8px">⏳</div>
+			<div id="ob-loading-text" style="font-weight:600; font-size:13.5px">Memeriksa tautan formulir...</div>
+			<div class="muted" style="font-size:12px; margin-top:4px">Menghubungkan ke server RPG</div>
+		</div>
+
+		<!-- State Sukses / Tautan Jadi atau Tautan Lama Aktif -->
+		<div id="ob-state-success" style="display:none">
+			<div id="ob-alert-box" style="background:var(--accent-soft); color:var(--accent-ink); padding:10px 12px; border-radius:8px; font-size:12.5px; margin-bottom:14px; display:flex; align-items:center; gap:8px">
+				<span id="ob-alert-icon" style="font-size:15px; font-weight:bold">ℹ</span>
+				<span id="ob-success-msg" style="font-weight:600">Tautan formulir pelamar aktif ditemukan.</span>
+			</div>
+
+			<div style="margin-bottom:12px">
+				<label style="display:block; font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:4px">URL Formulir Pelamar</label>
+				<div style="display:flex; gap:6px">
+					<input type="text" id="ob-input-url" readonly style="flex:1; font-size:12px; font-family:monospace; padding:8px 10px; background:var(--surface-2); border:1px solid var(--border); border-radius:6px" onclick="this.select()">
+					<button type="button" id="ob-btn-copy" onclick="copyObUrl()" class="btn btn-sm btn-primary" style="white-space:nowrap; font-size:12px; font-weight:600">
+						Salin
+					</button>
+				</div>
+				<div id="ob-copy-feedback" style="display:none; color:var(--good); font-size:11.5px; margin-top:4px; font-weight:600">Berhasil disalin ke clipboard!</div>
+			</div>
+
+			<div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:14px">
+				<a id="ob-btn-wa" href="#" target="_blank" class="btn btn-sm btn-ghost" style="display:inline-flex; align-items:center; gap:6px; color:var(--good); font-size:12.5px; font-weight:600; text-decoration:none; border:1px solid var(--border)">
+					Bagikan ke WhatsApp
+				</a>
+				<a id="ob-btn-open" href="#" target="_blank" class="btn btn-sm btn-ghost" style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px; text-decoration:none; border:1px solid var(--border)">
+					Buka Halaman Form &rarr;
+				</a>
+			</div>
+		</div>
+	</div>
+
+	<div class="ob-modal-footer" style="display:flex; justify-content:space-between; align-items:center">
+		<div>
+			<button type="button" id="ob-btn-regen" onclick="submitGenerateOnboarding(true)" class="btn btn-sm btn-ghost" style="display:none; color:var(--text-muted); font-size:12px" title="Cabut link lama dan buat link baru">
+				↻ Buat Ulang Link Baru
+			</button>
+		</div>
+		<div style="display:flex; gap:8px">
+			<button type="button" onclick="closeOnboardingModal()" class="btn btn-sm btn-ghost">Tutup</button>
+		</div>
+	</div>
+</dialog>
+
+<script>
+var _currentObId = null;
+var _currentObName = '';
+var _hasGeneratedNew = false;
+
+function openOnboardingModal(e, idLamaran, namaKandidat) {
+	var ddowns = document.querySelectorAll('.mpr-dropdown');
+	ddowns.forEach(function(d){ d.style.display = 'none'; });
+	if (e) {
+		e.preventDefault();
+		e.stopPropagation();
+	}
+
+	_currentObId = idLamaran;
+	_currentObName = namaKandidat;
+	_hasGeneratedNew = false;
+
+	document.getElementById('ob-modal-subtitle').textContent = 'Kandidat: ' + namaKandidat;
+
+	document.getElementById('ob-state-success').style.display = 'none';
+	document.getElementById('ob-btn-regen').style.display = 'none';
+	document.getElementById('ob-copy-feedback').style.display = 'none';
+
+	document.getElementById('ob-loading-text').textContent = 'Memeriksa tautan formulir...';
+	document.getElementById('ob-state-loading').style.display = 'block';
+
+	var dlg = document.getElementById('dlg-onboarding-link');
+	if (dlg && typeof dlg.showModal === 'function') {
+		dlg.showModal();
+	} else if (dlg) {
+		dlg.setAttribute('open', '');
+	}
+
+	// Otomatis periksa dan tampilkan token yang sudah ada tanpa generate baru
+	loadOnboardingToken(false);
+}
+
+function closeOnboardingModal() {
+	var dlg = document.getElementById('dlg-onboarding-link');
+	if (dlg && typeof dlg.close === 'function') {
+		dlg.close();
+	} else if (dlg) {
+		dlg.removeAttribute('open');
+	}
+}
+
+function submitGenerateOnboarding(forceNew) {
+	if (forceNew) {
+		if (!confirm('Apakah Anda yakin ingin membuat ulang tautan baru?\nTautan lama akan dicabut dan kandidat harus menggunakan tautan yang baru.')) {
+			return;
+		}
+	}
+	loadOnboardingToken(forceNew);
+}
+
+function loadOnboardingToken(forceNew) {
+	if (!_currentObId) return;
+
+	document.getElementById('ob-state-success').style.display = 'none';
+	document.getElementById('ob-btn-regen').style.display = 'none';
+
+	document.getElementById('ob-loading-text').textContent = forceNew ? 'Membuat tautan formulir baru...' : 'Memeriksa tautan formulir...';
+	document.getElementById('ob-state-loading').style.display = 'block';
+
+	var url = '<?= site_url("candidates/generate_onboarding_link/") ?>' + _currentObId + '?format=json' + (forceNew ? '&force_new=1' : '');
+
+	fetch(url, {
+		method: 'GET',
+		headers: {
+			'X-Requested-With': 'XMLHttpRequest'
+		}
+	})
+	.then(function(res){
+		return res.json();
+	})
+	.then(function(data){
+		document.getElementById('ob-state-loading').style.display = 'none';
+
+		if (data && data.success) {
+			_hasGeneratedNew = true;
+			document.getElementById('ob-state-success').style.display = 'block';
+			document.getElementById('ob-input-url').value = data.onboarding_url;
+			document.getElementById('ob-success-msg').textContent = data.message || 'Tautan formulir pelamar siap digunakan.';
+
+			var alertBox = document.getElementById('ob-alert-box');
+			var alertIcon = document.getElementById('ob-alert-icon');
+			if (data.is_existing) {
+				alertBox.style.background = 'var(--accent-soft)';
+				alertBox.style.color = 'var(--accent-ink)';
+				alertBox.style.border = '1px solid var(--border)';
+				alertIcon.textContent = '';
+			} else {
+				alertBox.style.background = 'var(--good-soft)';
+				alertBox.style.color = 'var(--good)';
+				alertBox.style.border = 'none';
+				alertIcon.textContent = '';
+			}
+
+			var btnWa = document.getElementById('ob-btn-wa');
+			if (data.wa_link) {
+				btnWa.href = data.wa_link;
+				btnWa.style.display = 'inline-flex';
+			} else {
+				btnWa.style.display = 'none';
+			}
+
+			var btnOpen = document.getElementById('ob-btn-open');
+			btnOpen.href = data.onboarding_url;
+
+			// Tampilkan opsi Buat Ulang Link jika diperlukan
+			document.getElementById('ob-btn-regen').style.display = 'inline-block';
+
+		} else {
+			alert(data.message || 'Gagal memuat tautan onboarding.');
+			closeOnboardingModal(false);
+		}
+	})
+	.catch(function(err){
+		document.getElementById('ob-state-loading').style.display = 'none';
+		alert('Terjadi kesalahan jaringan saat memproses link onboarding.');
+		closeOnboardingModal(false);
+	});
+}
+
+function copyObUrl() {
+	var input = document.getElementById('ob-input-url');
+	if (!input) return;
+	input.select();
+	input.setSelectionRange(0, 99999);
+	if (navigator.clipboard && navigator.clipboard.writeText) {
+		navigator.clipboard.writeText(input.value).then(function(){
+			showCopyFeedback();
+		}).catch(function(){
+			document.execCommand('copy');
+			showCopyFeedback();
+		});
+	} else {
+		document.execCommand('copy');
+		showCopyFeedback();
+	}
+}
+
+function showCopyFeedback() {
+	var fb = document.getElementById('ob-copy-feedback');
+	var btn = document.getElementById('ob-btn-copy');
+	if (fb) fb.style.display = 'block';
+	if (btn) btn.textContent = 'Tersalin!';
+	setTimeout(function(){
+		if (fb) fb.style.display = 'none';
+		if (btn) btn.textContent = 'Salin';
+	}, 3000);
+}
+</script>

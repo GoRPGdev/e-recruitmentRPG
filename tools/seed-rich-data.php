@@ -300,9 +300,9 @@ geser_ke_tahap($conn, $lMaya, 'SCREENING_CV', $uHrAdmin);
 list($kBagus, $lBagus) = tambah_kandidat($conn, $reqVM, $flwHqStf, $chGlints, 'Bagus Saputra', '081311002233', 'bagus.saputra@artworks.co', 'Tangerang Selatan', 'S1', 'IMPORT_FILE', '1997-06-18', 'L');
 geser_ke_tahap($conn, $lBagus, 'FORM_PELAMAR', $uHrAdmin);
 
-// 6.3 Tari Wulandari - Talent Pool (Disimpan untuk lowongan masa depan)
+// 6.3 Tari Wulandari - Ditolak (Kandidat tidak memenuhi kualifikasi)
 list($kTari, $lTari) = tambah_kandidat($conn, $reqVM, $flwHqStf, $chJobstreet, 'Tari Wulandari, S.Sn.', '081233889900', 'tari.wulandari@gmail.com', 'Bandung', 'S1', 'IMPORT_FILE', '1996-10-14', 'P');
-q($conn, "UPDATE dbo.APPLICATIONS SET status_global='Talent_Pool' WHERE id_lamaran=?", array($lTari));
+q($conn, "UPDATE dbo.APPLICATIONS SET status_global='Rejected' WHERE id_lamaran=?", array($lTari));
 
 // 7. Update agregat funnel hari ini
 q($conn, "{CALL dbo.sp_BuildFunnelHarian(?)}", array(date('Y-m-d')));

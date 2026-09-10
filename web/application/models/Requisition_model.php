@@ -2,8 +2,13 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Requisition_model -- MPR + approval + posting + flow engine (advance / contact / pipeline).
- * SP dengan OUTPUT param dipanggil via sqlsrv_query() langsung.
+ * Model Requisition_model -- Model Permintaan Tenaga Kerja (MPR) & Flow Engine Seleksi
+ *
+ * Fungsi:
+ * - Mengelola siklus hidup dokumen MPR: pengajuan, review HR, persetujuan BOD, dan pembatalan.
+ * - Menangani pembaruan status MPR dan catatan/feedback evaluasi HR via Stored Procedure.
+ * - Menggerakkan flow engine seleksi: transisi tahap pelamar (advance), pencatatan log kontak, dan penjadwalan wawancara.
+ * - Menangani eksekusi SP dengan parameter output T-SQL menggunakan driver sqlsrv native.
  */
 class Requisition_model extends CI_Model
 {
@@ -20,6 +25,17 @@ class Requisition_model extends CI_Model
 	}
 
 	/* ================= list / lihat ================================= */
+
+	private function _has_catatan_hr()
+	{
+		static $has = NULL;
+		if ($has === NULL) {
+			// ponytail: fallback metadata check jika migrasi 20260912_1600 belum dieksekusi di database
+			$r = $this->db->query("SELECT COL_LENGTH('dbo.REQUISITIONS', 'catatan_hr') AS l")->row();
+			$has = ! empty($r->l);
+		}
+		return $has;
+	}
 
 	private function _list_where($f, &$b)
 	{
@@ -46,7 +62,7 @@ class Requisition_model extends CI_Model
 		$sql = "SELECT 
 		            COUNT(*) AS total,
 		            SUM(CASE WHEN r.status_req IN ('Sourcing', 'Approved', 'Sourcing_Ulang') THEN 1 ELSE 0 END) AS n_aktif,
-		            SUM(CASE WHEN r.status_req IN ('Review_HR', 'Menunggu_BOD', 'Draft') THEN 1 ELSE 0 END) AS n_review,
+		            SUM(CASE WHEN r.status_req IN ('Review_HR', 'Revisi_HR', 'Review_BOD', 'Revisi_BOD', 'Draft') THEN 1 ELSE 0 END) AS n_review,
 		            SUM(CASE WHEN r.status_req IN ('Terpenuhi', 'Terpenuhi_Sebagian') THEN 1 ELSE 0 END) AS n_terpenuhi
 		        FROM dbo.REQUISITIONS r
 		        JOIN dbo.M_POSISI p ON p.id_posisi = r.id_posisi $where";
@@ -70,15 +86,23 @@ class Requisition_model extends CI_Model
 		$b = array();
 		$where = $this->_list_where((array) $f, $b);
 		$b[] = (int) $offset; $b[] = (int) $offset + (int) $per - 1;
+		$col_catatan_hr = $this->_has_catatan_hr() ? 'r.catatan_hr' : 'NULL AS catatan_hr';
 		$sql = "WITH q AS (
 		            SELECT r.id_req, r.no_mpr, r.status_req, r.tipe_penempatan, r.jumlah_dibutuhkan,
-		                   r.jumlah_disetujui, r.jumlah_terpenuhi, r.tanggal_pengajuan,
+		                   r.jumlah_disetujui, r.jumlah_terpenuhi, r.tanggal_pengajuan, {$col_catatan_hr},
 		                   p.nama_posisi, p.id_departemen, o.nama_outlet, u.nama_snapshot AS pemohon,
+		                   ISNULL(r.catatan_bod, bod_rej.catatan_bod) AS catatan_bod, bod_rej.disetujui_oleh AS penolak_bod,
 		                   ROW_NUMBER() OVER (ORDER BY r.id_req DESC) AS rn
 		            FROM dbo.REQUISITIONS r
 		            JOIN dbo.M_POSISI p      ON p.id_posisi = r.id_posisi
 		            LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
 		            JOIN dbo.M_USERS u       ON u.id_user = r.id_user_pemohon
+		            OUTER APPLY (
+		                SELECT TOP 1 ra.catatan_bod, ra.disetujui_oleh
+		                FROM dbo.REQUISITION_APPROVALS ra
+		                WHERE ra.id_req = r.id_req AND ra.keputusan = 'Rejected'
+		                ORDER BY ra.putaran_ke DESC
+		            ) bod_rej
 		            $where
 		        )
 		        SELECT * FROM q WHERE rn BETWEEN ? AND ? ORDER BY rn";
@@ -89,16 +113,24 @@ class Requisition_model extends CI_Model
 
 	public function get($id_req)
 	{
+		$col_catatan_hr = $this->_has_catatan_hr() ? '' : ', NULL AS catatan_hr';
 		$q = $this->db->query(
-			'SELECT r.*, p.nama_posisi, p.id_departemen, o.nama_outlet, d.nama AS departemen, u.nama_snapshot AS pemohon,
-			        f.kode_flow, f.nama_flow
+			"SELECT r.*{$col_catatan_hr}, p.nama_posisi, p.id_departemen, o.nama_outlet, d.nama AS departemen, u.nama_snapshot AS pemohon,
+			        f.kode_flow, f.nama_flow,
+			        ISNULL(r.catatan_bod, bod_rej.catatan_bod) AS catatan_bod, bod_rej.disetujui_oleh AS penolak_bod
 			 FROM dbo.REQUISITIONS r
 			 JOIN dbo.M_POSISI p       ON p.id_posisi = r.id_posisi
 			 LEFT JOIN dbo.M_OUTLET o  ON o.id_outlet = r.id_outlet
 			 LEFT JOIN dbo.M_DEPARTEMEN d ON d.id_departemen = p.id_departemen
 			 JOIN dbo.M_USERS u        ON u.id_user = r.id_user_pemohon
 			 LEFT JOIN dbo.M_FLOW f    ON f.id_flow = r.id_flow
-			 WHERE r.id_req = ?', array((int) $id_req));
+			 OUTER APPLY (
+			     SELECT TOP 1 ra.catatan_bod, ra.disetujui_oleh
+			     FROM dbo.REQUISITION_APPROVALS ra
+			     WHERE ra.id_req = r.id_req AND ra.keputusan = 'Rejected'
+			     ORDER BY ra.putaran_ke DESC
+			 ) bod_rej
+			 WHERE r.id_req = ?", array((int) $id_req));
 		$row = $q->row_array(); $q->free_result();
 		return $row ? $row : NULL;
 	}
@@ -183,6 +215,30 @@ class Requisition_model extends CI_Model
 		return (int) $id_req;
 	}
 
+	public function update_requisition($id_req, $in, $oleh_user)
+	{
+		$this->_call(
+			'{CALL dbo.sp_UpdateRequisition(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)}',
+			array(
+				(int) $id_req,
+				(int) $in['id_posisi'],
+				$in['tipe_penempatan'],
+				! empty($in['id_outlet']) ? (int) $in['id_outlet'] : NULL,
+				(int) $in['jumlah_dibutuhkan'],
+				$in['status_karyawan'] ?: NULL,
+				$in['alasan_permintaan'] ?: NULL,
+				$in['nik_digantikan'] ?: NULL,
+				$in['target_tanggal_join'] ?: NULL,
+				$in['urgensi'] ?: NULL,
+				$in['pendidikan_minimal'] ?: NULL,
+				$in['pengalaman_minimal_tahun'] !== '' ? (int) $in['pengalaman_minimal_tahun'] : NULL,
+				$in['job_desc'] ?: NULL,
+				$in['kualifikasi'] ?: NULL,
+				(int) $oleh_user,
+			)
+		);
+	}
+
 	public function submit_to_hr($id_req, $oleh_user)
 	{
 		$this->_call('{CALL dbo.sp_SubmitToHR(?,?)}', array(
@@ -192,44 +248,38 @@ class Requisition_model extends CI_Model
 
 	public function submit_to_bod($id_req, $oleh_user)
 	{
-		$id_app = 0;
-		$this->_call('{CALL dbo.sp_SubmitToBOD(?,?,?)}', array(
+		$this->_call('{CALL dbo.sp_SubmitToBOD(?,?)}', array(
 			(int) $id_req, (int) $oleh_user,
-			array(&$id_app, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
-		));
-		return (int) $id_app;
-	}
-
-	public function record_approval($in, $oleh_user)
-	{
-		$this->_call('{CALL dbo.sp_RecordApproval(?,?,?,?,?,?,?,?)}', array(
-			(int) $in['id_approval'],
-			$in['keputusan'],
-			$in['jumlah_disetujui'] !== '' ? (int) $in['jumlah_disetujui'] : NULL,
-			$in['tanggal_keputusan'] ?: NULL,
-			$in['disetujui_oleh'] ?: NULL,
-			$in['catatan_bod'] ?: NULL,
-			$in['lampiran_path'] ?: NULL,
-			(int) $oleh_user,
 		));
 	}
 
-	public function create_posting($id_req, $id_channel, $judul, $job_desc, $kualifikasi)
+	public function create_posting($id_req, $id_channel, $judul, $job_desc, $kualifikasi, $batch_ke = 1, $durasi_hari = 14)
 	{
 		$id_posting = 0;
-		$this->_call('{CALL dbo.sp_CreatePosting(?,?,?,?,?,?,?)}', array(
-			(int) $id_req, (int) $id_channel, (string) $judul,
-			$job_desc ?: NULL, $kualifikasi ?: NULL, 1,
+		$this->_call('{CALL dbo.sp_CreatePosting(?,?,?,?,?,?,?,?)}', array(
+			(int) $id_req,
+			$id_channel !== NULL ? (int) $id_channel : NULL,
+			(string) $judul,
+			$job_desc ?: NULL,
+			$kualifikasi ?: NULL,
+			(int) $batch_ke,
+			(int) $durasi_hari,
 			array(&$id_posting, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
 		));
-		return (int) $id_posting;
+		$id_posting = (int) $id_posting;
+		if ($id_posting > 0) {
+			$this->load->model('posting_model', 'pm');
+			$this->pm->ensure_slug($id_posting);
+		}
+		return $id_posting;
 	}
 
 	public function postings_for_req($id_req)
 	{
 		$q = $this->db->query(
 			'SELECT jp.*,
-			        (SELECT COUNT(*) FROM dbo.APPLICATIONS a WHERE a.id_posting = jp.id_posting) AS n_lamaran
+			        (SELECT COUNT(*) FROM dbo.APPLICATIONS a WHERE a.id_posting = jp.id_posting) AS n_lamaran,
+			        CASE WHEN jp.form_aktif = 1 AND jp.form_ditutup IS NOT NULL AND jp.form_ditutup < GETDATE() THEN 1 ELSE 0 END AS is_kadaluarsa
 			 FROM dbo.JOB_POSTINGS jp
 			 WHERE jp.id_req = ?
 			 ORDER BY jp.id_posting DESC',
@@ -237,19 +287,41 @@ class Requisition_model extends CI_Model
 		);
 		$rows = $q->result_array();
 		$q->free_result();
+
+		if ( ! empty($rows)) {
+			$this->load->model('posting_model', 'pm');
+			foreach ($rows as &$row) {
+				if (empty($row['url_slug']) && ! empty($row['id_posting'])) {
+					$row['url_slug'] = $this->pm->ensure_slug((int) $row['id_posting']);
+				}
+			}
+			unset($row);
+		}
+
 		return $rows;
 	}
 
-	public function toggle_posting_form($id_posting, $form_aktif = NULL, $oleh_user = NULL)
+	public function toggle_posting_form($id_posting, $form_aktif = NULL, $oleh_user = NULL, $durasi_hari = 14)
 	{
 		$status_akhir = 0;
-		$this->_call('{CALL dbo.sp_TogglePostingForm(?,?,?,?)}', array(
+		$this->_call('{CALL dbo.sp_TogglePostingForm(?,?,?,?,?)}', array(
 			(int) $id_posting,
 			$form_aktif !== NULL ? ($form_aktif ? 1 : 0) : NULL,
+			(int) $durasi_hari,
 			(int) $oleh_user,
 			array(&$status_akhir, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
 		));
 		return (bool) $status_akhir;
+	}
+
+	public function extend_posting($id_posting, $durasi_hari = 14, $oleh_user = NULL)
+	{
+		$this->_call('{CALL dbo.sp_ExtendPosting(?,?,?)}', array(
+			(int) $id_posting,
+			(int) $durasi_hari,
+			(int) $oleh_user,
+		));
+		return TRUE;
 	}
 
 	/* ================= SP: flow engine ============================== */
@@ -310,7 +382,20 @@ class Requisition_model extends CI_Model
 
 	public function active_stages()
 	{
-		$q = $this->db->query("SELECT id_stage, nama_tahap, tipe_tahap FROM dbo.M_STAGE WHERE is_aktif = 1 ORDER BY nama_tahap");
+		$chk = $this->db->query("SELECT COL_LENGTH('dbo.M_STAGE', 'is_sisipan_allowed') AS col_len")->row_array();
+		$where_sisip = ! empty($chk['col_len']) ? ' AND is_sisipan_allowed = 1' : '';
+
+		$q = $this->db->query("SELECT id_stage, nama_tahap, tipe_tahap
+		                       FROM dbo.M_STAGE
+		                       WHERE is_aktif = 1
+		                         {$where_sisip}
+		                         AND id_stage NOT IN (
+		                             SELECT fs.id_stage
+		                             FROM dbo.M_FLOW_STAGE fs
+		                             JOIN dbo.M_FLOW f ON f.id_flow = fs.id_flow
+		                             WHERE f.is_aktif = 1
+		                         )
+		                       ORDER BY nama_tahap");
 		$r = $q->result_array(); $q->free_result(); return $r;
 	}
 
@@ -480,6 +565,13 @@ class Requisition_model extends CI_Model
 		));
 	}
 
+	public function update_catatan_hr($id_req, $catatan_hr, $oleh_user)
+	{
+		$this->_call('{CALL dbo.sp_UpdateRequisitionCatatanHR(?,?,?)}', array(
+			(int) $id_req, $catatan_hr !== '' ? (string) $catatan_hr : NULL, (int) $oleh_user
+		));
+	}
+
 	public function cancel_requisition($id_req, $alasan, $oleh_user)
 	{
 		$this->_call('{CALL dbo.sp_CancelRequisition(?,?,?)}', array(
@@ -488,7 +580,36 @@ class Requisition_model extends CI_Model
 	}
 
 	/**
-	 * Mengambil kandidat berstatus final (Rejected, Hired, Withdrawn, Offer_Declined, No_Show, Talent_Pool)
+	 * Batalkan status Hired kandidat — kembalikan ke Withdrawn/Offer_Declined/Rejected.
+	 * @return string status_baru setelah pembatalan
+	 */
+	public function cancel_hired($id_lamaran, $status_tujuan, $alasan, $pic_user, $buka_posting = 1)
+	{
+		$status_baru = '';
+		$stmt = sqlsrv_query(
+			$this->db->conn_id,
+			'{CALL dbo.sp_CancelHired(?,?,?,?,?,?)}',
+			array(
+				(int) $id_lamaran,
+				$status_tujuan ?: 'Withdrawn',
+				$alasan ?: NULL,
+				(int) $pic_user,
+				$buka_posting ? 1 : 0,
+				array(&$status_baru, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR))
+			)
+		);
+		if ($stmt === FALSE) {
+			$e = sqlsrv_errors();
+			$last = $e ? end($e) : NULL;
+			throw new RuntimeException($last ? trim($last['message']) : 'Gagal membatalkan status Hired.');
+		}
+		do { /* nothing */ } while (sqlsrv_next_result($stmt));
+		sqlsrv_free_stmt($stmt);
+		return $status_baru ?: $status_tujuan;
+	}
+
+	/**
+	 * Mengambil kandidat berstatus final (Rejected, Hired, Withdrawn, Offer_Declined, No_Show)
 	 * untuk satu requisition / MPR.
 	 */
 	public function final_candidates($id_req)
@@ -502,7 +623,7 @@ class Requisition_model extends CI_Model
 		        LEFT JOIN dbo.M_STAGE s      ON s.id_stage = a.id_stage_sekarang
 		        LEFT JOIN dbo.M_REMARKS rm   ON rm.id_remark = a.id_remark_terakhir
 		        WHERE a.id_req = ?
-		          AND a.status_global IN ('Hired','Rejected','Withdrawn','Offer_Declined','No_Show','Talent_Pool')
+		          AND a.status_global IN ('Hired','Rejected','Withdrawn','Offer_Declined','No_Show')
 		        ORDER BY a.id_lamaran DESC";
 		$q = $this->db->query($sql, array((int) $id_req));
 		$rows = $q->result_array();

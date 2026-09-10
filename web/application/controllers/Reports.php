@@ -2,9 +2,13 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Reports Controller -- Laporan & Ringkasan Eksekutif Rekrutmen RPG.
- * Proteksi: LIHAT_KANDIDAT, dengan pembatasan scoping USER_DEPT.
- * Ekspor butuh permission EXPORT.
+ * Controller Reports -- Laporan Analitik & Ringkasan Eksekutif Rekrutmen RPG
+ *
+ * Fungsi:
+ * - Menyajikan visualisasi data analitik: rasio konversi funnel, time-to-hire per posisi, dan performa pemenuhan formasi MPR.
+ * - Menyajikan ringkasan alasan penolakan/kegagalan kandidat pada setiap tahapan seleksi.
+ * - Mendukung ekspor data laporan analitik ke format spreadsheet.
+ * - Proteksi akses: membutuhkan permission 'LIHAT_KANDIDAT' (melihat) dan 'EXPORT' (mengunduh).
  */
 class Reports extends Secured_Controller
 {
@@ -182,7 +186,6 @@ class Reports extends Secured_Controller
 		$html .= '<tr><td>Total Berhasil Diterima (Hired)</td><td style="text-align:right"><b>' . (int)($kpi['n_hired'] ?? 0) . '</b></td><td>Kandidat lolos dan bergabung</td></tr>';
 		$html .= '<tr><td>Tidak Lolos / Ditolak</td><td style="text-align:right">' . (int)($kpi['n_rejected'] ?? 0) . '</td><td>Hasil evaluasi seleksi</td></tr>';
 		$html .= '<tr><td>Mengundurkan Diri / Batal</td><td style="text-align:right">' . (int)($kpi['n_withdrawn'] ?? 0) . '</td><td>Withdrawn, Offer Declined, No Show</td></tr>';
-		$html .= '<tr><td>Talent Pool</td><td style="text-align:right">' . (int)($kpi['n_talent_pool'] ?? 0) . '</td><td>Disimpan untuk formasi mendatang</td></tr>';
 		$avg_days = isset($kpi['avg_time_to_hire_days']) && $kpi['avg_time_to_hire_days'] !== NULL ? round($kpi['avg_time_to_hire_days'], 1) : '-';
 		$html .= '<tr><td>Rata-rata Durasi Proses (Time to Hire)</td><td style="text-align:right"><b>' . $avg_days . ' hari</b></td><td>Dari tanggal daftar sampai diterima</td></tr>';
 		$html .= '<tr><td>Total Dokumen MPR</td><td style="text-align:right">' . (int)($kpi['total_mpr'] ?? 0) . '</td><td>Permintaan tenaga kerja</td></tr>';

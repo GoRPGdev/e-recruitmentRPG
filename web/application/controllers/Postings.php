@@ -2,7 +2,14 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Kelola link form publik + token berkas. Wajib login + KELOLA_REKRUTMEN.
+ * Controller Postings -- Manajemen Publikasi Lowongan Kerja & Token Berkas
+ *
+ * Fungsi:
+ * - Mengelola tautan publikasi form lamaran online (URL slug) untuk setiap batch MPR.
+ * - Mengatur pembukaan dan penutupan form pendaftaran kandidat.
+ * - Mengonfigurasi form settings (pertanyaan kuesioner dan berkas prasyarat tambahan).
+ * - Menampilkan metrik submit pelamar pada lowongan terkait.
+ * - Proteksi akses: membutuhkan permission 'KELOLA_REKRUTMEN'.
  */
 class Postings extends Secured_Controller
 {
@@ -91,6 +98,27 @@ class Postings extends Secured_Controller
 			redirect($redirect);
 		}
 		redirect('postings');
+	}
+
+	public function extend($id_posting = NULL)
+	{
+		if ( ! $id_posting || $this->input->method() !== 'post') {
+			show_404();
+		}
+
+		$durasi_hari = max(1, (int) ($this->input->post('durasi_hari') ?: 14));
+		try {
+			$this->pm->extend_posting($id_posting, $durasi_hari, (int) $this->auth_user['id_user']);
+			$this->session->set_flashdata('ok', 'Batas waktu lowongan berhasil diperpanjang (+' . $durasi_hari . ' hari) dan status MPR beralih ke Sourcing Ulang.');
+		} catch (RuntimeException $e) {
+			$this->session->set_flashdata('error', $e->getMessage());
+		}
+
+		$redirect = $this->input->post('redirect_to', TRUE);
+		if ($redirect && strpos($redirect, '://') === FALSE) {
+			redirect($redirect);
+		}
+		redirect('postings/form_settings/' . (int) $id_posting);
 	}
 
 	public function stats($id_posting = NULL)

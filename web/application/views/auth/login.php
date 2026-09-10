@@ -1,4 +1,15 @@
-<?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+/**
+ * View: auth/login.php -- Halaman Otentikasi & Masuk Portal Internal E-Recruitment RPG
+ *
+ * Fungsi:
+ * - Menyediakan form login bagi seluruh user internal RPG (IT Admin, HR Admin, HR Spv, User Dept, BOD, Viewer).
+ * - Menangani verifikasi kredensial berbasis password hash terenkripsi.
+ * - Menginisialisasi session RBAC (permissions) saat otentikasi berhasil.
+ */
+?>
 <main class="card" style="box-shadow:var(--shadow); border-radius:12px; padding:28px 30px">
 	<div style="display:flex; align-items:center; gap:12px; margin-bottom:18px">
 		<div style="width:38px; height:38px; border-radius:10px; background:var(--accent); color:var(--accent-contrast); display:grid; place-items:center; font-family:'Archivo', sans-serif; font-weight:700; font-size:16px">

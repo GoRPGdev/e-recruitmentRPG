@@ -47,7 +47,7 @@ CREATE PROCEDURE dbo.sp_SubmitApplication
     @kontak_darurat_hub  VARCHAR(30)  = NULL,
     -- consent umum
     @consent_versi       VARCHAR(20)  = NULL,
-    @setuju_talent_pool  BIT          = 0,
+    @setuju_talent_pool  BIT          = 0,  -- parameter dijaga demi backward compatibility, tidak disimpan
     -- kesehatan (consent terpisah; hanya ditulis kalau consent_kesehatan = 1)
     @riwayat_penyakit    NVARCHAR(500) = NULL,
     @consent_kesehatan   BIT          = 0,
@@ -137,14 +137,14 @@ BEGIN
                 INSERT INTO dbo.CANDIDATES
                     (nama_lengkap, email, no_wa_raw, no_wa_normal, tanggal_lahir,
                      pendidikan_terakhir, kota_domisili, consent_pada, consent_versi,
-                     setuju_talent_pool, tempat_lahir, jenis_kelamin, nama_sekolah,
+                     tempat_lahir, jenis_kelamin, nama_sekolah,
                      jurusan, alamat_lengkap, status_pernikahan, kontak_darurat_nama,
                      kontak_darurat_telp, kontak_darurat_hub)
                 VALUES
                     (@nama_lengkap, @email, @no_wa_raw, @wa, @tanggal_lahir,
                      @pendidikan_terakhir, @kota_domisili,
                      CASE WHEN @consent_versi IS NULL THEN NULL ELSE GETDATE() END, @consent_versi,
-                     @setuju_talent_pool, @tempat_lahir, @jenis_kelamin, @nama_sekolah,
+                     @tempat_lahir, @jenis_kelamin, @nama_sekolah,
                      @jurusan, @alamat_lengkap, @status_pernikahan, @kontak_darurat_nama,
                      @kontak_darurat_telp, @kontak_darurat_hub);
 
@@ -161,8 +161,7 @@ BEGIN
                     no_wa_raw           = ISNULL(no_wa_raw, @no_wa_raw),
                     tanggal_lahir       = ISNULL(tanggal_lahir, @tanggal_lahir),
                     pendidikan_terakhir = ISNULL(pendidikan_terakhir, @pendidikan_terakhir),
-                    kota_domisili       = ISNULL(kota_domisili, @kota_domisili),
-                    setuju_talent_pool  = CASE WHEN @setuju_talent_pool = 1 THEN 1 ELSE setuju_talent_pool END
+                    kota_domisili       = ISNULL(kota_domisili, @kota_domisili)
                 WHERE id_kandidat = @id_kandidat;
             END
 

@@ -11,9 +11,9 @@
 
 	<p class="muted" style="font-size:13.5px; line-height:1.6; margin-bottom:20px">
 		<?php if (!empty($t['dipakai_pada'])): ?>
-			Tautan formulir onboarding ini sudah pernah digunakan untuk mengirim data pada <strong><?= html_escape(substr($t['dipakai_pada'], 0, 16)) ?></strong>.
+			Tautan formulir pelamar ini sudah pernah digunakan untuk mengirim data pada <strong><?= html_escape(substr($t['dipakai_pada'], 0, 16)) ?></strong>.
 		<?php elseif (!empty($t['is_revoked'])): ?>
-			Tautan formulir onboarding ini telah dinonaktifkan / dicabut oleh Tim HR Ratu Pertiwi Group.
+			Tautan formulir pelamar ini telah dinonaktifkan / dicabut oleh Tim HR Ratu Pertiwi Group.
 		<?php else: ?>
 			Masa berlaku tautan formulir ini telah kedaluwarsa.
 		<?php endif; ?>

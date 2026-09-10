@@ -8,6 +8,7 @@
    kode_stage unik.
    Tahap sistem (is_sistem = 1): nama_tahap & is_terminal boleh diedit,
    tetapi kode_stage & tipe_tahap terkunci untuk menjaga integritas flow/report.
+   is_sisipan_allowed: flag izin untuk muncul di dropdown sisip tahap ad-hoc.
    Audit trail dicatat via sp_AuditLog.
 
    Deploy:  php tools/migrate.php proc
@@ -16,14 +17,15 @@ IF OBJECT_ID('dbo.sp_SaveStage') IS NOT NULL DROP PROCEDURE dbo.sp_SaveStage;
 GO
 
 CREATE PROCEDURE dbo.sp_SaveStage
-    @id_stage     INT           = NULL,
-    @kode_stage   VARCHAR(30),
-    @nama_tahap   NVARCHAR(100),
-    @tipe_tahap   VARCHAR(20),
-    @is_terminal  BIT           = 0,
-    @is_aktif     BIT           = 1,
-    @id_stage_out INT OUTPUT,
-    @oleh_user    INT           = NULL
+    @id_stage            INT           = NULL,
+    @kode_stage          VARCHAR(30),
+    @nama_tahap          NVARCHAR(100),
+    @tipe_tahap          VARCHAR(20),
+    @is_terminal         BIT           = 0,
+    @is_aktif            BIT           = 1,
+    @is_sisipan_allowed  BIT           = 1,
+    @id_stage_out        INT OUTPUT,
+    @oleh_user           INT           = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -54,19 +56,19 @@ BEGIN
 
         IF @id_stage IS NULL
         BEGIN
-            INSERT INTO dbo.M_STAGE (kode_stage, nama_tahap, tipe_tahap, is_terminal, is_sistem, is_aktif)
-            VALUES (@kode_stage, @nama_tahap, @tipe_tahap, ISNULL(@is_terminal, 0), 0, ISNULL(@is_aktif, 1));
+            INSERT INTO dbo.M_STAGE (kode_stage, nama_tahap, tipe_tahap, is_terminal, is_sistem, is_aktif, is_sisipan_allowed)
+            VALUES (@kode_stage, @nama_tahap, @tipe_tahap, ISNULL(@is_terminal, 0), 0, ISNULL(@is_aktif, 1), ISNULL(@is_sisipan_allowed, 1));
             SET @id_stage_out = SCOPE_IDENTITY();
 
-            DECLARE @nb VARCHAR(400) = 'kode=' + @kode_stage + ', nama=' + @nama_tahap + ', tipe=' + @tipe_tahap + ', term=' + CONVERT(VARCHAR(1), ISNULL(@is_terminal,0));
+            DECLARE @nb VARCHAR(400) = 'kode=' + @kode_stage + ', nama=' + @nama_tahap + ', tipe=' + @tipe_tahap + ', term=' + CONVERT(VARCHAR(1), ISNULL(@is_terminal,0)) + ', sisip=' + CONVERT(VARCHAR(1), ISNULL(@is_sisipan_allowed,1));
             EXEC dbo.sp_AuditLog 'M_STAGE', @id_stage_out, 'INSERT', NULL, @nb, @oleh_user;
         END
         ELSE
         BEGIN
             DECLARE @sis BIT;
-            DECLARE @old_kode VARCHAR(30), @old_nama NVARCHAR(100), @old_tipe VARCHAR(20), @old_term BIT, @old_akt BIT;
+            DECLARE @old_kode VARCHAR(30), @old_nama NVARCHAR(100), @old_tipe VARCHAR(20), @old_term BIT, @old_akt BIT, @old_sisip BIT;
             SELECT @sis = is_sistem, @old_kode = kode_stage, @old_nama = nama_tahap, @old_tipe = tipe_tahap,
-                   @old_term = is_terminal, @old_akt = is_aktif
+                   @old_term = is_terminal, @old_akt = is_aktif, @old_sisip = ISNULL(is_sisipan_allowed, 1)
             FROM dbo.M_STAGE WHERE id_stage = @id_stage;
 
             IF @sis IS NULL
@@ -76,25 +78,27 @@ BEGIN
             IF @sis = 1
             BEGIN
                 UPDATE dbo.M_STAGE
-                SET nama_tahap  = @nama_tahap,
-                    is_terminal = ISNULL(@is_terminal, 0),
-                    is_aktif    = ISNULL(@is_aktif, 1)
+                SET nama_tahap         = @nama_tahap,
+                    is_terminal        = ISNULL(@is_terminal, 0),
+                    is_aktif           = ISNULL(@is_aktif, 1),
+                    is_sisipan_allowed = ISNULL(@is_sisipan_allowed, 1)
                 WHERE id_stage = @id_stage;
             END
             ELSE
             BEGIN
                 UPDATE dbo.M_STAGE
-                SET kode_stage  = @kode_stage,
-                    nama_tahap  = @nama_tahap,
-                    tipe_tahap  = @tipe_tahap,
-                    is_terminal = ISNULL(@is_terminal, 0),
-                    is_aktif    = ISNULL(@is_aktif, 1)
+                SET kode_stage         = @kode_stage,
+                    nama_tahap         = @nama_tahap,
+                    tipe_tahap         = @tipe_tahap,
+                    is_terminal        = ISNULL(@is_terminal, 0),
+                    is_aktif           = ISNULL(@is_aktif, 1),
+                    is_sisipan_allowed = ISNULL(@is_sisipan_allowed, 1)
                 WHERE id_stage = @id_stage;
             END
             SET @id_stage_out = @id_stage;
 
-            DECLARE @nl VARCHAR(400) = 'kode=' + ISNULL(@old_kode,'') + ', nama=' + ISNULL(@old_nama,'') + ', tipe=' + ISNULL(@old_tipe,'') + ', term=' + CONVERT(VARCHAR(1), @old_term);
-            DECLARE @nb2 VARCHAR(400) = 'kode=' + @kode_stage + ', nama=' + @nama_tahap + ', tipe=' + @tipe_tahap + ', term=' + CONVERT(VARCHAR(1), ISNULL(@is_terminal,0));
+            DECLARE @nl VARCHAR(400) = 'kode=' + ISNULL(@old_kode,'') + ', nama=' + ISNULL(@old_nama,'') + ', tipe=' + ISNULL(@old_tipe,'') + ', term=' + CONVERT(VARCHAR(1), @old_term) + ', sisip=' + CONVERT(VARCHAR(1), ISNULL(@old_sisip,1));
+            DECLARE @nb2 VARCHAR(400) = 'kode=' + @kode_stage + ', nama=' + @nama_tahap + ', tipe=' + @tipe_tahap + ', term=' + CONVERT(VARCHAR(1), ISNULL(@is_terminal,0)) + ', sisip=' + CONVERT(VARCHAR(1), ISNULL(@is_sisipan_allowed,1));
             EXEC dbo.sp_AuditLog 'M_STAGE', @id_stage, 'UPDATE', @nl, @nb2, @oleh_user;
         END
 

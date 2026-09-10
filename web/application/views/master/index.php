@@ -1,4 +1,15 @@
-<?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+/**
+ * View: master/index.php -- Pengelolaan Master Data Referensi Organisasi RPG
+ *
+ * Fungsi:
+ * - Menangani CRUD master referensi: Departemen, Posisi/Jabatan, Lokasi Kerja, Sumber Lamaran, dan Alasan Penolakan.
+ * - Mendukung penyusunan urutan posisi/hirarki secara interaktif (drag & drop).
+ * - Menjaga integritas data referensi dengan pendekatan soft delete (is_aktif = 0).
+ */
+?>
 
 <div style="margin-bottom:24px">
 	<!-- Page Header -->
@@ -29,13 +40,12 @@
 	<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin-bottom:20px">
 		<?php
 		$menu_icons = array(
-			'posisi'     => '<path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>',
-			'departemen' => '<path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>',
-				'level_organisasi' => '<path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 13h6m-3-3v6"/>',
-			'outlet'     => '<path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>',
-			'dokumen'    => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>',
-			'remark'     => '<path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>',
-				'efek_status' => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+			'posisi'           => '<path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>',
+			'departemen'       => '<path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>',
+			'level_organisasi' => '<path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 13h6m-3-3v6"/>',
+			'outlet'           => '<path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>',
+			'dokumen'          => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>',
+			'remark'           => '<path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>',
 		);
 		foreach ($types as $k => $v):
 			$is_curr = ($k === $t);
@@ -67,15 +77,14 @@
 <?php
 // Kolom tabel per tipe
 $col = array(
-	'posisi'     => array('Nama Posisi', 'Departemen', 'Level Organisasi', 'Template Jabatan (HR)'),
-	'departemen' => array('Kode Departemen', 'Nama Departemen'),
-		'level_organisasi' => array('Kode Level', 'Nama Level Organisasi', 'Urutan', 'Keterangan'),
-	'outlet'     => array('Kode Outlet', 'Nama Outlet / Cabang', 'Brand', 'Wilayah / Region'),
-	'dokumen'    => array('Nama Dokumen Persyaratan', 'Kategori Berkas', 'Tingkat Sensitif PDP', 'Wajib Default'),
-	'remark'      => array('Tahap Alur', 'Kode', 'Label Keputusan', 'Efek Status Seleksi', 'Urutan'),
-		'efek_status' => array('Kode Efek', 'Nama Efek Status', 'Hasil Tahap', 'Status Global Target', 'Deskripsi Aturan', 'Urutan'),
+	'posisi'           => array('Nama Posisi', 'Departemen', 'Level Organisasi', 'Template Jabatan (HR)'),
+	'departemen'       => array('Kode Departemen', 'Nama Departemen'),
+	'level_organisasi' => array('', 'Kode Level', 'Nama Level Organisasi', 'Keterangan'),
+	'outlet'           => array('Kode Outlet', 'Nama Outlet / Cabang', 'Brand', 'Wilayah / Region'),
+	'dokumen'          => array('Nama Dokumen Persyaratan', 'Kategori Berkas', 'Tingkat Sensitif PDP', 'Wajib Default'),
+	'remark'           => array('Tahap Alur', 'Kode', 'Label Keputusan', 'Efek Status Seleksi', 'Urutan'),
 );
-$levels = array('MP','Staff','Staff_Krusial','Spv','Manager','Senior_Manager');
+$levels = ! empty($levels) ? $levels : array('MP','Staff','Staff_Krusial','Spv','Manager','Senior_Manager');
 $kat    = array('IDENTITAS','PENDIDIKAN','FINANSIAL','LAMARAN');
 $sens   = array('UMUM','IDENTITAS','FINANSIAL');
 ?>
@@ -93,6 +102,9 @@ $sens   = array('UMUM','IDENTITAS','FINANSIAL');
 			</div>
 		</div>
 		<div style="display:flex; align-items:center; gap:8px">
+			<?php if ($t === 'level_organisasi'): ?>
+				<span class="tag info" style="font-size:11px" title="Klik dan geser baris tabel untuk mengubah urutan level organisasi">&#8645; Drag &amp; Drop Reorder</span>
+			<?php endif; ?>
 			<span class="tag on" style="font-size:11px">&#10003; Soft Delete Protected</span>
 			<button type="button" class="btn btn-sm btn-primary" onclick="openAddModal()" style="display:inline-flex; align-items:center; gap:5px">
 				<svg style="width:13px; height:13px" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
@@ -101,12 +113,12 @@ $sens   = array('UMUM','IDENTITAS','FINANSIAL');
 		</div>
 	</div>
 
-	<div class="table-responsive-fit" style="overflow-x:visible">
+<div class="table-responsive-fit" style="overflow-x:visible">
 		<table style="width:100%; border-collapse:collapse; table-layout:fixed">
 			<thead>
 				<tr>
-					<?php foreach ($col[$t] as $c): ?>
-						<th style="padding:12px 14px; font-size:12px; font-weight:600; text-align:left; background:var(--surface); border-bottom:1px solid var(--border)">
+					<?php foreach ($col[$t] as $ci => $c): ?>
+						<th style="padding:12px 14px; font-size:12px; font-weight:600; text-align:left; background:var(--surface); border-bottom:1px solid var(--border)<?= ($t === 'level_organisasi' && $ci === 0) ? '; width:44px; text-align:center' : '' ?>">
 							<?= $c ?>
 						</th>
 					<?php endforeach; ?>
@@ -118,7 +130,7 @@ $sens   = array('UMUM','IDENTITAS','FINANSIAL');
 					</th>
 				</tr>
 			</thead>
-			<tbody>
+			<tbody <?= ($t === 'level_organisasi') ? 'id="level-organisasi-tbody"' : '' ?>>
 				<?php if (empty($rows)): ?>
 					<tr>
 						<td colspan="<?= count($col[$t]) + 2 ?>" style="text-align:center; padding:40px 16px" class="muted">
@@ -130,10 +142,10 @@ $sens   = array('UMUM','IDENTITAS','FINANSIAL');
 				<?php else: ?>
 					<?php foreach ($rows as $r): ?>
 						<?php
-							$row_id = (int) ($r['id_posisi'] ?? ($r['id_departemen'] ?? ($r['id_level_organisasi'] ?? ($r['id_outlet'] ?? ($r['id_dokumen'] ?? ($r['id_remark'] ?? ($r['id_efek_status'] ?? 0)))))));
-						$json_data = htmlspecialchars(json_encode($r), ENT_QUOTES, 'UTF-8');
+							$row_id = (int) ($r['id_posisi'] ?? ($r['id_departemen'] ?? ($r['id_level_organisasi'] ?? ($r['id_outlet'] ?? ($r['id_dokumen'] ?? ($r['id_remark'] ?? 0))))));
+							$json_data = htmlspecialchars(json_encode($r), ENT_QUOTES, 'UTF-8');
 						?>
-						<tr style="<?= empty($r['is_aktif']) ? 'opacity:.55; background:var(--surface-2);' : '' ?>">
+						<tr <?= ($t === 'level_organisasi') ? 'class="level-org-row" data-id="' . $row_id . '" draggable="true"' : '' ?> style="<?= empty($r['is_aktif']) ? 'opacity:.55; background:var(--surface-2);' : '' ?><?= ($t === 'level_organisasi') ? ' cursor:grab; transition:background .15s ease;' : '' ?>">
 							<?php if ($t === 'posisi'): ?>
 								<td style="padding:11px 14px; border-bottom:1px solid var(--border)">
 									<div style="font-weight:600; color:var(--text); word-break:break-word"><?= html_escape($r['nama_posisi']) ?></div>
@@ -170,19 +182,25 @@ $sens   = array('UMUM','IDENTITAS','FINANSIAL');
 									<?= html_escape($r['nama']) ?>
 								</td>
 
-								<?php elseif ($t === 'level_organisasi'): ?>
-									<td style="padding:11px 14px; border-bottom:1px solid var(--border)">
-										<code><?= html_escape($r['kode_level']) ?></code>
-									</td>
-									<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-weight:600; color:var(--text); word-break:break-word">
-										<?= html_escape($r['nama_level']) ?>
-									</td>
-									<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-size:12.5px">
-										<?= (int) $r['urutan'] ?>
-									</td>
-									<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-size:12.5px; color:var(--text-muted); word-break:break-word">
-										<?= html_escape($r['keterangan'] ?: '-') ?>
-									</td>
+							<?php elseif ($t === 'level_organisasi'): ?>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border); width:44px; text-align:center; user-select:none">
+									<div style="display:inline-flex; align-items:center; justify-content:center; cursor:grab" title="Klik dan geser untuk mengubah urutan">
+										<svg style="width:13px; height:13px; color:var(--text-muted); opacity:.6; flex-shrink:0" viewBox="0 0 24 24" fill="currentColor">
+											<circle cx="9" cy="5" r="1.6"/><circle cx="15" cy="5" r="1.6"/>
+											<circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/>
+											<circle cx="9" cy="19" r="1.6"/><circle cx="15" cy="19" r="1.6"/>
+										</svg>
+									</div>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border)">
+									<code><?= html_escape($r['kode_level']) ?></code>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-weight:600; color:var(--text); word-break:break-word">
+									<?= html_escape($r['nama_level']) ?>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-size:12.5px; color:var(--text-muted); word-break:break-word">
+									<?= html_escape($r['keterangan'] ?: '-') ?>
+								</td>
 
 							<?php elseif ($t === 'outlet'): ?>
 								<td style="padding:11px 14px; border-bottom:1px solid var(--border)">
@@ -225,32 +243,9 @@ $sens   = array('UMUM','IDENTITAS','FINANSIAL');
 									<?= html_escape($r['label']) ?>
 								</td>
 								<td style="padding:11px 14px; border-bottom:1px solid var(--border)">
-									<span class="tag <?= in_array($r['efek_status'], array('HIRED','LANJUT')) ? 'on' : (in_array($r['efek_status'], array('TOLAK','WITHDRAWN','OFFER_DECLINED','NO_SHOW')) ? 'off' : 'warn') ?>" style="font-size:11px">
+									<span class="tag <?= in_array($r['efek_status'], array('HIRED','LANJUT')) ? 'on' : 'off' ?>" style="font-size:11px">
 										<?= html_escape($r['efek_status']) ?>
 									</span>
-								</td>
-								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-size:12.5px">
-									<?= (int) $r['urutan'] ?>
-								</td>
-							<?php elseif ($t === 'efek_status'): ?>
-								<td style="padding:11px 14px; border-bottom:1px solid var(--border)">
-									<code><?= html_escape($r['kode_efek']) ?></code>
-								</td>
-								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-weight:600; color:var(--text); word-break:break-word">
-									<?= html_escape($r['nama_efek']) ?>
-								</td>
-								<td style="padding:11px 14px; border-bottom:1px solid var(--border)">
-									<span class="tag <?= $r['status_tahap'] === 'Lulus' ? 'on' : ($r['status_tahap'] === 'Tidak_Lulus' ? 'off' : 'warn') ?>" style="font-size:11px">
-										<?= html_escape($r['status_tahap']) ?>
-									</span>
-								</td>
-								<td style="padding:11px 14px; border-bottom:1px solid var(--border)">
-									<span class="tag <?= in_array($r['status_global_target'], array('Hired','In_Progress')) ? 'on' : (in_array($r['status_global_target'], array('Rejected','Withdrawn','Offer_Declined','No_Show')) ? 'off' : 'warn') ?>" style="font-size:11px">
-										<?= html_escape($r['status_global_target']) ?>
-									</span>
-								</td>
-								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-size:12px; color:var(--text-muted); word-break:break-word">
-									<?= html_escape($r['deskripsi'] ?: '-') ?>
 								</td>
 								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-size:12.5px">
 									<?= (int) $r['urutan'] ?>
@@ -270,7 +265,7 @@ $sens   = array('UMUM','IDENTITAS','FINANSIAL');
 									<svg style="width:12px; height:12px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
 									<span>Edit</span>
 								</button>
-								<?= form_open(site_url('master/toggle/' . $t), array('class' => 'inline', 'style' => 'display:inline; margin-left:4px')) ?>
+								<?= form_open(site_url('master/toggle/' . $t), array('class' => 'inline', 'style' => 'display:inline; margin-left:4px', 'onsubmit' => "return confirm('" . ($r['is_aktif'] ? 'Nonaktifkan data ini? Data tidak akan tampil di pilihan aktif.' : 'Aktifkan kembali data ini?') . "');")) ?>
 									<input type="hidden" name="id" value="<?= $row_id ?>">
 									<input type="hidden" name="is_aktif" value="<?= $r['is_aktif'] ? 0 : 1 ?>">
 									<button type="submit" class="btn-sm btn-ghost" style="padding:4px 8px; font-size:12px; color:<?= $r['is_aktif'] ? 'var(--warn-ink)' : 'var(--accent)' ?>" title="<?= $r['is_aktif'] ? 'Nonaktifkan item ini' : 'Aktifkan kembali item ini' ?>">
@@ -366,11 +361,9 @@ $sens   = array('UMUM','IDENTITAS','FINANSIAL');
 			<input type="hidden" name="id" id="field-id" value="">
 			<input type="hidden" name="id_posisi" id="field-id-posisi" value="">
 			<input type="hidden" name="id_departemen" id="field-id-departemen" value="">
-				<input type="hidden" name="id_level_organisasi" id="field-id-level-organisasi" value="">
+			<input type="hidden" name="id_level_organisasi" id="field-id-level-organisasi" value="">
 			<input type="hidden" name="id_outlet" id="field-id-outlet" value="">
 			<input type="hidden" name="id_dokumen" id="field-id-dokumen" value="">
-				<input type="hidden" name="id_efek_status" id="field-id-efek-status" value="">
-				<input type="hidden" name="id_efek_status" id="field-id-efek-status" value="">
 			<input type="hidden" name="id_remark" id="field-id-remark" value="">
 
 			<div style="display:flex; flex-direction:column; gap:14px">
@@ -382,7 +375,7 @@ $sens   = array('UMUM','IDENTITAS','FINANSIAL');
 					<input type="text" name="nama_posisi" id="field-nama-posisi" placeholder="Mis. SPV Area, Staff Finance" required style="width:100%">
 				</div>
 
-				<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+				<div style="grid-template-columns:1fr 1fr; display:grid; gap:12px">
 					<div>
 						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Departemen <span style="color:var(--crit)">*</span></label>
 						<select name="id_departemen" id="field-id-dept" required style="width:100%">
@@ -397,11 +390,11 @@ $sens   = array('UMUM','IDENTITAS','FINANSIAL');
 					<div>
 						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Level Organisasi <span style="color:var(--crit)">*</span></label>
 						<select name="level_posisi" id="field-level-posisi" required style="width:100%">
-								<?php foreach ($levels as $l): ?>
-									<?php $val = is_array($l) ? ($l["kode_level"] ?? "") : $l; ?>
-									<?php $lbl = is_array($l) ? (($l["nama_level"] ?? $val) . " (" . $val . ")") : $l; ?>
-									<option value="<?= html_escape($val) ?>"><?= html_escape($lbl) ?></option>
-								<?php endforeach; ?>
+							<?php foreach ($levels as $l): ?>
+								<?php $val = is_array($l) ? ($l["kode_level"] ?? "") : $l; ?>
+								<?php $lbl = is_array($l) ? (($l["nama_level"] ?? $val) . " (" . $val . ")") : $l; ?>
+								<option value="<?= html_escape($val) ?>"><?= html_escape($lbl) ?></option>
+							<?php endforeach; ?>
 						</select>
 					</div>
 					<div style="grid-column: span 2">
@@ -462,31 +455,31 @@ $sens   = array('UMUM','IDENTITAS','FINANSIAL');
 					</div>
 				</div>
 
+			<!-- ================= FORM LEVEL ORGANISASI ================= -->
+			<?php elseif ($t === 'level_organisasi'): ?>
+				<div style="display:grid; grid-template-columns:140px 1fr; gap:12px">
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Kode Level <span style="color:var(--crit)">*</span></label>
+						<input type="text" name="kode_level" id="field-kode-level" placeholder="Mis. Staff, Spv" required style="width:100%">
+					</div>
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Nama Level Organisasi <span style="color:var(--crit)">*</span></label>
+						<input type="text" name="nama_level" id="field-nama-level" placeholder="Mis. Staff (Headquarters / Back-Office)" required style="width:100%">
+					</div>
+				</div>
+
+				<div style="display:grid; grid-template-columns:120px 1fr; gap:12px">
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Urutan Jenjang</label>
+						<input type="number" name="urutan" id="field-urutan-level" value="0" style="width:100%">
+					</div>
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Keterangan / Deskripsi</label>
+						<input type="text" name="keterangan" id="field-keterangan-level" placeholder="Mis. Tenaga kerja staf umum kantor pusat" style="width:100%">
+					</div>
+				</div>
+
 			<!-- ================= FORM OUTLET ================= -->
-				<!-- ================= FORM LEVEL ORGANISASI ================= -->
-				<?php elseif ($t === 'level_organisasi'): ?>
-					<div style="display:grid; grid-template-columns:140px 1fr; gap:12px">
-						<div>
-							<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Kode Level <span style="color:var(--crit)">*</span></label>
-							<input type="text" name="kode_level" id="field-kode-level" placeholder="Mis. Staff, Spv" required style="width:100%">
-						</div>
-						<div>
-							<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Nama Level Organisasi <span style="color:var(--crit)">*</span></label>
-							<input type="text" name="nama_level" id="field-nama-level" placeholder="Mis. Staff (Headquarters / Back-Office)" required style="width:100%">
-						</div>
-					</div>
-
-					<div style="display:grid; grid-template-columns:120px 1fr; gap:12px">
-						<div>
-							<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Urutan Jenjang</label>
-							<input type="number" name="urutan" id="field-urutan-level" value="0" style="width:100%">
-						</div>
-						<div>
-							<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Keterangan / Deskripsi</label>
-							<input type="text" name="keterangan" id="field-keterangan-level" placeholder="Mis. Tenaga kerja staf umum kantor pusat" style="width:100%">
-						</div>
-					</div>
-
 			<?php elseif ($t === 'outlet'): ?>
 				<div style="display:grid; grid-template-columns:140px 1fr; gap:12px">
 					<div>
@@ -582,48 +575,6 @@ $sens   = array('UMUM','IDENTITAS','FINANSIAL');
 						<input type="number" name="urutan" id="field-urutan-remark" value="0" style="width:100%">
 					</div>
 				</div>
-
-				<!-- ================= FORM EFEK STATUS ================= -->
-				<?php elseif ($t === 'efek_status'): ?>
-					<div style="display:grid; grid-template-columns:140px 1fr; gap:12px">
-						<div>
-							<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Kode Efek <span style="color:var(--crit)">*</span></label>
-							<input type="text" name="kode_efek" id="field-kode-efek" placeholder="Mis. LANJUT" required style="width:100%">
-						</div>
-						<div>
-							<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Nama Efek Status <span style="color:var(--crit)">*</span></label>
-							<input type="text" name="nama_efek" id="field-nama-efek" placeholder="Mis. Lanjut ke Tahap Berikutnya" required style="width:100%">
-						</div>
-					</div>
-
-					<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
-						<div>
-							<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Hasil Tahap Seleksi <span style="color:var(--crit)">*</span></label>
-							<select name="status_tahap" id="field-status-tahap" required style="width:100%">
-								<?php foreach ($st_tahap_options as $stt): ?>
-									<option value="<?= $stt ?>"><?= $stt ?></option>
-								<?php endforeach; ?>
-							</select>
-						</div>
-						<div>
-							<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Status Global Target <span style="color:var(--crit)">*</span></label>
-							<select name="status_global_target" id="field-status-global-target" required style="width:100%">
-								<?php foreach ($st_global_options as $stg): ?>
-									<option value="<?= $stg ?>"><?= $stg ?></option>
-								<?php endforeach; ?>
-							</select>
-						</div>
-					</div>
-
-					<div>
-						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Deskripsi Aturan Alur</label>
-						<textarea name="deskripsi" id="field-deskripsi-efek" rows="2" placeholder="Penjelasan efek status ini saat diterapkan ke kandidat..." style="width:100%"></textarea>
-					</div>
-
-					<div>
-						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Urutan Tampil</label>
-						<input type="number" name="urutan" id="field-urutan-efek" value="0" style="width:120px">
-					</div>
 			<?php endif; ?>
 
 			</div>
@@ -652,11 +603,10 @@ function openAddModal() {
 	document.getElementById('field-id').value = '';
 	if (document.getElementById('field-id-posisi')) document.getElementById('field-id-posisi').value = '';
 	if (document.getElementById('field-id-departemen')) document.getElementById('field-id-departemen').value = '';
-		if (document.getElementById('field-id-level-organisasi')) document.getElementById('field-id-level-organisasi').value = '';
+	if (document.getElementById('field-id-level-organisasi')) document.getElementById('field-id-level-organisasi').value = '';
 	if (document.getElementById('field-id-outlet')) document.getElementById('field-id-outlet').value = '';
 	if (document.getElementById('field-id-dokumen')) document.getElementById('field-id-dokumen').value = '';
 	if (document.getElementById('field-id-remark')) document.getElementById('field-id-remark').value = '';
-		if (document.getElementById('field-id-efek-status')) document.getElementById('field-id-efek-status').value = '';
 
 	document.getElementById('modal-title').textContent = 'Tambah ' + <?= json_encode($types[$t]['label']) ?> + ' Baru';
 	document.getElementById('modal-sub').textContent = 'Lengkapi formulir di bawah ini untuk menyimpan data baru.';
@@ -672,7 +622,7 @@ function openEditModal(data) {
 	document.getElementById('form-master').reset();
 
 	var labelTipe = <?= json_encode($types[$t]['label']) ?>;
-		var pkVal = data.id_posisi || data.id_departemen || data.id_level_organisasi || data.id_outlet || data.id_dokumen || data.id_remark || data.id_efek_status || '';
+	var pkVal = data.id_posisi || data.id_departemen || data.id_level_organisasi || data.id_outlet || data.id_dokumen || data.id_remark || '';
 
 	document.getElementById('field-id').value = pkVal;
 	document.getElementById('modal-title').textContent = 'Edit ' + labelTipe + ' #' + pkVal;
@@ -693,12 +643,12 @@ function openEditModal(data) {
 		document.getElementById('field-id-departemen').value = data.id_departemen || '';
 		document.getElementById('field-kode-dept').value = data.kode || '';
 		document.getElementById('field-nama-dept').value = data.nama || '';
-		} else if (currentType === 'level_organisasi') {
-			document.getElementById('field-id-level-organisasi').value = data.id_level_organisasi || '';
-			document.getElementById('field-kode-level').value = data.kode_level || '';
-			document.getElementById('field-nama-level').value = data.nama_level || '';
-			document.getElementById('field-urutan-level').value = (data.urutan !== undefined && data.urutan !== null) ? data.urutan : '0';
-			document.getElementById('field-keterangan-level').value = data.keterangan || '';
+	} else if (currentType === 'level_organisasi') {
+		document.getElementById('field-id-level-organisasi').value = data.id_level_organisasi || '';
+		document.getElementById('field-kode-level').value = data.kode_level || '';
+		document.getElementById('field-nama-level').value = data.nama_level || '';
+		document.getElementById('field-urutan-level').value = (data.urutan !== undefined && data.urutan !== null) ? data.urutan : '0';
+		document.getElementById('field-keterangan-level').value = data.keterangan || '';
 	} else if (currentType === 'outlet') {
 		document.getElementById('field-id-outlet').value = data.id_outlet || '';
 		document.getElementById('field-kode-outlet').value = data.kode_outlet || '';
@@ -718,14 +668,6 @@ function openEditModal(data) {
 		document.getElementById('field-label-remark').value = data.label || '';
 		document.getElementById('field-efek-status').value = data.efek_status || 'LANJUT';
 		document.getElementById('field-urutan-remark').value = data.urutan || '0';
-	} else if (currentType === 'efek_status') {
-		document.getElementById('field-id-efek-status').value = data.id_efek_status || '';
-		document.getElementById('field-kode-efek').value = data.kode_efek || '';
-		document.getElementById('field-nama-efek').value = data.nama_efek || '';
-		document.getElementById('field-status-tahap').value = data.status_tahap || 'Lulus';
-		document.getElementById('field-status-global-target').value = data.status_global_target || 'In_Progress';
-		document.getElementById('field-deskripsi-efek').value = data.deskripsi || '';
-		document.getElementById('field-urutan-efek').value = data.urutan || '0';
 	}
 
 	dlgMaster.showModal();
@@ -750,4 +692,137 @@ window.addEventListener('DOMContentLoaded', function() {
 	openEditModal(<?= json_encode($edit_row) ?>);
 });
 <?php endif; ?>
+
+/* =========================================================================
+   NATIVE HTML5 DRAG AND DROP REORDERING (KHUSUS LEVEL ORGANISASI)
+   ========================================================================= */
+<?php if ($t === 'level_organisasi'): ?>
+document.addEventListener('DOMContentLoaded', function() {
+	var tbody = document.getElementById('level-organisasi-tbody');
+	if (!tbody) return;
+
+	var draggedRow = null;
+	var csrfTokenName = '<?= $this->security->get_csrf_token_name() ?>';
+	var csrfHash = '<?= $this->security->get_csrf_hash() ?>';
+	var reorderUrl = '<?= site_url('master/reorder_level_organisasi') ?>';
+
+	function updateSequenceNumbers() {
+		var rows = tbody.querySelectorAll('.level-org-row');
+		var addUrutanInput = document.getElementById('field-urutan-level');
+		if (addUrutanInput && (!addUrutanInput.value || addUrutanInput.value === '0')) {
+			addUrutanInput.value = rows.length + 1;
+		}
+	}
+
+	function saveNewOrder() {
+		var rows = tbody.querySelectorAll('.level-org-row');
+		var orderIds = [];
+		rows.forEach(function(row) {
+			var id = row.getAttribute('data-id');
+			if (id) orderIds.push(parseInt(id, 10));
+		});
+
+		if (orderIds.length === 0) return;
+
+		var formData = new URLSearchParams();
+		formData.append(csrfTokenName, csrfHash);
+		orderIds.forEach(function(id) {
+			formData.append('order[]', id);
+		});
+
+		fetch(reorderUrl, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'X-Requested-With': 'XMLHttpRequest'
+			},
+			body: formData.toString()
+		})
+		.then(function(res) {
+			return res.json();
+		})
+		.then(function(data) {
+			if (data && data.success) {
+				showToast('Susunan urutan level organisasi berhasil diperbarui.', 'ok');
+			} else {
+				showToast('Gagal menyimpan urutan: ' + ((data && data.error) ? data.error : 'Terjadi kesalahan sistem'), 'err', 6000);
+			}
+		})
+		.catch(function(err) {
+			console.error('Reorder error:', err);
+			showToast('Terjadi kesalahan jaringan saat menyimpan urutan.', 'err', 6000);
+		});
+	}
+
+	function attachRowEvents(row) {
+		row.addEventListener('dragstart', function(e) {
+			draggedRow = row;
+			row.classList.add('dragging');
+			e.dataTransfer.effectAllowed = 'move';
+			e.dataTransfer.setData('text/plain', row.getAttribute('data-id'));
+		});
+
+		row.addEventListener('dragend', function() {
+			row.classList.remove('dragging');
+			var allRows = tbody.querySelectorAll('.level-org-row');
+			allRows.forEach(function(r) {
+				r.classList.remove('drag-over-top', 'drag-over-bottom');
+			});
+			draggedRow = null;
+		});
+
+		row.addEventListener('dragover', function(e) {
+			e.preventDefault();
+			if (!draggedRow || draggedRow === row) return;
+
+			var rect = row.getBoundingClientRect();
+			var midY = rect.top + rect.height / 2;
+			if (e.clientY < midY) {
+				row.classList.add('drag-over-top');
+				row.classList.remove('drag-over-bottom');
+			} else {
+				row.classList.add('drag-over-bottom');
+				row.classList.remove('drag-over-top');
+			}
+		});
+
+		row.addEventListener('dragleave', function() {
+			row.classList.remove('drag-over-top', 'drag-over-bottom');
+		});
+
+		row.addEventListener('drop', function(e) {
+			e.preventDefault();
+			row.classList.remove('drag-over-top', 'drag-over-bottom');
+			if (!draggedRow || draggedRow === row) return;
+
+			var rect = row.getBoundingClientRect();
+			var midY = rect.top + rect.height / 2;
+			if (e.clientY < midY) {
+				tbody.insertBefore(draggedRow, row);
+			} else {
+				tbody.insertBefore(draggedRow, row.nextSibling);
+			}
+
+			updateSequenceNumbers();
+			saveNewOrder();
+		});
+	}
+
+	var rows = tbody.querySelectorAll('.level-org-row');
+	rows.forEach(attachRowEvents);
+});
+<?php endif; ?>
 </script>
+
+<style>
+.level-org-row.dragging {
+	opacity: 0.4;
+	background: var(--surface-2) !important;
+}
+.level-org-row.drag-over-top {
+	border-top: 3px solid var(--primary) !important;
+}
+.level-org-row.drag-over-bottom {
+	border-bottom: 3px solid var(--primary) !important;
+}
+</style>

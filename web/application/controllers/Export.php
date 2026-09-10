@@ -2,9 +2,13 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Export data ke Excel. Butuh permission EXPORT.
- * Format: tabel HTML dengan Content-Type Excel (dibuka Excel/Sheets tanpa
- * library tambahan). Kolom sensitif hanya ikut bila RBAC mengizinkan.
+ * Controller Export -- Ekspor Data Rekrutmen ke Format Spreadsheet (Excel/CSV)
+ *
+ * Fungsi:
+ * - Menangani ekspor data kandidat dan lamaran ke format file Excel (.xls) tanpa dependensi library berat pihak ketiga.
+ * - Memformat nomor kontak WA dan NIK agar tidak berubah menjadi notasi ilmiah pada Microsoft Excel.
+ * - Menerapkan audit logging ACCESS_LOG_SENSITIF ketika kolom data sensitif ikut diekspor.
+ * - Proteksi akses: membutuhkan permission 'EXPORT'.
  */
 class Export extends Secured_Controller
 {

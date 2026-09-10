@@ -1,4 +1,15 @@
-<?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+/**
+ * View: requisitions/index.php -- Daftar Dokumen Permintaan Tenaga Kerja (MPR)
+ *
+ * Fungsi:
+ * - Menampilkan daftar pengajuan MPR dari seluruh departemen dengan filter status terpadu.
+ * - Menyediakan indikator visual progres pemenuhan kuota rekrutmen.
+ * - Mendukung pembatasan akses data (scoping departemen) bagi pemohon non-HR.
+ */
+?>
 <?php $qs = function ($extra = array()) use ($f) {
 	return '?' . http_build_query(array_merge(array_filter((array) $f), $extra));
 }; ?>
@@ -66,11 +77,12 @@
 					<label style="margin:0 0 4px; font-size:11.5px; font-weight:600" class="eyebrow">Status</label>
 					<select name="status" style="width:auto; padding:6px 10px; font-size:13px; background:var(--surface)">
 						<option value="">Semua Status</option>
-						<?php foreach (array('Draft','Review_HR','Menunggu_BOD','Approved','Sourcing','Sourcing_Ulang','Terpenuhi_Sebagian','Terpenuhi','Ditolak_HR','Ditolak_BOD','Dibatalkan','Kadaluarsa') as $s): ?>
-							<option value="<?= $s ?>" <?= (isset($f['status']) && $f['status'] === $s) ? 'selected' : '' ?>><?= $s ?></option>
+						<?php foreach (array('Draft','Review_HR','Revisi_HR','Review_BOD','Revisi_BOD','Approved','Sourcing','Sourcing_Ulang','Terpenuhi_Sebagian','Terpenuhi','Ditolak_HR','Ditolak_BOD','Dibatalkan','Kadaluarsa') as $s): ?>
+							<option value="<?= $s ?>" <?= (isset($f['status']) && $f['status'] === $s) ? 'selected' : '' ?>><?= html_escape(label_status_req($s)) ?></option>
 						<?php endforeach; ?>
 					</select>
 				</div>
+				<?php if (current_user_dept() === NULL): ?>
 				<div>
 					<label style="margin:0 0 4px; font-size:11.5px; font-weight:600" class="eyebrow">Departemen</label>
 					<select name="dept" style="width:auto; min-width:150px; padding:6px 10px; font-size:13px; background:var(--surface)">
@@ -80,6 +92,7 @@
 						<?php endforeach; ?>
 					</select>
 				</div>
+				<?php endif; ?>
 				<div>
 					<label style="margin:0 0 4px; font-size:11.5px; font-weight:600" class="eyebrow">Posisi</label>
 					<select name="posisi" style="width:auto; min-width:150px; padding:6px 10px; font-size:13px; background:var(--surface)">
@@ -136,7 +149,7 @@
 					</thead>
 					<tbody>
 						<?php foreach ($rows as $r): ?>
-						<tr>
+						<tr class="mpr-row" data-href="<?= site_url('requisitions/view/' . (int) $r['id_req']) ?>" style="cursor:pointer">
 							<td style="padding:12px 14px">
 								<strong style="color:var(--text)"><?= html_escape($r['nama_posisi']) ?></strong>
 								<div class="muted" style="font-size:11.5px; margin-top:2px"><?= html_escape($r['no_mpr']) ?></div>
@@ -144,31 +157,31 @@
 							<td style="padding:12px 14px"><?= html_escape($r['pemohon']) ?></td>
 							<td style="padding:12px 14px"><span class="tag" style="word-break:break-word; white-space:normal; display:inline-block; max-width:100%"><?= html_escape($r['tipe_penempatan'] . ($r['nama_outlet'] ? ' / ' . $r['nama_outlet'] : '')) ?></span></td>
 							<td style="padding:12px 14px; text-align:center">
-								<span class="tag <?= in_array($r['status_req'], array('Sourcing','Approved','Terpenuhi','Terpenuhi_Sebagian')) ? 'on' : (in_array($r['status_req'], array('Review_HR','Menunggu_BOD')) ? 'warn' : (in_array($r['status_req'], array('Ditolak_HR','Ditolak_BOD','Dibatalkan')) ? 'crit' : 'off')) ?>">
-									<?= html_escape($r['status_req']) ?>
+								<span class="tag <?= in_array($r['status_req'], array('Sourcing','Approved','Terpenuhi','Terpenuhi_Sebagian')) ? 'on' : (in_array($r['status_req'], array('Review_HR','Review_BOD','Revisi_HR','Revisi_BOD')) ? 'warn' : (in_array($r['status_req'], array('Ditolak_HR','Ditolak_BOD','Dibatalkan')) ? 'crit' : 'off')) ?>">
+									<?= html_escape(label_status_req($r['status_req'])) ?>
 								</span>
+								<?php if ($r['status_req'] === 'Ditolak_HR' && !empty($r['catatan_hr'])): ?>
+									<div style="font-size:11px; color:var(--crit); margin-top:4px; max-width:180px; margin-inline:auto; line-height:1.3; word-break:break-word" title="Alasan: <?= html_escape($r['catatan_hr']) ?>">
+										<strong>HR:</strong> <?= html_escape(mb_strimwidth($r['catatan_hr'], 0, 45, '...')) ?>
+									</div>
+								<?php elseif ($r['status_req'] === 'Ditolak_BOD' && !empty($r['catatan_bod'])): ?>
+									<div style="font-size:11px; color:var(--crit); margin-top:4px; max-width:180px; margin-inline:auto; line-height:1.3; word-break:break-word" title="Alasan: <?= html_escape($r['catatan_bod']) ?>">
+										<strong>BOD:</strong> <?= html_escape(mb_strimwidth($r['catatan_bod'], 0, 45, '...')) ?>
+									</div>
+								<?php endif; ?>
 							</td>
 							<td style="padding:12px 14px; text-align:right; position:relative; overflow:visible">
-								<?php
-								$can_view_pipeline = (current_user_dept() === NULL || (isset($r['id_departemen']) && (int) $r['id_departemen'] === (int) current_user_dept()));
-								if ($can_view_pipeline): ?>
-									<div style="position:relative; display:inline-block">
-										<button type="button" class="btn btn-sm btn-ghost mpr-menu-btn" onclick="toggleMenu(event, 'menu-<?= (int) $r['id_req'] ?>')" style="padding:2px 8px; font-weight:700; line-height:1; font-size:16px; border-radius:6px" title="Pilihan Aksi">&#8942;</button>
-										<div id="menu-<?= (int) $r['id_req'] ?>" class="mpr-dropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:var(--surface); border:1px solid var(--border); border-radius:8px; box-shadow:var(--shadow); min-width:160px; z-index:99; text-align:left; overflow:hidden">
-											<a href="<?= site_url('requisitions/view/' . (int) $r['id_req']) ?>" style="display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:12.5px; color:var(--text); text-decoration:none; border-bottom:1px solid var(--surface-2)">
-												<svg style="width:13px; height:13px; flex:none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-												<span>Lihat Detail</span>
-											</a>
-											<?php if ($can_view_pipeline): ?>
-												<a href="<?= site_url('pipeline/index/' . (int) $r['id_req']) ?>" style="display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:12.5px; color:var(--accent); font-weight:600; text-decoration:none; border-bottom:1px solid var(--surface-2)">
+									<?php
+									$can_view_pipeline = (current_user_dept() === NULL || (isset($r['id_departemen']) && (int) $r['id_departemen'] === (int) current_user_dept()));
+									$show_pipeline = $can_view_pipeline && in_array($r['status_req'], array('Approved','Sourcing','Sourcing_Ulang','Terpenuhi_Sebagian','Terpenuhi'));
+									if ($show_pipeline): ?>
+										<div style="position:relative; display:inline-block">
+											<button type="button" class="btn btn-sm btn-ghost mpr-menu-btn" onclick="toggleMenu(event, 'menu-<?= (int) $r['id_req'] ?>')" style="padding:2px 8px; font-weight:700; line-height:1; font-size:16px; border-radius:6px" title="Buka Pipeline">&#8942;</button>
+											<div id="menu-<?= (int) $r['id_req'] ?>" class="mpr-dropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:var(--surface); border:1px solid var(--border); border-radius:8px; box-shadow:var(--shadow); min-width:160px; z-index:99; text-align:left; overflow:hidden">
+												<a href="<?= site_url('pipeline/index/' . (int) $r['id_req']) ?>" style="display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:12.5px; color:var(--accent); font-weight:600; text-decoration:none; ">
 													<svg style="width:13px; height:13px; flex:none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
 													<span>Buka Pipeline</span>
 												</a>
-											<?php endif; ?>
-											<a href="<?= site_url('export/candidates?req=' . (int) $r['id_req']) ?>" style="display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:12.5px; color:var(--text); text-decoration:none">
-												<svg style="width:13px; height:13px; flex:none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-												<span>Export Pelamar</span>
-											</a>
 										</div>
 									</div>
 								<?php endif; ?>
@@ -194,3 +207,12 @@
 		<?php endif; ?>
 	</div>
 </div>
+<style>.mpr-row:hover td{background:var(--surface-2)}</style>
+<script>
+document.querySelectorAll('.mpr-row').forEach(function(tr){
+	tr.addEventListener('click',function(e){
+		if(e.target.closest('a,button,.mpr-dropdown'))return;
+		window.location=this.dataset.href;
+	});
+});
+</script>

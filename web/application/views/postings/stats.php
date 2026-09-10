@@ -4,8 +4,8 @@
 	<div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:14px">
 		<div>
 			<div style="display:flex; align-items:center; gap:8px; margin-bottom:4px">
-				<a href="<?= site_url('postings/form_settings/' . (int) $posting['id_posting']) ?>" style="font-size:12px; text-decoration:none; color:var(--text-muted); display:inline-flex; align-items:center; gap:4px">
-					&larr; Kembali ke Pengaturan Link Form
+				<a href="<?= site_url('postings') ?>" style="font-size:12px; text-decoration:none; color:var(--text-muted); display:inline-flex; align-items:center; gap:4px">
+					&larr; Kembali ke Daftar Form Publik
 				</a>
 				<span class="muted">&bull;</span>
 				<span class="muted" style="font-size:12px">Portal Analytics</span>

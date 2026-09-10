@@ -51,7 +51,7 @@
 					<td><code><?= html_escape($r['kode_remark']) ?></code></td>
 					<td><?= html_escape($r['label']) ?></td>
 					<td>
-						<span class="tag <?= in_array($r['efek_status'], array('HIRED','LANJUT')) ? 'on' : (in_array($r['efek_status'], array('TOLAK','WITHDRAWN','OFFER_DECLINED','NO_SHOW')) ? 'off' : 'warn') ?>">
+						<span class="tag <?= in_array($r['efek_status'], array('HIRED','LANJUT')) ? 'on' : 'off' ?>">
 							<?= html_escape($r['efek_status']) ?>
 						</span>
 					</td>
@@ -120,10 +120,10 @@
 
 			<div style="display:grid; grid-template-columns:1fr 120px; gap:12px">
 				<div>
-					<label for="rem-efek" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Efek Status *</label>
+					<label for="rem-efek" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Efek Status Seleksi *</label>
 					<select name="efek_status" id="rem-efek" required style="width:100%">
 						<?php foreach ($efek as $e): ?>
-							<option value="<?= $e ?>"><?= $e ?></option>
+							<option value="<?= $e ?>"><?= $e === 'LANJUT' ? 'LANJUT (Lolos &amp; Lanjut Tahap)' : ($e === 'HIRED' ? 'HIRED (Diterima Kerja)' : ($e === 'TOLAK' ? 'TOLAK (Gugur / Ditolak)' : $e)) ?></option>
 						<?php endforeach; ?>
 					</select>
 				</div>

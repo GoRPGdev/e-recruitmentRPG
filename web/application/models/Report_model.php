@@ -2,8 +2,14 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Report_model -- Agregat laporan komprehensif, metrik rekrutmen,
- * funnel konversi, dan pemenuhan formasi MPR (kompatibel SQL Server 2008 R2).
+ * Model Report_model -- Model Agregasi Laporan Analitik & Funnel Rekrutmen
+ *
+ * Fungsi:
+ * - Menghitung tingkat konversi tahapan seleksi (Conversion Rate Funnel) dari pelamar masuk hingga diterima.
+ * - Mengukur durasi siklus rekrutmen (Time-to-Hire) per posisi dan departemen.
+ * - Menganalisis alasan penolakan kandidat per tahap seleksi.
+ * - Mengagregasi metrik pemenuhan formasi Requisition (MPR) aktif vs kuota yang terpenuhi.
+ * - Kueri kompatibel penuh dengan batasan T-SQL Microsoft SQL Server 2008 R2.
  */
 class Report_model extends CI_Model
 {
@@ -66,7 +72,6 @@ class Report_model extends CI_Model
 					SUM(CASE WHEN a.status_global = 'Hired' THEN 1 ELSE 0 END) AS n_hired,
 					SUM(CASE WHEN a.status_global = 'Rejected' THEN 1 ELSE 0 END) AS n_rejected,
 					SUM(CASE WHEN a.status_global IN ('Withdrawn', 'Offer_Declined', 'No_Show') THEN 1 ELSE 0 END) AS n_withdrawn,
-					SUM(CASE WHEN a.status_global = 'Talent_Pool' THEN 1 ELSE 0 END) AS n_talent_pool,
 					AVG(CASE WHEN a.status_global = 'Hired' AND a.tanggal_lamar IS NOT NULL
 					         THEN CAST(DATEDIFF(DAY, a.tanggal_lamar, GETDATE()) AS FLOAT)
 					         ELSE NULL END) AS avg_time_to_hire_days

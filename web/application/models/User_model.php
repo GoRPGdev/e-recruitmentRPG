@@ -2,11 +2,13 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * User_model -- Manajemen data pengguna (dbo.M_USERS).
- * Sesuai arsitektur SQL Server 2008 R2:
- * - Parameter binding pada semua query
- * - Paginasi ROW_NUMBER() OVER (...) di CTE
- * - Soft delete (toggle is_aktif), tanpa DELETE fisik
+ * Model User_model -- Model Pengelolaan Akun Pengguna Internal & Role Sistem
+ *
+ * Fungsi:
+ * - Menangani operasi CRUD akun pengguna internal melalui Stored Procedure T-SQL sp_SaveUser.
+ * - Mengambil daftar role sistem dan departemen yang tersedia.
+ * - Mengatur aktivasi dan penonaktifan akun dengan prinsip integritas soft delete (is_aktif = 0).
+ * - Menangani reset password dan pemetaan scoping departemen bagi pengguna ber-role USER_DEPT.
  */
 class User_model extends CI_Model
 {

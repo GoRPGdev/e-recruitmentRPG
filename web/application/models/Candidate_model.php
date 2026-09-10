@@ -2,19 +2,39 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Candidate_model -- layar detail kandidat, profil lamaran, riwayat seleksi,
- * serta pembacaan data pribadi spesifik (kesehatan, gaji pelamar, perbankan, onboarding).
+ * Model Candidate_model -- Model Data Kandidat Pelamar & Profil Komprehensif
+ *
+ * Fungsi:
+ * - Mengambil data detail profil pelamar, riwayat seleksi, dan histori tahapan lamaran.
+ * - Membaca data pelengkap: riwayat keluarga, pendidikan formal/non-formal, riwayat kerja, data kesehatan, referensi kerja, dan kuesioner onboarding.
+ * - Menyediakan fitur pembuatan token onboarding mandiri dan streaming pas foto resmi pelamar.
+ * - Menangani scoping departemen dan paginasi daftar kandidat.
  */
 class Candidate_model extends CI_Model
 {
 	public function get_detail($id_lamaran)
 	{
-		$sql = 'SELECT a.id_lamaran, a.id_kandidat, a.id_req, a.id_flow, a.status_global, a.tanggal_lamar,
+		// Cek ketersediaan kolom onboarding & identitas baru di CANDIDATES
+		$chk = $this->db->query("SELECT COL_LENGTH('dbo.CANDIDATES', 'nama_panggilan') AS has_panggilan, COL_LENGTH('dbo.CANDIDATES', 'status_tempat_tinggal') AS has_tt, COL_LENGTH('dbo.CANDIDATES', 'foto_path') AS has_foto")->row_array();
+		$has_extra = ! empty($chk['has_panggilan']);
+		$has_tt    = ! empty($chk['has_tt']);
+		$has_foto  = ! empty($chk['has_foto']);
+
+		$extra_cols = $has_extra
+			? 'c.nama_panggilan, c.nik, c.no_sim, c.npwp, c.agama, c.gol_darah, c.tinggi_badan, c.berat_badan,'
+			: 'NULL AS nama_panggilan, NULL AS nik, NULL AS no_sim, NULL AS npwp, NULL AS agama, NULL AS gol_darah, NULL AS tinggi_badan, NULL AS berat_badan,';
+		$extra_cols .= $has_tt
+			? ' c.status_tempat_tinggal, c.keahlian_komputer, c.bahasa_asing,'
+			: ' NULL AS status_tempat_tinggal, NULL AS keahlian_komputer, NULL AS bahasa_asing,';
+		$extra_cols .= $has_foto
+			? ' c.foto_path,'
+			: ' NULL AS foto_path,';
+
+		$sql = "SELECT a.id_lamaran, a.id_kandidat, a.id_req, a.id_flow, a.status_global, a.tanggal_lamar,
 		               a.intake_method, a.screening_score, a.id_stage_sekarang,
-		               c.nama_lengkap, c.nama_panggilan, c.no_wa_normal, c.email, c.tempat_lahir, c.tanggal_lahir,
+		               c.nama_lengkap, {$extra_cols} c.no_wa_normal, c.email, c.tempat_lahir, c.tanggal_lahir,
 		               c.jenis_kelamin, c.pendidikan_terakhir, c.nama_sekolah, c.jurusan,
 		               c.kota_domisili, c.alamat_lengkap, c.status_pernikahan,
-		               c.nik, c.no_sim, c.npwp, c.agama, c.gol_darah, c.tinggi_badan, c.berat_badan,
 		               c.kontak_darurat_nama, c.kontak_darurat_telp, c.kontak_darurat_hub,
 		               c.is_blacklist, c.retensi_sampai, c.created_at AS kandidat_dibuat,
 		               r.no_mpr, r.tipe_penempatan, r.status_req,
@@ -33,7 +53,7 @@ class Candidate_model extends CI_Model
 		        LEFT JOIN dbo.M_FLOW f        ON f.id_flow = a.id_flow
 		        LEFT JOIN dbo.M_STAGE st      ON st.id_stage = a.id_stage_sekarang
 		        /* no channel join */
-		        WHERE a.id_lamaran = ?';
+		        WHERE a.id_lamaran = ?";
 		$q = $this->db->query($sql, array((int) $id_lamaran));
 		$row = $q->row_array();
 		$q->free_result();
@@ -207,7 +227,7 @@ class Candidate_model extends CI_Model
 	public function get_onboarding_token($id_lamaran)
 	{
 		$q = $this->db->query(
-			"SELECT TOP 1 id_token, token, tujuan, kadaluarsa_pada, dipakai_pada, is_revoked, dibuat_pada
+			"SELECT TOP 1 id_token, token, tujuan, kadaluarsa_pada, dipakai_pada, is_revoked
 			 FROM dbo.FORM_TOKENS
 			 WHERE id_lamaran = ? AND tujuan = 'FORM_ONBOARDING'
 			 ORDER BY id_token DESC",
@@ -229,6 +249,13 @@ class Candidate_model extends CI_Model
 	 */
 	public function create_onboarding_token($id_lamaran, $id_user, $masa_hari = 14)
 	{
+		// Defensif: pastikan constraint CK_FT_tujuan mengizinkan 'FORM_ONBOARDING'
+		$chk_tujuan = $this->db->query("SELECT definition FROM sys.check_constraints WHERE name = 'CK_FT_tujuan'")->row_array();
+		if ( ! empty($chk_tujuan['definition']) && stripos($chk_tujuan['definition'], 'FORM_ONBOARDING') === FALSE) {
+			$this->db->query("ALTER TABLE dbo.FORM_TOKENS DROP CONSTRAINT CK_FT_tujuan");
+			$this->db->query("ALTER TABLE dbo.FORM_TOKENS ADD CONSTRAINT CK_FT_tujuan CHECK (tujuan IN ('FORM2', 'UPLOAD_DOKUMEN', 'FORM_ONBOARDING'))");
+		}
+
 		// Cabut token lama yang belum dipakai
 		$this->db->query(
 			"UPDATE dbo.FORM_TOKENS SET is_revoked = 1
@@ -241,10 +268,12 @@ class Candidate_model extends CI_Model
 			? date('Y-m-d H:i:s', time() + (int) $masa_hari * 86400)
 			: NULL;
 
+		$user_val = ! empty($id_user) ? (int) $id_user : NULL;
+
 		$this->db->query(
 			"INSERT INTO dbo.FORM_TOKENS (id_lamaran, token, tujuan, kadaluarsa_pada, dibuat_oleh)
 			 VALUES (?, ?, 'FORM_ONBOARDING', ?, ?)",
-			array((int) $id_lamaran, $token, $exp, (int) $id_user)
+			array((int) $id_lamaran, $token, $exp, $user_val)
 		);
 
 		return $token;
@@ -255,7 +284,7 @@ class Candidate_model extends CI_Model
 	 */
 	public function get_work_experiences($id_lamaran)
 	{
-		$tbl_exists = $this->db->query("SELECT 1 FROM sys.tables WHERE name = 'CANDIDATE_WORK_EXPERIENCES'")->row();
+		$tbl_exists = $this->db->query("SELECT 1 AS cnt FROM sys.tables WHERE name = 'CANDIDATE_WORK_EXPERIENCES'")->row();
 		if ( ! $tbl_exists) {
 			return array();
 		}
@@ -274,7 +303,7 @@ class Candidate_model extends CI_Model
 	 */
 	public function get_family_members($id_kandidat)
 	{
-		$tbl_exists = $this->db->query("SELECT 1 FROM sys.tables WHERE name = 'CANDIDATE_FAMILY'")->row();
+		$tbl_exists = $this->db->query("SELECT 1 AS cnt FROM sys.tables WHERE name = 'CANDIDATE_FAMILY'")->row();
 		if ( ! $tbl_exists) {
 			return array();
 		}
@@ -288,6 +317,63 @@ class Candidate_model extends CI_Model
 		return $rows;
 	}
 
+	/**
+	 * Ambil riwayat pendidikan non-formal / pelatihan / kursus
+	 */
+	public function get_trainings($id_kandidat)
+	{
+		$tbl_exists = $this->db->query("SELECT 1 AS cnt FROM sys.tables WHERE name = 'CANDIDATE_TRAININGS'")->row();
+		if ( ! $tbl_exists) {
+			return array();
+		}
+
+		$q = $this->db->query(
+			"SELECT * FROM dbo.CANDIDATE_TRAININGS WHERE id_kandidat = ? ORDER BY urutan ASC, id_training ASC",
+			array((int) $id_kandidat)
+		);
+		$rows = $q->result_array();
+		$q->free_result();
+		return $rows;
+	}
+
+	/**
+	 * Ambil daftar referensi kerja profesional
+	 */
+	public function get_references($id_kandidat)
+	{
+		$tbl_exists = $this->db->query("SELECT 1 AS cnt FROM sys.tables WHERE name = 'CANDIDATE_REFERENCES'")->row();
+		if ( ! $tbl_exists) {
+			return array();
+		}
+
+		$q = $this->db->query(
+			"SELECT * FROM dbo.CANDIDATE_REFERENCES WHERE id_kandidat = ? ORDER BY urutan ASC, id_ref ASC",
+			array((int) $id_kandidat)
+		);
+		$rows = $q->result_array();
+		$q->free_result();
+		return $rows;
+	}
+
+	/**
+	 * Ambil data 12 butir kuesioner evaluasi diri & kesiapan kerja
+	 */
+	public function get_questionnaire($id_lamaran)
+	{
+		$tbl_exists = $this->db->query("SELECT 1 AS cnt FROM sys.tables WHERE name = 'CANDIDATE_QUESTIONNAIRE'")->row();
+		if ( ! $tbl_exists) {
+			return NULL;
+		}
+
+		$q = $this->db->query(
+			"SELECT TOP 1 * FROM dbo.CANDIDATE_QUESTIONNAIRE WHERE id_lamaran = ? ORDER BY id_quest DESC",
+			array((int) $id_lamaran)
+		);
+		$row = $q->row_array();
+		$q->free_result();
+		return $row ? $row : NULL;
+	}
+
 	/* ---- List Kandidat Global & Filter ---- */
 
 	private function _list_where($f, &$b)
@@ -299,7 +385,7 @@ class Candidate_model extends CI_Model
 			} elseif ($f['status'] === 'Hired') {
 				$w[] = "a.status_global = 'Hired'";
 			} elseif ($f['status'] === 'Rejected') {
-				$w[] = "a.status_global IN ('Rejected', 'Withdrawn', 'Offer_Declined', 'No_Show', 'Talent_Pool')";
+				$w[] = "a.status_global IN ('Rejected', 'Withdrawn', 'Offer_Declined', 'No_Show')";
 			} else {
 				$w[] = 'a.status_global = ?';
 				$b[] = (string) $f['status'];
@@ -358,7 +444,7 @@ class Candidate_model extends CI_Model
 		            COUNT(*) AS total,
 		            SUM(CASE WHEN a.status_global IN ('In_Progress', 'On_Hold', 'Unreachable') THEN 1 ELSE 0 END) AS n_in_progress,
 		            SUM(CASE WHEN a.status_global = 'Hired' THEN 1 ELSE 0 END) AS n_hired,
-		            SUM(CASE WHEN a.status_global IN ('Rejected', 'Withdrawn', 'Offer_Declined', 'No_Show', 'Talent_Pool') THEN 1 ELSE 0 END) AS n_rejected
+		            SUM(CASE WHEN a.status_global IN ('Rejected', 'Withdrawn', 'Offer_Declined', 'No_Show') THEN 1 ELSE 0 END) AS n_rejected
 		        FROM dbo.APPLICATIONS a
 		        JOIN dbo.CANDIDATES c   ON c.id_kandidat = a.id_kandidat
 		        JOIN dbo.REQUISITIONS r ON r.id_req = a.id_req
@@ -401,6 +487,9 @@ class Candidate_model extends CI_Model
 		                   d.nama AS nama_departemen,
 		                   o.nama_outlet,
 		                   st.nama_tahap AS nama_tahap_kini, st.tipe_tahap AS tipe_tahap_kini,
+		                   ft.dipakai_pada AS form_dipakai_pada,
+		                   CASE WHEN ft.id_token IS NOT NULL THEN 1 ELSE 0 END AS form_token_ada,
+		                   ft.is_revoked AS form_revoked,
 		                   ROW_NUMBER() OVER (ORDER BY a.id_lamaran DESC) AS rn
 		            FROM dbo.APPLICATIONS a
 		            JOIN dbo.CANDIDATES c        ON c.id_kandidat = a.id_kandidat
@@ -409,6 +498,12 @@ class Candidate_model extends CI_Model
 		            LEFT JOIN dbo.M_DEPARTEMEN d ON d.id_departemen = p.id_departemen
 		            LEFT JOIN dbo.M_OUTLET o     ON o.id_outlet = r.id_outlet
 		            LEFT JOIN dbo.M_STAGE st     ON st.id_stage = a.id_stage_sekarang
+		            LEFT JOIN dbo.FORM_TOKENS ft ON ft.id_token = (
+		                SELECT TOP 1 ft2.id_token
+		                FROM dbo.FORM_TOKENS ft2
+		                WHERE ft2.id_lamaran = a.id_lamaran AND ft2.tujuan = 'FORM_ONBOARDING'
+		                ORDER BY ft2.id_token DESC
+		            )
 		            $where
 		        )
 		        SELECT * FROM q WHERE rn BETWEEN ? AND ? ORDER BY rn";

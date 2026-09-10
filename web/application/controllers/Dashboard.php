@@ -1,6 +1,15 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
+/**
+ * Controller Dashboard -- Beranda & Ringkasan Metrik Rekrutmen RPG
+ *
+ * Fungsi:
+ * - Menampilkan ringkasan metrik statistik rekrutmen: MPR aktif, pelamar baru, dalam proses seleksi, dan kandidat lolos (Hired).
+ * - Menampilkan funnel rekrutmen 7 tahap utama.
+ * - Menampilkan aktivitas seleksi terkini (kandidat masuk tahap baru, kontak, interview).
+ * - Scoping data otomatis: Super Admin / HR melihat seluruh divisi; User Dept dibatasi ke departemen sendiri.
+ */
 class Dashboard extends Secured_Controller
 {
 	public function __construct()
@@ -16,6 +25,12 @@ class Dashboard extends Secured_Controller
 		$dept = current_user_dept();
 		$au   = current_user();
 		$role = $au['kode_role'] ?? 'SUPER_ADMIN';
+
+		// Role USER_DEPT diarahkan ke menu operasional utamanya: MPR & Pipeline
+		if ($role === 'USER_DEPT') {
+			redirect('requisitions');
+			return;
+		}
 
 		$tgl_single = $this->input->get('tanggal') ?: NULL;
 		$f = array(
@@ -34,6 +49,7 @@ class Dashboard extends Secured_Controller
 
 		$d = $this->dm->dashboard($f);
 		$pos_stage_funnel = $this->dm->position_stage_funnel($f);
+		$remarks_summary  = $this->dm->applicant_remarks_summary($f);
 
 		$depts = $this->dm->departments();
 		if ($dept !== NULL) {
@@ -42,27 +58,18 @@ class Dashboard extends Secured_Controller
 			}));
 		}
 
-		// Data khusus jika role USER_DEPT
-		$dept_mpr        = array();
-		$dept_candidates = array();
-		$dept_metrics    = array();
-		if ($role === 'USER_DEPT' && $dept !== NULL) {
-			$dept_mpr        = $this->dm->dept_requisitions($dept, 6);
-			$dept_candidates = $this->dm->dept_candidates_active($dept, 8);
-			$dept_metrics    = $this->dm->dept_summary_metrics($dept);
-		}
-
 		$this->load->view('layouts/main', array(
-			'title'           => 'Dashboard — ' . ($role === 'USER_DEPT' ? 'Departemen' : 'Recruitment Ops'),
+			'title'           => 'Dashboard — Recruitment Ops',
 			'_content'        => 'dashboard/index',
 			'wide'            => TRUE,
 			'user_role'       => $role,
 			'user_nama'       => $au['nama_snapshot'] ?? ($au['nama'] ?? ($au['username'] ?? 'User')),
 			'user_dept_nama'  => $au['departemen_snapshot'] ?? '',
-			'dept_mpr'        => $dept_mpr,
-			'dept_candidates' => $dept_candidates,
-			'dept_metrics'     => $dept_metrics,
+			'dept_mpr'        => array(),
+			'dept_candidates' => array(),
+			'dept_metrics'     => array(),
 			'pos_stage_funnel' => $pos_stage_funnel,
+			'remarks_summary'  => $remarks_summary,
 			'f'                => $f,
 			'd'               => $d,
 			'trend'           => $this->dm->funnel_trend(14, $f['dept']),
@@ -75,7 +82,7 @@ class Dashboard extends Secured_Controller
 				'pic'     => $this->dm->roles(),
 			),
 			'tipe_tahap'    => array('SCREENING','KONTAK','FORM','TEST','INTERVIEW','OFFER','ONBOARD'),
-			'status_global' => array('In_Progress','On_Hold','Unreachable','Rejected','Withdrawn','Offer_Declined','No_Show','Hired','Talent_Pool'),
+			'status_global' => array('In_Progress','On_Hold','Unreachable','Rejected','Withdrawn','Offer_Declined','No_Show','Hired'),
 		));
 	}
 }

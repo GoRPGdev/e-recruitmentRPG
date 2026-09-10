@@ -2,9 +2,14 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Users Controller -- Manajemen data pengguna aplikasi.
- * Wajib login + KELOLA_REKRUTMEN (SUPER_ADMIN biasanya tetap bisa akses).
- * Sesuai CLAUDE.md aturan 4: Soft delete (is_aktif = 0).
+ * Controller Users -- Manajemen Akun Pengguna Sistem & Hak Akses
+ *
+ * Fungsi:
+ * - Menampilkan daftar akun pengguna internal (Super Admin, HR Admin, HR Spv, User Dept, BOD).
+ * - Menambah dan mengedit akun pengguna serta mengaitkan departemen pemohon (scoping akses).
+ * - Mengatur reset password terenkripsi standar password_hash bcrypt.
+ * - Mengaktifkan / menonaktifkan pengguna dengan prinsip integritas soft delete (is_aktif = 0).
+ * - Proteksi akses: membutuhkan permission 'SUPER_ADMIN' atau 'KELOLA_REKRUTMEN'.
  */
 class Users extends Secured_Controller
 {

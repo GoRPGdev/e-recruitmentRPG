@@ -2,7 +2,7 @@
    sp_SubmitToHR  --  ajukan MPR dari pemohon untuk direview HR
    E-Recruitment RPG  --  modul Requisition (Kahfi)
 
-   Draft / Ditolak_HR / Ditolak_BOD -> Review_HR.
+   Draft / Revisi_HR / Ditolak_HR / Ditolak_BOD -> Review_HR.
    Memberikan nomor MPR resmi kalau belum ada, dan mencatat tanggal pengajuan.
 
    Deploy:  php tools/migrate.php proc
@@ -26,8 +26,8 @@ BEGIN
 
         IF @status IS NULL
             RAISERROR('Requisition tidak ditemukan.', 16, 1);
-        IF @status NOT IN ('Draft', 'Ditolak_HR', 'Ditolak_BOD')
-            RAISERROR('Hanya MPR berstatus Draft atau Ditolak yang dapat diajukan ke HR.', 16, 1);
+        IF @status NOT IN ('Draft', 'Revisi_HR', 'Revisi_BOD', 'Ditolak_HR', 'Ditolak_BOD')
+            RAISERROR('Hanya MPR berstatus Draft, Revisi, atau Ditolak yang dapat diajukan ke HR.', 16, 1);
 
         /* Generate nomor MPR kalau belum ada */
         IF @no_mpr IS NULL

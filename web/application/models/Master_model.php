@@ -2,9 +2,13 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Master_model -- CRUD master data + Flow Builder.
- * Posisi & flow lewat SP (logika + FK). Master flat (departemen/outlet/
- * dokumen) lewat query berparameter (tabel lookup, tanpa transaksi).
+ * Model Master_model -- Model Pengelolaan Master Data & Konfigurasi Alur Seleksi
+ *
+ * Fungsi:
+ * - Menyediakan operasi CRUD master posisi, departemen, outlet, level organisasi, dan katalog dokumen.
+ * - Mengelola susunan urutan tahapan alur seleksi Flowbuilder via sp_ReorderFlowStages.
+ * - Mengelola remark hasil evaluasi seleksi dan efek status seleksi kandidat.
+ * - Menerapkan prinsip soft-delete (is_aktif = 0) dan validasi parameter binding murni.
  */
 class Master_model extends CI_Model
 {
@@ -66,19 +70,25 @@ class Master_model extends CI_Model
 
 	public function list_stage()
 	{
+		$chk = $this->db->query("SELECT COL_LENGTH('dbo.M_STAGE', 'is_sisipan_allowed') AS col_len")->row_array();
+		$col_sisip = ! empty($chk['col_len']) ? 'ISNULL(s.is_sisipan_allowed, 1)' : '1';
+
 		return $this->db->query(
-			'SELECT s.id_stage, s.kode_stage, s.nama_tahap, s.tipe_tahap,
-			        s.is_terminal, s.is_sistem, s.is_aktif,
+			"SELECT s.id_stage, s.kode_stage, s.nama_tahap, s.tipe_tahap,
+			        s.is_terminal, s.is_sistem, s.is_aktif, {$col_sisip} AS is_sisipan_allowed,
 			        (SELECT COUNT(*) FROM dbo.M_FLOW_STAGE fs WHERE fs.id_stage = s.id_stage) AS n_flow,
 			        (SELECT COUNT(*) FROM dbo.M_REMARKS r WHERE r.id_stage = s.id_stage) AS n_remark
 			 FROM dbo.M_STAGE s
-			 ORDER BY s.is_aktif DESC, s.nama_tahap'
+			 ORDER BY s.is_aktif DESC, s.nama_tahap"
 		)->result_array();
 	}
 
 	public function get_stage($id_stage)
 	{
-		return $this->db->query('SELECT * FROM dbo.M_STAGE WHERE id_stage = ?', array((int) $id_stage))->row_array();
+		$chk = $this->db->query("SELECT COL_LENGTH('dbo.M_STAGE', 'is_sisipan_allowed') AS col_len")->row_array();
+		$col_sisip = ! empty($chk['col_len']) ? 'ISNULL(is_sisipan_allowed, 1)' : '1';
+
+		return $this->db->query("SELECT id_stage, kode_stage, nama_tahap, tipe_tahap, is_terminal, is_sistem, is_aktif, {$col_sisip} AS is_sisipan_allowed FROM dbo.M_STAGE WHERE id_stage = ?", array((int) $id_stage))->row_array();
 	}
 
 	public function save_stage($in, $oleh_user = NULL)
@@ -86,13 +96,15 @@ class Master_model extends CI_Model
 		$id = 0;
 		$id_st = ! empty($in['id_stage']) ? (int) $in['id_stage'] : (! empty($in['id']) ? (int) $in['id'] : NULL);
 		$is_aktif = isset($in['is_aktif']) ? (int) $in['is_aktif'] : 1;
-		$this->_sp('{CALL dbo.sp_SaveStage(?,?,?,?,?,?,?,?)}', array(
+		$is_sisip = ! empty($in['is_sisipan_allowed']) ? 1 : 0;
+		$this->_sp('{CALL dbo.sp_SaveStage(?,?,?,?,?,?,?,?,?)}', array(
 			$id_st,
 			(string) $in['kode_stage'],
 			(string) $in['nama_tahap'],
 			(string) $in['tipe_tahap'],
 			! empty($in['is_terminal']) ? 1 : 0,
 			$is_aktif,
+			$is_sisip,
 			array(&$id, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
 			$oleh_user ? (int) $oleh_user : NULL,
 		));
@@ -104,6 +116,15 @@ class Master_model extends CI_Model
 		$this->_sp('{CALL dbo.sp_ToggleStage(?,?,?)}', array(
 			(int) $id_stage, $is_aktif ? 1 : 0, $oleh_user ? (int) $oleh_user : NULL,
 		));
+	}
+
+	public function toggle_stage_sisipan($id_stage, $is_allowed, $oleh_user = NULL)
+	{
+		$chk = $this->db->query("SELECT COL_LENGTH('dbo.M_STAGE', 'is_sisipan_allowed') AS col_len")->row_array();
+		if (empty($chk['col_len'])) {
+			$this->db->query("ALTER TABLE dbo.M_STAGE ADD is_sisipan_allowed BIT NOT NULL CONSTRAINT DF_M_STAGE_sisipan DEFAULT (1)");
+		}
+		$this->db->query("UPDATE dbo.M_STAGE SET is_sisipan_allowed = ? WHERE id_stage = ?", array($is_allowed ? 1 : 0, (int) $id_stage));
 	}
 
 	/* ================= DEPARTEMEN ================================== */
@@ -211,6 +232,10 @@ class Master_model extends CI_Model
 
 	public function remarks($id_stage = NULL)
 	{
+		// Defensif: selaraskan efek status lama ke 2 jenis baku (LANJUT / TOLAK)
+		$this->db->query("UPDATE dbo.M_REMARKS SET efek_status = 'LANJUT' WHERE efek_status IN ('ON_HOLD', 'UNREACHABLE', 'HIRED')");
+		$this->db->query("UPDATE dbo.M_REMARKS SET efek_status = 'TOLAK' WHERE efek_status IN ('WITHDRAWN', 'OFFER_DECLINED', 'NO_SHOW')");
+
 		$sql = 'SELECT r.id_remark, r.id_stage, r.kode_remark, r.label, r.efek_status, r.urutan, r.is_aktif,
 		               s.nama_tahap, s.kode_stage
 		        FROM dbo.M_REMARKS r
@@ -352,6 +377,35 @@ class Master_model extends CI_Model
 		);
 	}
 
+	public function reorder_level_organisasi(array $ordered_ids)
+	{
+		if (empty($ordered_ids)) return;
+
+		$this->db->trans_begin();
+		try {
+			// Nilai negatif sementara untuk menghindari benturan urutan
+			foreach ($ordered_ids as $idx => $id_lo) {
+				$this->db->query(
+					'UPDATE dbo.M_LEVEL_ORGANISASI SET urutan = ? WHERE id_level_organisasi = ?',
+					array(-($idx + 1), (int) $id_lo)
+				);
+			}
+
+			// Terapkan urutan positif final 1, 2, 3, ...
+			foreach ($ordered_ids as $idx => $id_lo) {
+				$this->db->query(
+					'UPDATE dbo.M_LEVEL_ORGANISASI SET urutan = ? WHERE id_level_organisasi = ?',
+					array($idx + 1, (int) $id_lo)
+				);
+			}
+
+			$this->db->trans_commit();
+		} catch (Exception $e) {
+			$this->db->trans_rollback();
+			throw new RuntimeException($e->getMessage());
+		}
+	}
+
 	/* ================= FLOW BUILDER (M_FLOW + M_FLOW_STAGE) ======= */
 
 	public function list_flow()
@@ -425,5 +479,38 @@ class Master_model extends CI_Model
 			$role_pic,
 			$oleh_user ? (int) $oleh_user : NULL,
 		));
+	}
+
+	public function reorder_flow_stages($id_flow, array $ordered_ids, $oleh_user = NULL)
+	{
+		$id_flow = (int) $id_flow;
+		if (empty($ordered_ids)) return;
+
+		$this->db->trans_begin();
+		try {
+			// Set sementara ke angka negatif untuk mencegah konflik unique/urutan
+			foreach ($ordered_ids as $idx => $id_fs) {
+				$this->db->query(
+					'UPDATE dbo.M_FLOW_STAGE SET urutan = ? WHERE id_flow_stage = ? AND id_flow = ?',
+					array(-($idx + 1), (int) $id_fs, $id_flow)
+				);
+			}
+
+			// Terapkan urutan final 1, 2, 3, ...
+			foreach ($ordered_ids as $idx => $id_fs) {
+				$this->db->query(
+					'UPDATE dbo.M_FLOW_STAGE SET urutan = ? WHERE id_flow_stage = ? AND id_flow = ?',
+					array($idx + 1, (int) $id_fs, $id_flow)
+				);
+			}
+
+			// Naikkan versi alur flow standar
+			$this->db->query('UPDATE dbo.M_FLOW SET versi = versi + 1 WHERE id_flow = ?', array($id_flow));
+
+			$this->db->trans_commit();
+		} catch (Exception $e) {
+			$this->db->trans_rollback();
+			throw new RuntimeException($e->getMessage());
+		}
 	}
 }

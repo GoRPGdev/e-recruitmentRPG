@@ -3,7 +3,7 @@
  * seed-demo.php -- data contoh end-to-end untuk testing lokal (DEV SAJA).
  *
  * Membuat: 6 user (satu per peran), 2 requisition (1 Sourcing + posting aktif,
- * 1 Menunggu_BOD), 4 kandidat + lamaran di berbagai tahap (1 ditolak -> retensi
+ * 1 Review_BOD), 4 kandidat + lamaran di berbagai tahap (1 ditolak -> retensi
  * kena), dokumen contoh (CV/KTP/Rekening) + file fisik dummy, 1 data kesehatan.
  *
  *   php tools/seed-demo.php            -> isi data demo (aman diulang)
@@ -161,10 +161,10 @@ insert_row($conn, 'JOB_POSTINGS', array(
 $reqB = insert_row($conn, 'REQUISITIONS', array(
     'id_user_pemohon' => $uid['USER_DEPT'], 'nama_pemohon_snapshot' => 'DEMO Outlet',
     'id_posisi' => $posCrew, 'tipe_penempatan' => 'OUTLET', 'id_outlet' => $outlet,
-    'jumlah_dibutuhkan' => 3, 'id_flow' => $flowCrew, 'status_req' => 'Menunggu_BOD',
+    'jumlah_dibutuhkan' => 3, 'id_flow' => $flowCrew, 'status_req' => 'Review_BOD',
     'no_mpr' => 'MPR/2026/09/900',
 ), 'id_req');
-echo "- 2 MPR: #$reqA Sourcing (+posting aktif), #$reqB Menunggu_BOD\n";
+echo "- 2 MPR: #$reqA Sourcing (+posting aktif), #$reqB Review_BOD\n";
 
 /* --------------------------------------------------- kandidat + lamaran -- */
 function buat_lamaran($conn, $reqA, $flow, $ch, $nama, $wa, $email, $intake) {

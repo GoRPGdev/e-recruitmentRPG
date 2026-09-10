@@ -9,7 +9,7 @@
 			</div>
 			<h1 style="margin:0 0 4px; font-size:20px; font-weight:700">Tahap Seleksi Rekrutmen</h1>
 			<p class="muted" style="margin:0; font-size:13px">
-				Katalog master tahap seleksi. <code>tipe_tahap</code> adalah 7 sumbu analitik tetap untuk seluruh laporan eksekutif.
+				Katalog master tahap seleksi. Atur tahap mana yang diizinkan untuk disisipkan (ad-hoc) ke lamaran pelamar.
 			</p>
 		</div>
 		<div>
@@ -29,6 +29,7 @@
 					<th>Kode</th>
 					<th>Nama Tahap</th>
 					<th>Tipe (Report)</th>
+					<th style="text-align:center">Bisa Disisipkan?</th>
 					<th style="text-align:center">Terminal</th>
 					<th style="text-align:center">Sistem</th>
 					<th>Penggunaan</th>
@@ -43,6 +44,28 @@
 					<td><code><?= html_escape($r['kode_stage']) ?></code></td>
 					<td><strong><?= html_escape($r['nama_tahap']) ?></strong></td>
 					<td><span class="tag on"><?= html_escape($r['tipe_tahap']) ?></span></td>
+					<!-- Flag Izin Sisip Tahap Ad-Hoc -->
+					<td style="text-align:center">
+						<?php if (!empty($r['n_flow'])): ?>
+							<span class="tag off" title="Tahap ini terdaftar di Flow Standar, sehingga otomatis bukan tahap sisipan" style="opacity:.7">
+								Flow Standar
+							</span>
+						<?php else: ?>
+							<?= form_open(site_url('flowbuilder/toggle_stage_sisipan'), array('class' => 'inline', 'style' => 'display:inline; margin:0')) ?>
+								<input type="hidden" name="id" value="<?= (int) $r['id_stage'] ?>">
+								<input type="hidden" name="is_sisipan_allowed" value="<?= !empty($r['is_sisipan_allowed']) ? 0 : 1 ?>">
+								<?php if (!empty($r['is_sisipan_allowed'])): ?>
+									<button type="submit" class="tag info" style="cursor:pointer; border:none" title="Klik untuk melarang tahap ini disisipkan">
+										&#10003; Ya (Bisa)
+									</button>
+								<?php else: ?>
+									<button type="submit" class="tag off" style="cursor:pointer; border:none" title="Klik untuk mengizinkan tahap ini disisipkan">
+										&times; Tidak
+									</button>
+								<?php endif; ?>
+							<?= form_close() ?>
+						<?php endif; ?>
+					</td>
 					<td style="text-align:center"><?= $r['is_terminal'] ? '<span class="tag info">&#10003; Ya</span>' : '<span class="muted">-</span>' ?></td>
 					<td style="text-align:center"><?= $r['is_sistem'] ? '<span class="tag off" title="Tahap inti bawaan sistem">Sistem</span>' : '<span class="muted">Custom</span>' ?></td>
 					<td>
@@ -81,7 +104,7 @@
 				Tambah Tahap Seleksi
 			</h3>
 			<span class="muted" style="font-size:12px">
-				Tahap baru akan tersedia untuk dirangkai pada template alur rekrutmen.
+				Tahap baru akan tersedia untuk dirangkai pada template alur rekrutmen atau disisipkan.
 			</span>
 		</div>
 		<button type="button" onclick="closeStageModal()" style="background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer; line-height:1; padding:4px 8px; border-radius:6px" title="Tutup pop up">&times;</button>
@@ -113,6 +136,16 @@
 				</div>
 			</div>
 
+			<div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 14px; display:flex; flex-direction:column; gap:8px">
+				<label style="display:inline-flex; align-items:center; gap:8px; font-size:12.5px; cursor:pointer; margin:0">
+					<input type="checkbox" name="is_sisipan_allowed" id="stg-is-sisipan" value="1" checked>
+					<span><strong>Izinkan sebagai Tahap Sisipan (Ad-Hoc)</strong></span>
+				</label>
+				<span class="muted" style="font-size:11px; margin-left:22px">
+					Jika dicentang, tahap ini akan muncul pada pilihan menu "Sisip Tahap" di pipeline pelamar.
+				</span>
+			</div>
+
 			<div style="margin-top:2px">
 				<label style="display:inline-flex; align-items:center; gap:8px; font-size:12.5px; cursor:pointer">
 					<input type="checkbox" name="is_terminal" id="stg-is-terminal" value="1">
@@ -139,6 +172,7 @@ function openAddStageModal() {
 	document.getElementById('stg-kode').removeAttribute('readonly');
 	document.getElementById('stg-kode').style.background = '';
 	document.getElementById('stg-tipe').removeAttribute('disabled');
+	document.getElementById('stg-is-sisipan').checked = true;
 	document.getElementById('stg-sistem-note').style.display = 'none';
 	document.getElementById('stage-modal-title').textContent = 'Tambah Tahap Seleksi';
 	document.getElementById('stg-btn-submit').textContent = '+ Tambah Tahap';
@@ -153,6 +187,7 @@ function openEditStageModal(data) {
 	document.getElementById('stg-nama').value = data.nama_tahap || '';
 	document.getElementById('stg-tipe').value = data.tipe_tahap || 'SCREENING';
 	document.getElementById('stg-is-terminal').checked = (data.is_terminal == 1);
+	document.getElementById('stg-is-sisipan').checked = (data.is_sisipan_allowed == 1);
 
 	if (data.is_sistem == 1) {
 		document.getElementById('stg-kode').setAttribute('readonly', 'readonly');

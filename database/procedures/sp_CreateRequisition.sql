@@ -50,6 +50,19 @@ BEGIN
         IF @tipe_penempatan = 'OUTLET' AND @id_outlet IS NULL
             RAISERROR('Penempatan OUTLET wajib mengisi outlet.', 16, 1);
 
+        -- Validasi departemen pemohon jika user terafiliasi dengan departemen spesifik (USER_DEPT)
+        DECLARE @user_dept INT;
+        SELECT @user_dept = id_departemen FROM dbo.M_USERS WHERE id_user = @id_user_pemohon;
+
+        IF @user_dept IS NOT NULL
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM dbo.M_POSISI
+                WHERE id_posisi = @id_posisi AND id_departemen = @user_dept
+            )
+                RAISERROR('Posisi yang dipilih tidak sesuai dengan departemen pemohon.', 16, 1);
+        END
+
         -- Ambil default template posisi dari M_POSISI jika parameter kosong
         DECLARE @pos_flow INT, @pos_jd VARCHAR(MAX), @pos_kual VARCHAR(MAX),
                 @pos_pend NVARCHAR(60), @pos_exp INT;

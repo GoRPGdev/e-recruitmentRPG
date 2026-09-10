@@ -2,20 +2,12 @@
    sp_AdvanceStage  --  proses hasil satu tahap lamaran
    E-Recruitment RPG  --  Flow Engine (Kahfi)
 
-   Membaca efek_status dari M_REMARKS lalu menerapkannya (aturan jadi DATA,
-   bukan IF bertingkat di SP -- ERD sec.4 & sec.7.1). Menulis APPLICATION_HISTORY
-   di transaksi yang sama (aturan bisnis #8). Atomik, pola savepoint.
+   Membaca efek_status dari M_REMARKS lalu menerapkannya (3 Efek Status Baku):
+     LANJUT -> tahap kini Lulus, tahap berikut Berjalan (In_Progress)
+     HIRED  -> tahap kini Lulus, status Hired, hitung ulang kuota MPR
+     TOLAK  -> tahap kini Tidak_Lulus, status Rejected
 
-   @id_remark NULL  -> dianggap "lulus / lanjut" tanpa catatan efek.
-
-   efek_status -> aksi:
-     LANJUT         tahap kini Lulus, tahap berikut Berjalan (In_Progress)
-     HIRED          tahap Lulus, status Hired, hitung ulang jumlah_terpenuhi
-     TOLAK          tahap Tidak_Lulus, status Rejected
-     ON_HOLD        tahap tetap Berjalan, status On_Hold
-     UNREACHABLE    tahap tetap Berjalan, status Unreachable (reversible)
-     WITHDRAWN / OFFER_DECLINED / NO_SHOW / TALENT_POOL
-                    tahap Tidak_Lulus, status sesuai
+   Menulis APPLICATION_HISTORY di transaksi yang sama. Atomik, pola savepoint.
 
    Deploy:  php tools/migrate.php proc
    ========================================================================= */
@@ -46,7 +38,7 @@ BEGIN
         DECLARE @st_global VARCHAR(20);
         SELECT @st_global = status_global FROM dbo.APPLICATIONS WHERE id_lamaran = @id_lamaran;
 
-        IF @st_global IN ('Hired','Rejected','Withdrawn','Offer_Declined','No_Show','Talent_Pool')
+        IF @st_global IN ('Hired','Rejected')
             RAISERROR('Lamaran sudah berstatus final (%s).', 16, 1, @st_global);
 
         DECLARE @efek VARCHAR(20) = 'LANJUT';
@@ -81,19 +73,19 @@ BEGIN
             END
             ELSE
             BEGIN
-                SET @st_global_baru = 'In_Progress';   -- keluar dari On_Hold/Unreachable kalau maju
+                SET @st_global_baru = 'In_Progress';
                 SET @event = 'STAGE_CHANGE';
             END
         END
-        ELSE IF @efek = 'TOLAK'         BEGIN SET @st_tahap_baru = 'Tidak_Lulus'; SET @st_global_baru = 'Rejected'; END
-        ELSE IF @efek = 'ON_HOLD'       BEGIN SET @st_global_baru = 'On_Hold'; END
-        ELSE IF @efek = 'UNREACHABLE'   BEGIN SET @st_global_baru = 'Unreachable'; END
-        ELSE IF @efek = 'WITHDRAWN'     BEGIN SET @st_tahap_baru = 'Tidak_Lulus'; SET @st_global_baru = 'Withdrawn'; END
-        ELSE IF @efek = 'OFFER_DECLINED' BEGIN SET @st_tahap_baru = 'Tidak_Lulus'; SET @st_global_baru = 'Offer_Declined'; END
-        ELSE IF @efek = 'NO_SHOW'       BEGIN SET @st_tahap_baru = 'Tidak_Lulus'; SET @st_global_baru = 'No_Show'; END
-        ELSE IF @efek = 'TALENT_POOL'   BEGIN SET @st_tahap_baru = 'Tidak_Lulus'; SET @st_global_baru = 'Talent_Pool'; END
+        ELSE IF @efek = 'TOLAK'
+        BEGIN
+            SET @st_tahap_baru = 'Tidak_Lulus';
+            SET @st_global_baru = 'Rejected';
+        END
         ELSE
+        BEGIN
             RAISERROR('efek_status tidak dikenal: %s', 16, 1, @efek);
+        END
 
         /* -- tulis tahap kini -- */
         UPDATE dbo.APPLICATION_STAGES
@@ -121,8 +113,7 @@ BEGIN
         WHERE id_lamaran = @id_lamaran;
 
         /* -- Fase 4 (Kiki): retensi data pelamar saat status jadi final -- */
-        IF @st_global_baru <> @st_global
-           AND @st_global_baru IN ('Hired','Rejected','Withdrawn','Offer_Declined','No_Show','Talent_Pool')
+        IF @st_global_baru <> @st_global AND @st_global_baru IN ('Hired','Rejected')
             EXEC dbo.sp_SetRetensi @id_lamaran = @id_lamaran, @oleh_user = @pic_user;
 
         /* -- fill rate requisition saat Hired -- */

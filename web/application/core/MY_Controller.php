@@ -2,9 +2,12 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Base controller untuk semua controller aplikasi.
- * MY_Controller           -> publik (form lamar, dsb.)
- * Secured_Controller      -> wajib login; menyiapkan $this->auth_user & $this->permissions
+ * Core Base Controllers -- E-Recruitment Ratu Pertiwi Group (RPG)
+ *
+ * Terdiri dari 2 kelas dasar pengendali:
+ * 1. MY_Controller: Controller dasar untuk halaman publik tanpa otentikasi (misal: formulir pendaftaran /lamar dan /onboarding).
+ * 2. Secured_Controller: Controller terproteksi untuk area internal yang mewajibkan sesi login aktif,
+ *    menginisialisasi data pengguna ($auth_user), serta memvalidasi hak akses RBAC ($permissions).
  */
 class MY_Controller extends CI_Controller
 {

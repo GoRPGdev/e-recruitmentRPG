@@ -2,14 +2,12 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Auth_model -- membungkus sp_Login & sp_GetUserPermissions.
+ * Model Auth_model -- Model Autentikasi Pengguna & Pengecekan Izin RBAC
  *
- * CATATAN parameter binding:
- * CI3 driver sqlsrv menjalankan  ?  sebagai substitusi ter-escape (query()
- * -> compile_binds), bukan prepared statement murni. Aman dari injeksi untuk
- * kasus baca seperti ini. Untuk SP transaksional dengan OUTPUT param
- * (sp_AdvanceStage dkk, Fase 3) pakai sqlsrv_query() langsung -- lihat
- * tools/test-koneksi.php bagian 7.
+ * Fungsi:
+ * - Mengeksekusi verifikasi kredensial login melalui Stored Procedure T-SQL sp_Login.
+ * - Mengambil daftar permission aktif pengguna melalui Stored Procedure T-SQL sp_GetUserPermissions.
+ * - Mengembalikan data snapshot profil pengguna untuk disimpan pada sesi login CodeIgniter.
  */
 class Auth_model extends CI_Model
 {

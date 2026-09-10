@@ -1,4 +1,14 @@
-<?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+/**
+ * View: berkas/form.php -- Formulir Unggah Dokumen Mandiri Pelamar
+ *
+ * Fungsi:
+ * - Antarmuka publik yang diakses kandidat via token unik untuk melengkapi berkas yang diminta HR.
+ * - Mengunggah dokumen pendukung secara aman ke direktori penyimpanan fisik di luar webroot.
+ */
+?>
 <main class="card">
 	<h1>Lengkapi berkas</h1>
 	<p class="muted" style="margin-top:0">

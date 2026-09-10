@@ -2,7 +2,12 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Dashboard_model -- data papan dashboard + trend funnel + export kandidat.
+ * Model Dashboard_model -- Model Agregasi Metrik & Data Statistik Dashboard
+ *
+ * Fungsi:
+ * - Menghitung data ringkasan KPI rekrutmen: kandidat aktif, funnel 7 tahapan, dan waktu pemenuhan.
+ * - Mengambil log histori aktivitas terkini rekrutmen.
+ * - Mengambil data rekap pelamar untuk kebutuhan ekspor spreadsheet Excel.
  */
 class Dashboard_model extends CI_Model
 {
@@ -197,7 +202,7 @@ class Dashboard_model extends CI_Model
 		            COUNT(*) AS total_mpr,
 		            ISNULL(SUM(jumlah_dibutuhkan), 0) AS total_dibutuhkan,
 		            ISNULL(SUM(jumlah_terpenuhi), 0) AS total_terpenuhi,
-		            ISNULL(SUM(CASE WHEN status_req IN ('Draft','Review_HR','Menunggu_BOD') THEN 1 ELSE 0 END), 0) AS mpr_pending,
+		            ISNULL(SUM(CASE WHEN status_req IN ('Draft','Review_HR','Revisi_HR','Review_BOD','Revisi_BOD') THEN 1 ELSE 0 END), 0) AS mpr_pending,
 		            ISNULL(SUM(CASE WHEN status_req IN ('Approved','Sourcing') THEN 1 ELSE 0 END), 0) AS mpr_aktif,
 		            ISNULL(SUM(CASE WHEN status_req = 'Terpenuhi' THEN 1 ELSE 0 END), 0) AS mpr_selesai
 		        FROM dbo.REQUISITIONS r
@@ -348,17 +353,143 @@ class Dashboard_model extends CI_Model
 		});
 
 		// Urutkan baris posisi berdasarkan nama_posisi
-		uasort($positions, function ($a, $b) {
-			return strcasecmp($a['nama_posisi'], $b['nama_posisi']);
-		});
+			return array(
+				'positions' => $positions,
+				'stages'    => $stages,
+				'matrix'    => $matrix,
+				'total_all' => $total_all,
+				'dari'      => $dari,
+				'sampai'    => $sampai,
+			);
+		}
 
-		return array(
-			'positions' => $positions,
-			'stages'    => $stages,
-			'matrix'    => $matrix,
-			'total_all' => $total_all,
-			'dari'      => $dari,
-			'sampai'    => $sampai,
-		);
+		/**
+		 * Analisis Distribusi Remark Pelamar per Tahap & Efek Status
+		 * Menghitung frekuensi keputusan remark pelamar berdasarkan filter aktif
+		 *
+		 * @param array $f Filter aktif dari dashboard
+		 * @return array ['total_remarked' => int, 'stages' => array, 'categories' => array, 'items' => array]
+		 */
+		public function applicant_remarks_summary(array $f)
+		{
+			$dari   = ! empty($f['dari']) ? $f['dari'] : NULL;
+			$sampai = ! empty($f['sampai']) ? $f['sampai'] : NULL;
+			if ($dari !== NULL && $sampai === NULL) {
+				$sampai = $dari;
+			} elseif ($dari === NULL && $sampai !== NULL) {
+				$dari = $sampai;
+			}
+
+			$where = "WHERE rm.id_remark IS NOT NULL";
+			$params = array();
+
+			if ($dari !== NULL && $sampai !== NULL) {
+				$where .= " AND (
+					(a.tanggal_lamar >= ? AND a.tanggal_lamar <= ?)
+					OR (aps.tanggal_selesai IS NOT NULL AND CAST(aps.tanggal_selesai AS DATE) >= ? AND CAST(aps.tanggal_selesai AS DATE) <= ?)
+					OR (aps.tanggal_mulai IS NOT NULL AND CAST(aps.tanggal_mulai AS DATE) >= ? AND CAST(aps.tanggal_mulai AS DATE) <= ?)
+				)";
+				$params[] = $dari; $params[] = $sampai;
+				$params[] = $dari; $params[] = $sampai;
+				$params[] = $dari; $params[] = $sampai;
+			}
+
+			if ( ! empty($f['dept'])) {
+				$where .= " AND p.id_departemen = ?";
+				$params[] = (int) $f['dept'];
+			}
+			if ( ! empty($f['posisi'])) {
+				$where .= " AND p.id_posisi = ?";
+				$params[] = (int) $f['posisi'];
+			}
+			if ( ! empty($f['outlet'])) {
+				$where .= " AND r.id_outlet = ?";
+				$params[] = (int) $f['outlet'];
+			}
+			if ( ! empty($f['status'])) {
+				$where .= " AND a.status_global = ?";
+				$params[] = $f['status'];
+			}
+
+			$sql = "SELECT
+						rm.id_remark,
+						rm.kode_remark,
+						rm.label AS label_remark,
+						rm.efek_status,
+						st.id_stage,
+						st.nama_tahap,
+						st.tipe_tahap,
+						COUNT(DISTINCT a.id_lamaran) AS jumlah
+					FROM dbo.APPLICATION_STAGES aps
+					JOIN dbo.APPLICATIONS a     ON a.id_lamaran = aps.id_lamaran
+					JOIN dbo.REQUISITIONS r     ON r.id_req = a.id_req
+					JOIN dbo.M_POSISI p         ON p.id_posisi = r.id_posisi
+					JOIN dbo.M_STAGE st         ON st.id_stage = aps.id_stage
+					JOIN dbo.M_REMARKS rm       ON rm.id_remark = aps.id_remark
+					$where
+					GROUP BY rm.id_remark, rm.kode_remark, rm.label, rm.efek_status, st.id_stage, st.nama_tahap, st.tipe_tahap
+					ORDER BY jumlah DESC, rm.label ASC";
+
+			$q = $this->db->query($sql, $params);
+			$rows = $q->result_array();
+			$q->free_result();
+
+			$total_remarked = 0;
+			$stages_map     = array();
+			$categories     = array(
+				'LANJUT' => array('label' => 'Dalam Proses',   'count' => 0, 'color' => 'var(--info, #3a6ea5)'),
+				'HIRED'  => array('label' => 'Diterima Bekerja', 'count' => 0, 'color' => 'var(--good, #2f7d4f)'),
+				'TOLAK'  => array('label' => 'Ditolak / Gugur', 'count' => 0, 'color' => 'var(--crit, #b23b3b)'),
+			);
+
+			$items = array();
+			foreach ($rows as $r) {
+				$cnt = (int) $r['jumlah'];
+				$total_remarked += $cnt;
+
+				$st_id = (int) $r['id_stage'];
+				if ( ! isset($stages_map[$st_id])) {
+					$stages_map[$st_id] = array(
+						'id_stage'   => $st_id,
+						'nama_tahap' => $r['nama_tahap'],
+						'tipe_tahap' => $r['tipe_tahap'],
+						'total'      => 0,
+					);
+				}
+				$stages_map[$st_id]['total'] += $cnt;
+
+				$efek = $r['efek_status'];
+				// Normalisasi efek status ke 3 kategori baku jika masih ada data lama
+				$norm_efek = 'TOLAK';
+				if (in_array($efek, array('LANJUT', 'ON_HOLD', 'UNREACHABLE'), TRUE)) {
+					$norm_efek = 'LANJUT';
+				} elseif ($efek === 'HIRED') {
+					$norm_efek = 'HIRED';
+				} elseif (in_array($efek, array('TOLAK', 'WITHDRAWN', 'OFFER_DECLINED', 'NO_SHOW'), TRUE)) {
+					$norm_efek = 'TOLAK';
+				}
+
+				if (isset($categories[$norm_efek])) {
+					$categories[$norm_efek]['count'] += $cnt;
+				}
+
+				$items[] = array(
+					'id_remark'    => (int) $r['id_remark'],
+					'kode_remark'  => $r['kode_remark'],
+					'label'        => $r['label_remark'],
+					'efek_status'  => $norm_efek,
+					'id_stage'     => $st_id,
+					'nama_tahap'   => $r['nama_tahap'],
+					'tipe_tahap'   => $r['tipe_tahap'],
+					'jumlah'       => $cnt,
+				);
+			}
+
+			return array(
+				'total_remarked' => $total_remarked,
+				'stages'         => array_values($stages_map),
+				'categories'     => $categories,
+				'items'          => $items,
+			);
+		}
 	}
-}

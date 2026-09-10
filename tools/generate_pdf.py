@@ -1,3 +1,11 @@
+"""
+tools/generate_pdf.py -- Generator Dokumen PDF E-Recruitment RPG berbasis Microsoft Edge Headless
+
+Fungsi:
+- Mengonversi dokumen Markdown/HTML menjadi berkas PDF standar cetak menggunakan browser headless.
+- Menangani pemformatan halaman, indentasi, dan styling dokumen dokumentasi sistem.
+"""
+
 import os
 import sys
 import re

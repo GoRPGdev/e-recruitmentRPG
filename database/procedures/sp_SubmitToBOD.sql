@@ -1,10 +1,9 @@
 /* =========================================================================
-   sp_SubmitToBOD  --  ajukan MPR ke BOD
+   sp_SubmitToBOD  --  ajukan MPR ke BOD (Review BOD)
    E-Recruitment RPG  --  modul Requisition (Kahfi)
 
-   Draft / (revisi) -> Menunggu_BOD. Memberi nomor MPR/YYYY/MM/NNN kalau
-   belum ada, dan membuka putaran approval baru di REQUISITION_APPROVALS.
-   NNN = urut per bulan (dijaga UX_REQ_no_mpr unik + transaksi).
+   Review_HR -> Review_BOD. Memberi nomor MPR/YYYY/MM/NNN kalau
+   belum ada. Tidak lagi mencatat ke REQUISITION_APPROVALS.
 
    Deploy:  php tools/migrate.php proc
    ========================================================================= */
@@ -13,8 +12,7 @@ GO
 
 CREATE PROCEDURE dbo.sp_SubmitToBOD
     @id_req      INT,
-    @oleh_user   INT,
-    @id_approval INT OUTPUT
+    @oleh_user   INT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -28,8 +26,8 @@ BEGIN
 
         IF @status IS NULL
             RAISERROR('Requisition tidak ditemukan.', 16, 1);
-        IF @status NOT IN ('Draft', 'Review_HR', 'Sourcing_Ulang')
-            RAISERROR('Hanya MPR Draft, Review_HR, atau Sourcing_Ulang yang bisa diajukan ke BOD.', 16, 1);
+        IF @status NOT IN ('Review_HR', 'Sourcing_Ulang')
+            RAISERROR('Hanya MPR berstatus Review_HR atau Sourcing_Ulang yang bisa diteruskan ke BOD.', 16, 1);
 
         /* nomor MPR kalau belum ada */
         IF @no_mpr IS NULL
@@ -46,20 +44,15 @@ BEGIN
             UPDATE dbo.REQUISITIONS SET no_mpr = @no_mpr WHERE id_req = @id_req;
         END
 
-        DECLARE @putaran INT =
-            ISNULL((SELECT MAX(putaran_ke) FROM dbo.REQUISITION_APPROVALS WHERE id_req = @id_req), 0) + 1;
-
-        INSERT INTO dbo.REQUISITION_APPROVALS
-            (id_req, putaran_ke, diajukan_ke_bod_pada, keputusan, diinput_oleh, diinput_pada)
-        VALUES
-            (@id_req, @putaran, CAST(GETDATE() AS DATE), 'Pending', @oleh_user, GETDATE());
-
-        SET @id_approval = SCOPE_IDENTITY();
-
         UPDATE dbo.REQUISITIONS
-        SET status_req = 'Menunggu_BOD',
+        SET status_req = 'Review_BOD',
             tanggal_pengajuan = ISNULL(tanggal_pengajuan, GETDATE())
         WHERE id_req = @id_req;
+
+        /* Audit log */
+        DECLARE @n_lama VARCHAR(MAX) = 'status_req=' + @status,
+                @n_baru VARCHAR(MAX) = 'status_req=Review_BOD';
+        EXEC dbo.sp_AuditLog 'REQUISITIONS', @id_req, 'UPDATE', @n_lama, @n_baru, @oleh_user;
 
         IF @outer = 0 COMMIT TRANSACTION;
     END TRY

@@ -2,12 +2,14 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Import file pelamar (CSV): upload -> preview + dedupe -> commit / discard.
- * Wajib login + KELOLA_REKRUTMEN.
+ * Controller Import -- Impor Massal Data Kandidat Pelamar (CSV/Excel)
  *
- * Commit menjalankan sp_SubmitApplication per baris dalam SATU transaksi
- * (sqlsrv_begin_transaction). SP memakai SAVE TRAN -> satu baris gagal
- * tidak membatalkan seluruh batch.
+ * Fungsi:
+ * - Menangani pengunggahan berkas CSV data pelamar dari berbagai kanal lowongan eksternal.
+ * - Melakukan parsing, normalisasi nomor WhatsApp, dan deduplikasi data pelamar otomatis.
+ * - Menampilkan layar pratinjau (preview) hasil pemindaian sebelum data di-commit ke database.
+ * - Melakukan eksekusi commit aman dalam transaksi database menggunakan sp_SubmitApplication.
+ * - Proteksi akses: membutuhkan permission 'KELOLA_REKRUTMEN'.
  */
 class Import extends Secured_Controller
 {

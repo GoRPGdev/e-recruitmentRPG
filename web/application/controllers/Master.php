@@ -2,19 +2,24 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Master Data: posisi, departemen, outlet, dokumen, remark.
- * Wajib login + KELOLA_REKRUTMEN. Soft delete (toggle is_aktif), tanpa hard delete.
+ * Controller Master -- Manajemen Data Induk Master Referensi Sistem
+ *
+ * Fungsi:
+ * - Mengelola data master posisi (lengkap dengan job description, kualifikasi standar, pendidikan min, & level organisasi).
+ * - Mengelola data master departemen, level organisasi (dengan fitur drag-and-drop urutan), outlet gerai, dan jenis dokumen.
+ * - Mengelola master remark hasil evaluasi seleksi dan efek status seleksi kandidat.
+ * - Menerapkan aturan integritas soft delete (is_aktif = 0) tanpa pernah menghapus data fisik (hard delete).
+ * - Proteksi akses: membutuhkan permission 'KELOLA_REKRUTMEN'.
  */
 class Master extends Secured_Controller
 {
 	private $types = array(
-		'posisi'     => array('label' => 'Posisi',     'pk' => 'id_posisi',     'desc' => 'Daftar jabatan, departemen induk, level organisasi, dan flow seleksi default.'),
-		'departemen' => array('label' => 'Departemen', 'pk' => 'id_departemen', 'tabel' => 'M_DEPARTEMEN', 'desc' => 'Unit divisi dan departemen operasional serta back-office RPG.'),
-			'level_organisasi' => array('label' => 'Level Organisasi', 'pk' => 'id_level_organisasi', 'tabel' => 'M_LEVEL_ORGANISASI', 'desc' => 'Tingkat jabatan dan struktur jenjang hierarki organisasi RPG.'),
-		'outlet'     => array('label' => 'Outlet',     'pk' => 'id_outlet',     'tabel' => 'M_OUTLET',     'desc' => 'Titik cabang, outlet gerai, unit brand, dan wilayah region penempatan.'),
-		'dokumen'     => array('label' => 'Dokumen',     'pk' => 'id_dokumen',     'tabel' => 'M_DOKUMEN',     'desc' => 'Katalog berkas persyaratan pelamar, kategori, dan tingkat sensitivitas PDP.'),
-		'remark'      => array('label' => 'Remark Alur', 'pk' => 'id_remark',    'tabel' => 'M_REMARKS',    'desc' => 'Daftar keputusan/alasan mutasi kandidat pada setiap tahap alur seleksi.'),
-		'efek_status' => array('label' => 'Efek Status', 'pk' => 'id_efek_status', 'tabel' => 'M_EFEK_STATUS', 'desc' => 'Daftar dampak status global dan kelulusan tahap seleksi kandidat.'),
+		'posisi'           => array('label' => 'Posisi',           'pk' => 'id_posisi',           'desc' => 'Daftar jabatan, departemen induk, level organisasi, dan flow seleksi default.'),
+		'departemen'       => array('label' => 'Departemen',       'pk' => 'id_departemen',       'tabel' => 'M_DEPARTEMEN',       'desc' => 'Unit divisi dan departemen operasional serta back-office RPG.'),
+		'level_organisasi' => array('label' => 'Level Organisasi', 'pk' => 'id_level_organisasi', 'tabel' => 'M_LEVEL_ORGANISASI', 'desc' => 'Tingkat jabatan dan struktur jenjang hierarki organisasi RPG.'),
+		'outlet'           => array('label' => 'Outlet',           'pk' => 'id_outlet',           'tabel' => 'M_OUTLET',           'desc' => 'Titik cabang, outlet gerai, unit brand, dan wilayah region penempatan.'),
+		'dokumen'          => array('label' => 'Dokumen',          'pk' => 'id_dokumen',          'tabel' => 'M_DOKUMEN',          'desc' => 'Katalog berkas persyaratan pelamar, kategori, dan tingkat sensitivitas PDP.'),
+		'remark'           => array('label' => 'Remark Alur',      'pk' => 'id_remark',           'tabel' => 'M_REMARKS',          'desc' => 'Daftar keputusan/alasan mutasi kandidat pada setiap tahap alur seleksi.'),
 	);
 
 	public function __construct()
@@ -37,13 +42,12 @@ class Master extends Secured_Controller
 			't'        => $t,
 			'types'    => $this->types,
 			'counts'   => array(
-				'posisi'     => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_POSISI WHERE is_aktif = 1")->row()->n,
-				'departemen' => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_DEPARTEMEN WHERE is_aktif = 1")->row()->n,
-					'level_organisasi' => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_LEVEL_ORGANISASI WHERE is_aktif = 1")->row()->n,
-				'outlet'     => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_OUTLET WHERE is_aktif = 1")->row()->n,
-				'dokumen'     => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_DOKUMEN WHERE is_aktif = 1")->row()->n,
-				'remark'      => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_REMARKS WHERE is_aktif = 1")->row()->n,
-				'efek_status' => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_EFEK_STATUS WHERE is_aktif = 1")->row()->n,
+				'posisi'           => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_POSISI WHERE is_aktif = 1")->row()->n,
+				'departemen'       => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_DEPARTEMEN WHERE is_aktif = 1")->row()->n,
+				'level_organisasi' => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_LEVEL_ORGANISASI WHERE is_aktif = 1")->row()->n,
+				'outlet'           => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_OUTLET WHERE is_aktif = 1")->row()->n,
+				'dokumen'          => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_DOKUMEN WHERE is_aktif = 1")->row()->n,
+				'remark'           => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_REMARKS WHERE is_aktif = 1")->row()->n,
 			),
 		);
 
@@ -52,9 +56,9 @@ class Master extends Secured_Controller
 
 		switch ($t) {
 			case 'posisi':
-				$data['rows']  = $this->master_model->list_posisi();
-				$data['depts'] = $this->master_model->list_departemen();
-				$data['flows'] = $this->master_model->list_flow();
+				$data['rows']   = $this->master_model->list_posisi();
+				$data['depts']  = $this->master_model->list_departemen();
+				$data['flows']  = $this->master_model->list_flow();
 				$data['levels'] = $this->master_model->list_level_organisasi(TRUE);
 				if ($edit_id) {
 					$q = $this->db->query('SELECT * FROM dbo.M_POSISI WHERE id_posisi = ?', array($edit_id));
@@ -71,14 +75,14 @@ class Master extends Secured_Controller
 				break;
 
 			case 'level_organisasi':
-					$data['rows'] = $this->master_model->list_level_organisasi();
-					if ($edit_id) {
-						$q = $this->db->query('SELECT * FROM dbo.M_LEVEL_ORGANISASI WHERE id_level_organisasi = ?', array($edit_id));
-						$data['edit_row'] = $q->row_array() ?: NULL;
-					}
-					break;
+				$data['rows'] = $this->master_model->list_level_organisasi();
+				if ($edit_id) {
+					$q = $this->db->query('SELECT * FROM dbo.M_LEVEL_ORGANISASI WHERE id_level_organisasi = ?', array($edit_id));
+					$data['edit_row'] = $q->row_array() ?: NULL;
+				}
+				break;
 
-				case 'outlet':
+			case 'outlet':
 				$data['rows'] = $this->master_model->list_outlet();
 				if ($edit_id) {
 					$q = $this->db->query('SELECT * FROM dbo.M_OUTLET WHERE id_outlet = ?', array($edit_id));
@@ -98,19 +102,9 @@ class Master extends Secured_Controller
 				$data['rows']       = $this->master_model->remarks();
 				$data['all_stages'] = $this->master_model->all_stages();
 				$efek_aktif         = $this->master_model->list_efek_status(TRUE);
-				$data['efek']       = ! empty($efek_aktif) ? array_column($efek_aktif, 'kode_efek') : array('LANJUT','TOLAK','ON_HOLD','UNREACHABLE','WITHDRAWN','OFFER_DECLINED','NO_SHOW','HIRED','TALENT_POOL');
+				$data['efek']       = ! empty($efek_aktif) ? array_column($efek_aktif, 'kode_efek') : array('LANJUT','HIRED','TOLAK');
 				if ($edit_id) {
 					$q = $this->db->query('SELECT * FROM dbo.M_REMARKS WHERE id_remark = ?', array($edit_id));
-					$data['edit_row'] = $q->row_array() ?: NULL;
-				}
-				break;
-
-			case 'efek_status':
-				$data['rows']              = $this->master_model->list_efek_status();
-				$data['st_tahap_options']  = array('Lulus', 'Tidak_Lulus', 'Berjalan');
-				$data['st_global_options'] = array('In_Progress','On_Hold','Unreachable','Rejected','Withdrawn','Offer_Declined','No_Show','Hired','Talent_Pool');
-				if ($edit_id) {
-					$q = $this->db->query('SELECT * FROM dbo.M_EFEK_STATUS WHERE id_efek_status = ?', array($edit_id));
 					$data['edit_row'] = $q->row_array() ?: NULL;
 				}
 				break;
@@ -127,13 +121,12 @@ class Master extends Secured_Controller
 		$p = $this->input->post(NULL, TRUE);
 		try {
 			switch ($t) {
-				case 'posisi':     $this->master_model->save_posisi($p, $this->auth_user['id_user']); break;
-				case 'departemen': $this->master_model->save_departemen($p, $this->auth_user['id_user']); break;
+				case 'posisi':           $this->master_model->save_posisi($p, $this->auth_user['id_user']); break;
+				case 'departemen':       $this->master_model->save_departemen($p, $this->auth_user['id_user']); break;
 				case 'level_organisasi': $this->master_model->save_level_organisasi($p); break;
-				case 'outlet':     $this->master_model->save_outlet($p); break;
-				case 'dokumen':     $this->master_model->save_dokumen($p); break;
-				case 'remark':      $this->master_model->save_remark($p, $this->auth_user['id_user']); break;
-				case 'efek_status': $this->master_model->save_efek_status($p); break;
+				case 'outlet':           $this->master_model->save_outlet($p); break;
+				case 'dokumen':          $this->master_model->save_dokumen($p); break;
+				case 'remark':           $this->master_model->save_remark($p, $this->auth_user['id_user']); break;
 			}
 			$this->session->set_flashdata('ok', 'Data ' . $this->types[$t]['label'] . ' berhasil disimpan.');
 		} catch (RuntimeException $e) {
@@ -156,20 +149,45 @@ class Master extends Secured_Controller
 				$this->master_model->toggle_departemen($id, $akt, $this->auth_user['id_user']);
 			} elseif ($t === 'remark') {
 				$this->master_model->toggle_remark($id, $akt, $this->auth_user['id_user']);
-				} elseif ($t === 'efek_status') {
-					$this->master_model->toggle_efek_status($id, $akt);
-				} elseif ($t === 'level_organisasi') {
-					$this->master_model->toggle_level_organisasi($id, $akt);
-				} elseif ($t === 'outlet') {
-					$this->master_model->toggle_outlet($id, $akt);
-				} elseif ($t === 'dokumen') {
-				} elseif ($t === 'dokumen') {
-					$this->master_model->toggle_dokumen($id, $akt);
-				}
+			} elseif ($t === 'level_organisasi') {
+				$this->master_model->toggle_level_organisasi($id, $akt);
+			} elseif ($t === 'outlet') {
+				$this->master_model->toggle_outlet($id, $akt);
+			} elseif ($t === 'dokumen') {
+				$this->master_model->toggle_dokumen($id, $akt);
+			}
 			$this->session->set_flashdata('ok', $akt ? 'Data berhasil diaktifkan kembali.' : 'Data berhasil dinonaktifkan.');
 		} catch (RuntimeException $e) {
 			$this->session->set_flashdata('error', $e->getMessage());
 		}
 		redirect('master/index/' . $t);
+	}
+
+	/**
+	 * Endpoint AJAX untuk reorder urutan Level Organisasi (Drag and Drop)
+	 */
+	public function reorder_level_organisasi()
+	{
+		if ($this->input->method() !== 'post') {
+			show_404();
+		}
+
+		$order = $this->input->post('order');
+		if ( ! is_array($order) || empty($order)) {
+			return $this->output
+				->set_content_type('application/json')
+				->set_output(json_encode(array('success' => FALSE, 'error' => 'Data urutan kosong.')));
+		}
+
+		try {
+			$this->master_model->reorder_level_organisasi($order);
+			return $this->output
+				->set_content_type('application/json')
+				->set_output(json_encode(array('success' => TRUE)));
+		} catch (RuntimeException $e) {
+			return $this->output
+				->set_content_type('application/json')
+				->set_output(json_encode(array('success' => FALSE, 'error' => $e->getMessage())));
+		}
 	}
 }

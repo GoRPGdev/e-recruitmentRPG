@@ -2,8 +2,14 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Form lamaran publik: /lamar/<slug>
- * Publik (tanpa login). Slug menentukan posisi -- kandidat tidak memilih.
+ * Controller Lamar -- Formulir Publik Intake Lamaran Online Pelamar
+ *
+ * Fungsi:
+ * - Menampilkan formulir pendaftaran kerja publik berdasarkan slug tautan lowongan (/lamar/{url_slug}).
+ * - Membaca informasi posisi, job description, kualifikasi standar, dan persyaratan lowongan.
+ * - Memvalidasi input data dasar kandidat dan menangani upload berkas CV fisik di luar webroot.
+ * - Mengeksekusi registrasi lamaran via sp_SubmitApplication dan inisialisasi tahap seleksi awal.
+ * - Akses: Terbuka untuk umum / publik (tanpa login).
  */
 class Lamar extends MY_Controller
 {
@@ -95,7 +101,6 @@ class Lamar extends MY_Controller
 			'kontak_darurat_telp' => $this->input->post('kd_telp', TRUE),
 			'kontak_darurat_hub'  => $this->input->post('kd_hub', TRUE),
 			'consent_versi'       => $this->config->item('erec_consent_versi'),
-			'setuju_talent_pool'  => $this->input->post('talent_pool') ? 1 : 0,
 			'riwayat_penyakit'    => $health ? $this->input->post('riwayat_penyakit', TRUE) : NULL,
 			'consent_kesehatan'   => $health,
 			'perusahaan_terakhir' => $this->input->post('perusahaan_terakhir', TRUE),

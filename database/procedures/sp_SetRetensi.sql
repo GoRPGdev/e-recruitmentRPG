@@ -38,8 +38,8 @@ BEGIN
         IF @id_kandidat IS NULL
             RAISERROR('sp_SetRetensi: lamaran #%d tidak ditemukan.', 16, 1, @id_lamaran);
 
-        DECLARE @lama DATE, @tp BIT;
-        SELECT @lama = retensi_sampai, @tp = setuju_talent_pool
+        DECLARE @lama DATE;
+        SELECT @lama = retensi_sampai
         FROM dbo.CANDIDATES WHERE id_kandidat = @id_kandidat;
 
         DECLARE @baru DATE;
@@ -47,10 +47,10 @@ BEGIN
         IF EXISTS (SELECT 1 FROM dbo.APPLICATIONS
                    WHERE id_kandidat = @id_kandidat AND status_global = 'Hired')
             SET @baru = NULL;
-        ELSE IF @st IN ('Rejected','Withdrawn','Offer_Declined','No_Show','Talent_Pool')
+        ELSE IF @st IN ('Rejected','Withdrawn','Offer_Declined','No_Show')
         BEGIN
-            DECLARE @bulan INT = CASE WHEN @tp = 1 OR @st = 'Talent_Pool' THEN 24 ELSE 12 END;
-            SET @baru = DATEADD(MONTH, @bulan, CONVERT(DATE, GETDATE()));
+            -- Retensi standar data pelamar non-hired: 12 bulan
+            SET @baru = DATEADD(MONTH, 12, CONVERT(DATE, GETDATE()));
             IF @lama IS NOT NULL AND @lama > @baru
                 SET @baru = @lama;                       -- jangan perpendek
         END

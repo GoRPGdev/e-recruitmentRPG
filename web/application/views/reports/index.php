@@ -1,12 +1,21 @@
-<?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
-
 <?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+/**
+ * View: reports/index.php -- Laporan Eksekutif, Analitik Funnel Rekrutmen & KPI
+ *
+ * Fungsi:
+ * - Menampilkan metrik KPI utama rekrutmen: Time-to-Hire, rasio konversi funnel, dan persentase pemenuhan kuota MPR.
+ * - Menyajikan visualisasi chart interaktif distribusi pelamar per departemen dan efektivitas channel intake.
+ * - Menyediakan fitur export data laporan teragregasi.
+ */
+
 $total_pelamar = (int) ($kpi['total_pelamar'] ?? 0);
 $n_in_progress = (int) ($kpi['n_in_progress'] ?? 0);
 $n_hired       = (int) ($kpi['n_hired'] ?? 0);
 $n_rejected    = (int) ($kpi['n_rejected'] ?? 0);
 $n_withdrawn   = (int) ($kpi['n_withdrawn'] ?? 0);
-$n_talent_pool = (int) ($kpi['n_talent_pool'] ?? 0);
+
 
 $total_target_orang    = max(1, (int) ($kpi['total_target_orang'] ?? 0));
 $total_terpenuhi_orang = (int) ($kpi['total_terpenuhi_orang'] ?? 0);
@@ -557,7 +566,7 @@ foreach ($trends as $tr) {
 			<?php
 			$pct_hired     = $total_pelamar > 0 ? round(($n_hired / $total_pelamar) * 100, 1) : 0;
 			$pct_active    = $total_pelamar > 0 ? round(($n_in_progress / $total_pelamar) * 100, 1) : 0;
-			$pct_talent    = $total_pelamar > 0 ? round(($n_talent_pool / $total_pelamar) * 100, 1) : 0;
+			
 			$pct_rejected  = $total_pelamar > 0 ? round(($n_rejected / $total_pelamar) * 100, 1) : 0;
 			$pct_withdrawn = $total_pelamar > 0 ? round(($n_withdrawn / $total_pelamar) * 100, 1) : 0;
 			?>
@@ -567,9 +576,6 @@ foreach ($trends as $tr) {
 				<?php endif; ?>
 				<?php if ($pct_active > 0): ?>
 					<div style="width:<?= $pct_active ?>%; height:100%; background:var(--info)" title="In Progress: <?= $pct_active ?>%"></div>
-				<?php endif; ?>
-				<?php if ($pct_talent > 0): ?>
-					<div style="width:<?= $pct_talent ?>%; height:100%; background:var(--talent)" title="Talent Pool: <?= $pct_talent ?>%"></div>
 				<?php endif; ?>
 				<?php if ($pct_withdrawn > 0): ?>
 					<div style="width:<?= $pct_withdrawn ?>%; height:100%; background:var(--warn)" title="Withdrawn/Declined: <?= $pct_withdrawn ?>%"></div>
@@ -591,13 +597,12 @@ foreach ($trends as $tr) {
 					if ($st_name === 'Hired') { $tag_class = 'on'; $color_bullet = 'var(--good)'; }
 					elseif ($st_name === 'In_Progress') { $tag_class = 'info'; $color_bullet = 'var(--info)'; }
 					elseif (in_array($st_name, array('On_Hold', 'Unreachable', 'Withdrawn', 'Offer_Declined', 'No_Show'))) { $tag_class = 'warn'; $color_bullet = 'var(--warn)'; }
-					elseif ($st_name === 'Talent_Pool') { $tag_class = 'talent'; $color_bullet = 'var(--talent)'; }
 					elseif ($st_name === 'Rejected') { $tag_class = 'off'; $color_bullet = 'var(--crit)'; }
 				?>
 				<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:7px 10px; border-radius:6px; background:var(--surface-2)">
 					<div style="display:flex; align-items:center; gap:8px">
 						<span style="width:8px; height:8px; border-radius:50%; background:<?= $color_bullet ?>; flex:none"></span>
-						<span class="tag <?= $tag_class ?>" style="font-size:11px; padding:2px 8px"><?= html_escape($st_name) ?></span>
+						<span class="tag <?= $tag_class ?>" style="font-size:11px; padding:2px 8px"><?= html_escape(label_status($st_name)) ?></span>
 					</div>
 					<div style="display:flex; align-items:center; gap:10px">
 						<strong class="mono" style="color:var(--text); font-size:13px"><?= number_format($cnt) ?></strong>
@@ -688,8 +693,8 @@ foreach ($trends as $tr) {
 										<span class="tag tag--info"><?= (int) $mr['total_in_progress'] ?> berkas</span>
 									</td>
 									<td style="padding:12px 10px; text-align:center">
-										<span class="tag <?= in_array($mr['status_req'], array('Sourcing','Approved','Terpenuhi')) ? 'on' : (in_array($mr['status_req'], array('Review_HR','Menunggu_BOD')) ? 'warn' : 'off') ?>">
-											<?= html_escape($mr['status_req']) ?>
+										<span class="tag <?= in_array($mr['status_req'], array('Sourcing','Approved','Terpenuhi')) ? 'on' : (in_array($mr['status_req'], array('Review_HR','Review_BOD','Revisi_HR','Revisi_BOD')) ? 'warn' : 'off') ?>">
+											<?= html_escape(label_status_req($mr['status_req'])) ?>
 										</span>
 									</td>
 									<td style="padding:12px 14px; text-align:right">
