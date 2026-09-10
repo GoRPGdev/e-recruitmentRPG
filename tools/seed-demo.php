@@ -82,6 +82,8 @@ if ($reset) {
               WHERE r.nama_pemohon_snapshot LIKE 'DEMO %'");
     q($conn, "DELETE FROM dbo.REQUISITION_APPROVALS WHERE id_req IN
               (SELECT id_req FROM dbo.REQUISITIONS WHERE nama_pemohon_snapshot LIKE 'DEMO %')");
+    q($conn, "DELETE FROM dbo.RPT_FUNNEL_HARIAN WHERE id_req IN
+              (SELECT id_req FROM dbo.REQUISITIONS WHERE nama_pemohon_snapshot LIKE 'DEMO %')");
     q($conn, "DELETE FROM dbo.REQUISITIONS WHERE nama_pemohon_snapshot LIKE 'DEMO %'");
     q($conn, "DELETE als FROM dbo.ACCESS_LOG_SENSITIF als JOIN dbo.M_USERS u ON u.id_user=als.id_user
               WHERE u.username LIKE 'demo\\_%' ESCAPE '\\'");
@@ -203,11 +205,11 @@ list($k4, $l4) = buat_lamaran($conn, $reqA, $flowMkt, $chPortal, 'Dewi Anggraini
 
 // Andi: biarkan di tahap awal (SOURCING/SCREENING).
 // Bunga: lewati sourcing + lolos screening -> masuk KONTAK_WA.
-maju($conn, $l2, $uid['HR_ADMIN'], null,    'Sourcing selesai (demo)');
-maju($conn, $l2, $uid['HR_ADMIN'], 'LANJUT','Lolos screening CV (demo)');
+maju($conn, $l2, $uid['SUPER_ADMIN'], null,    'Sourcing selesai (demo)');
+maju($conn, $l2, $uid['SUPER_ADMIN'], 'LANJUT','Lolos screening CV (demo)');
 // Cahyo: lewati sourcing, lalu DITOLAK di screening -> status Rejected -> sp_SetRetensi.
-maju($conn, $l3, $uid['HR_ADMIN'], null,    'Sourcing selesai (demo)');
-maju($conn, $l3, $uid['HR_ADMIN'], 'TOLAK', 'Kualifikasi tidak sesuai (demo)');
+maju($conn, $l3, $uid['SUPER_ADMIN'], null,    'Sourcing selesai (demo)');
+maju($conn, $l3, $uid['SUPER_ADMIN'], 'TOLAK', 'Kualifikasi tidak sesuai (demo)');
 
 // Dewi: data kesehatan + profil gaji + rekening.
 insert_row($conn, 'CANDIDATE_HEALTH', array(
@@ -253,17 +255,16 @@ function tampilkan_ringkasan($conn, $roles) {
     $ret  = scalar($conn, "SELECT CONVERT(varchar(10), retensi_sampai, 23) FROM dbo.CANDIDATES WHERE email='cahyo@demo.local'");
     $stat = scalar($conn, "SELECT a.status_global FROM dbo.APPLICATIONS a JOIN dbo.CANDIDATES c ON c.id_kandidat=a.id_kandidat WHERE c.email='cahyo@demo.local'");
     echo "\n=== SIAP TESTING LOKAL ===\n";
-    echo "1) cd web && php -S 127.0.0.1:8080 -t .\n";
-    echo "2) http://127.0.0.1:8080/index.php/auth/login\n\n";
+    echo "1) php -S localhost:8090 -t web\n";
+    echo "2) http://localhost:8090/index.php/auth/login\n\n";
     echo "Login (password semua: demo123):\n";
     foreach ($roles as $r) { echo "   demo_" . str_pad(strtolower($r), 12) . " ($r)\n"; }
     echo "\nCoba per peran:\n";
-    echo "   /index.php/dashboard            demo_hr_admin  -> metrik + funnel (1 Rejected)\n";
-    echo "   /index.php/requisitions         demo_user_dept -> daftar MPR\n";
-    echo "   /index.php/pipeline/index/$reqA       demo_hr_admin  -> papan pipeline\n";
-    echo "   /index.php/documents            demo_hr_admin  -> 'buka' KTP = boleh+tercatat, 'buka' Rekening = 403\n";
-    echo "                                  demo_hr_spv    -> dua-duanya boleh + tercatat di ACCESS_LOG_SENSITIF\n";
-    echo "   /index.php/export/candidates    demo_hr_admin vs demo_hr_spv -> jumlah kolom beda\n";
+    echo "   /index.php/dashboard            demo_super_admin -> metrik + funnel (1 Rejected)\n";
+    echo "   /index.php/requisitions         demo_user_dept  -> daftar MPR (scope Marketing)\n";
+    echo "   /index.php/pipeline/index/$reqA       demo_super_admin -> papan pipeline\n";
+    echo "   /index.php/documents            demo_super_admin -> buka KTP & Rekening, tercatat di ACCESS_LOG_SENSITIF\n";
+    echo "   /index.php/export/candidates    demo_super_admin -> ekspor Excel (kolom sensitif ikut + audit)\n";
     echo "   /lamar/marketing-staff-demo     (tanpa login) form lamaran publik\n";
     echo "\nCahyo Nugroho: status=$stat  retensi_sampai=" . ($ret ?: '(NULL - cek hook!)') . "  (harusnya hari ini +12 bln)\n";
     echo "Reset:  php tools/seed-demo.php --reset\n";
