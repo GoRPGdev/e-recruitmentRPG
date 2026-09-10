@@ -16,7 +16,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 <div style="margin-bottom:24px">
 	<!-- Page Header -->
-	<div style="margin-bottom:18px">
+	<div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:18px">
 		<div>
 			<div class="eyebrow" style="margin-bottom:3px">Manpower Requisition (MPR)</div>
 			<h1 style="margin:0 0 4px; font-size:22px; font-weight:700">Daftar Permintaan Tenaga Kerja</h1>
@@ -24,6 +24,12 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 				Ditemukan <strong><?= (int) $total ?></strong> dokumen MPR di database. Kelola dan pantau status persetujuan serta pemenuhan formasi.
 			</p>
 		</div>
+		<?php if (has_permission('BUAT_MPR')): ?>
+		<a href="<?= site_url('requisitions/create') ?>" class="btn btn-primary" style="display:inline-flex; align-items:center; gap:6px; font-weight:600; padding:8px 18px; border-radius:8px; text-decoration:none; white-space:nowrap">
+			<svg style="width:15px; height:15px" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+			<span>Ajukan MPR Baru</span>
+		</a>
+		<?php endif; ?>
 	</div>
 
 	<!-- Ringkasan Metrik / Quick Stat Cards (Di Atas Filter) -->
