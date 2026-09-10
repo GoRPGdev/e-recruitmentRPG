@@ -3,7 +3,8 @@
  * Test Validasi Penampil Alasan Penolakan MPR (Ditolak_HR & Ditolak_BOD)
  * Memverifikasi:
  * 1. Requisition berstatus Ditolak_HR memuat catatan_hr sebagai alasan penolakan
- * 2. Requisition berstatus Ditolak_BOD memuat catatan_bod dan nama BOD penolak dari REQUISITION_APPROVALS
+ * 2. Requisition berstatus Ditolak_BOD memuat catatan_bod (kolom di dbo.REQUISITIONS,
+ *    diisi sp_UpdateRequisitionStatus -- fitur catat keputusan REQUISITION_APPROVALS sudah dihapus)
  * 3. Query get() dan list_mpr() pada Requisition_model mengembalikan field alasan penolakan dengan benar
  *
  * Usage: php tools/test-rejection-reason.php
@@ -87,20 +88,13 @@ try {
 
     // Test Query get() untuk Ditolak_HR
     $sql_get = 'SELECT r.*, p.nama_posisi, p.id_departemen, o.nama_outlet, d.nama AS departemen, u.nama_snapshot AS pemohon,
-                       f.kode_flow, f.nama_flow,
-                       bod_rej.catatan_bod, bod_rej.disetujui_oleh AS penolak_bod
+                       f.kode_flow, f.nama_flow
                 FROM dbo.REQUISITIONS r
                 JOIN dbo.M_POSISI p       ON p.id_posisi = r.id_posisi
                 LEFT JOIN dbo.M_OUTLET o  ON o.id_outlet = r.id_outlet
                 LEFT JOIN dbo.M_DEPARTEMEN d ON d.id_departemen = p.id_departemen
                 JOIN dbo.M_USERS u        ON u.id_user = r.id_user_pemohon
                 LEFT JOIN dbo.M_FLOW f    ON f.id_flow = r.id_flow
-                OUTER APPLY (
-                    SELECT TOP 1 ra.catatan_bod, ra.disetujui_oleh
-                    FROM dbo.REQUISITION_APPROVALS ra
-                    WHERE ra.id_req = r.id_req AND ra.keputusan = \'Rejected\'
-                    ORDER BY ra.putaran_ke DESC
-                ) bod_rej
                 WHERE r.id_req = ?';
     $stmt_chk_hr = run_q($conn, $sql_get, array($id_req_hr));
     $row_chk_hr = sqlsrv_fetch_array($stmt_chk_hr, SQLSRV_FETCH_ASSOC);
@@ -121,44 +115,31 @@ try {
         throw new Exception("Gagal membuat MPR dummy untuk test Ditolak_BOD.");
     }
 
-    // Submit ke BOD via sp_SubmitToBOD
-    $id_app = 0;
-    $stmt_sub_bod = sqlsrv_query($conn, "{CALL dbo.sp_SubmitToBOD(?,?,?)}", array($id_req_bod, $id_user, array(&$id_app, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT)));
-    if ($stmt_sub_bod === FALSE || $id_app <= 0) {
-        throw new Exception("Gagal submit MPR ke BOD.");
-    }
+    // Draft -> Review_HR -> Review_BOD -> Ditolak_BOD (alur baru: tanpa REQUISITION_APPROVALS)
+    run_q($conn, "{CALL dbo.sp_SubmitToHR(?,?)}", array($id_req_bod, $id_user));
+    run_q($conn, "{CALL dbo.sp_SubmitToBOD(?,?)}", array($id_req_bod, $id_user));
 
     $alasan_bod = 'Anggaran penambahan formasi ditangguhkan ke tahun depan sesuai arahan rapat direksi.';
-    $penolak_bod = 'Bpk. Hendra (Direktur Operasional)';
-    run_q($conn, "{CALL dbo.sp_RecordApproval(?,?,?,?,?,?,?,?)}", array(
-        $id_app, 'Rejected', 0, date('Y-m-d'), $penolak_bod, $alasan_bod, NULL, $id_user
-    ));
+    run_q($conn, "{CALL dbo.sp_UpdateRequisitionStatus(?,?,?,?)}", array($id_req_bod, 'Ditolak_BOD', $alasan_bod, $id_user));
 
     // Test Query get() untuk Ditolak_BOD
     $stmt_chk_bod = run_q($conn, $sql_get, array($id_req_bod));
     $row_chk_bod = sqlsrv_fetch_array($stmt_chk_bod, SQLSRV_FETCH_ASSOC);
 
     assert_test($row_chk_bod['status_req'] === 'Ditolak_BOD', "Status MPR berhasil diubah ke Ditolak_BOD");
-    assert_test($row_chk_bod['catatan_bod'] === $alasan_bod, "Catatan penolakan BOD (catatan_bod) terbaca via OUTER APPLY");
-    assert_test($row_chk_bod['penolak_bod'] === $penolak_bod, "Nama penolak BOD (penolak_bod) terbaca via OUTER APPLY");
+    assert_test($row_chk_bod['catatan_bod'] === $alasan_bod, "Catatan penolakan BOD (catatan_bod) terbaca di kolom dbo.REQUISITIONS");
 
     // 3. Test list_mpr() query mencakup kedua penolakan
     $sql_list = "WITH q AS (
                     SELECT r.id_req, r.no_mpr, r.status_req, r.tipe_penempatan, r.jumlah_dibutuhkan,
-                           r.jumlah_disetujui, r.jumlah_terpenuhi, r.tanggal_pengajuan, r.catatan_hr,
+                           r.jumlah_disetujui, r.jumlah_terpenuhi, r.tanggal_pengajuan,
+                           r.catatan_hr, r.catatan_bod,
                            p.nama_posisi, p.id_departemen, o.nama_outlet, u.nama_snapshot AS pemohon,
-                           bod_rej.catatan_bod, bod_rej.disetujui_oleh AS penolak_bod,
                            ROW_NUMBER() OVER (ORDER BY r.id_req DESC) AS rn
                     FROM dbo.REQUISITIONS r
                     JOIN dbo.M_POSISI p      ON p.id_posisi = r.id_posisi
                     LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
                     JOIN dbo.M_USERS u       ON u.id_user = r.id_user_pemohon
-                    OUTER APPLY (
-                        SELECT TOP 1 ra.catatan_bod, ra.disetujui_oleh
-                        FROM dbo.REQUISITION_APPROVALS ra
-                        WHERE ra.id_req = r.id_req AND ra.keputusan = 'Rejected'
-                        ORDER BY ra.putaran_ke DESC
-                    ) bod_rej
                     WHERE r.id_req IN (?, ?)
                 )
                 SELECT * FROM q ORDER BY rn";
@@ -173,6 +154,7 @@ try {
 
     // Clean up
     run_q($conn, "DELETE FROM dbo.REQUISITION_APPROVALS WHERE id_req IN (?, ?)", array($id_req_hr, $id_req_bod));
+    run_q($conn, "DELETE FROM dbo.AUDIT_LOG WHERE nama_tabel = 'REQUISITIONS' AND id_baris IN (?, ?)", array($id_req_hr, $id_req_bod));
     run_q($conn, "DELETE FROM dbo.REQUISITIONS WHERE id_req IN (?, ?)", array($id_req_hr, $id_req_bod));
 
 } catch (Exception $ex) {
