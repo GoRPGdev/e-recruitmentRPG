@@ -291,6 +291,23 @@ $sisa_kuota = max(0, $kuota_ref - $terpenuhi);
 </div>
 <?php endif; ?>
 
+<!-- ================= BANNER CATATAN / ARAHAN REVISI BOD ================= -->
+<?php if (!empty($req['catatan_bod']) && in_array($req['status_req'], array('Revisi_BOD', 'Review_HR', 'Review_BOD', 'Draft'))): ?>
+<div style="padding:16px 20px; margin-bottom:20px; border-radius:10px; border:1px solid <?= $req['status_req'] === 'Revisi_BOD' ? 'var(--warn)' : 'var(--border)' ?>; background:<?= $req['status_req'] === 'Revisi_BOD' ? 'var(--warn-soft)' : 'var(--surface-2)' ?>">
+	<div style="display:flex; align-items:center; gap:8px; margin-bottom:8px">
+		<div class="eyebrow" style="font-size:11px; margin:0; color:<?= $req['status_req'] === 'Revisi_BOD' ? 'var(--warn)' : 'var(--text-muted)' ?>">
+			<?= $req['status_req'] === 'Revisi_BOD' ? 'Arahan Revisi dari Direksi (BOD)' : 'Catatan / Feedback Direksi (BOD)' ?>
+		</div>
+		<span class="tag <?= $req['status_req'] === 'Revisi_BOD' ? 'warn' : 'off' ?>" style="font-size:10px; padding:2px 6px">
+			<?= html_escape(label_status_req($req['status_req'])) ?>
+		</span>
+	</div>
+	<div style="font-size:13px; line-height:1.6; color:var(--text); white-space:pre-line; word-break:break-word">
+		<?= html_escape($req['catatan_bod']) ?>
+	</div>
+</div>
+<?php endif; ?>
+
 <!-- ================= PANEL AKSI KEPUTUSAN ALUR ================= -->
 
 <!-- 1. Pemohon: Ajukan ke HR (Draft / Revisi_HR / Revisi_BOD / Ditolak) -->
