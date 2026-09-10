@@ -61,36 +61,41 @@ try {
     while (sqlsrv_next_result($stmt)) {}
     echo "[OK] Requisition uji coba dibuat (ID: $id_req)\n";
 
-    // 3. Submit ke BOD
-    $id_app = 0;
-    $call_sql = "{CALL dbo.sp_SubmitToBOD(?,?,?)}";
-    $params = array($id_req, $id_user, array(&$id_app, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT));
+    // 3a. Draft -> Review_HR
+    $call_sql = "{CALL dbo.sp_SubmitToHR(?,?)}";
+    $stmt = sqlsrv_query($conn, $call_sql, array($id_req, $id_user));
+    if ($stmt === FALSE) throw new Exception(print_r(sqlsrv_errors(), true));
+    while (sqlsrv_next_result($stmt)) {}
+
+    // 3b. Review_HR -> Review_BOD  (sp_SubmitToBOD: 2 argumen, tidak lagi mengembalikan id_app)
+    $call_sql = "{CALL dbo.sp_SubmitToBOD(?,?)}";
+    $stmt = sqlsrv_query($conn, $call_sql, array($id_req, $id_user));
+    if ($stmt === FALSE) throw new Exception(print_r(sqlsrv_errors(), true));
+    while (sqlsrv_next_result($stmt)) {}
+    echo "[OK] Diajukan ke BOD -> Review_BOD (No MPR generated)\n";
+
+    // 4. BOD Approve -> Status: Approved (via sp_UpdateRequisitionStatus, bukan lagi sp_RecordApproval)
+    $call_sql = "{CALL dbo.sp_UpdateRequisitionStatus(?,?,?,?)}";
+    $params = array($id_req, 'Approved', 'Disetujui penuh oleh Direksi (test)', $id_user);
     $stmt = sqlsrv_query($conn, $call_sql, $params);
     if ($stmt === FALSE) throw new Exception(print_r(sqlsrv_errors(), true));
     while (sqlsrv_next_result($stmt)) {}
-    echo "[OK] Diajukan ke BOD (No MPR generated)\n";
+    echo "[OK] BOD Approve -> Status MPR: Approved\n";
 
-    // 4. Approval BOD -> Status: Sourcing
-    $call_sql = "{CALL dbo.sp_RecordApproval(?,?,?,?,?,?,?,?)}";
-    $params = array($id_app, 'Approved', 2, date('Y-m-d'), 'Direksi Test', 'Disetujui penuh', NULL, $id_user);
-    $stmt = sqlsrv_query($conn, $call_sql, $params);
-    if ($stmt === FALSE) throw new Exception(print_r(sqlsrv_errors(), true));
-    while (sqlsrv_next_result($stmt)) {}
-    echo "[OK] BOD Approve -> Status MPR: Sourcing\n";
-
-    // 5. Buat Job Posting
+    // 5. Buat Job Posting (sp_CreatePosting: @id_req,@id_channel,@judul,@job_desc,@kualifikasi,@batch_ke,@durasi_hari,@id_posting OUT)
     $id_posting = 0;
-    $call_sql = "{CALL dbo.sp_CreatePosting(?,?,?,?,?,?,?)}";
-    $params = array($id_req, 1, 'Posting Test Toggle', 'Deskripsi', 'Kualifikasi', 1, array(&$id_posting, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT));
+    $call_sql = "{CALL dbo.sp_CreatePosting(?,?,?,?,?,?,?,?)}";
+    $params = array($id_req, NULL, 'Posting Test Toggle', 'Deskripsi', 'Kualifikasi', 1, 14, array(&$id_posting, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT));
     $stmt = sqlsrv_query($conn, $call_sql, $params);
     if ($stmt === FALSE) throw new Exception(print_r(sqlsrv_errors(), true));
     while (sqlsrv_next_result($stmt)) {}
     echo "[OK] Job Posting dibuat (ID: $id_posting, Form Aktif: 1)\n";
 
     // 6. Test sp_TogglePostingForm: Tutup Form
+    // sig: @id_posting,@form_aktif,@durasi_hari,@oleh_user,@status_akhir OUT
     $status_akhir = -1;
-    $call_sql = "{CALL dbo.sp_TogglePostingForm(?,?,?,?)}";
-    $params = array($id_posting, 0, $id_user, array(&$status_akhir, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT));
+    $call_sql = "{CALL dbo.sp_TogglePostingForm(?,?,?,?,?)}";
+    $params = array($id_posting, 0, 14, $id_user, array(&$status_akhir, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT));
     $stmt = sqlsrv_query($conn, $call_sql, $params);
     if ($stmt === FALSE) throw new Exception(print_r(sqlsrv_errors(), true));
     while (sqlsrv_next_result($stmt)) {}
@@ -99,8 +104,8 @@ try {
 
     // 7. Test sp_TogglePostingForm: Buka Kembali Form
     $status_akhir = -1;
-    $call_sql = "{CALL dbo.sp_TogglePostingForm(?,?,?,?)}";
-    $params = array($id_posting, 1, $id_user, array(&$status_akhir, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT));
+    $call_sql = "{CALL dbo.sp_TogglePostingForm(?,?,?,?,?)}";
+    $params = array($id_posting, 1, 14, $id_user, array(&$status_akhir, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT));
     $stmt = sqlsrv_query($conn, $call_sql, $params);
     if ($stmt === FALSE) throw new Exception(print_r(sqlsrv_errors(), true));
     while (sqlsrv_next_result($stmt)) {}
@@ -159,6 +164,8 @@ try {
     // 11. Bersihkan data dummy uji coba
     run_query($conn, "DELETE FROM dbo.JOB_POSTINGS WHERE id_req = ?", array($id_req));
     run_query($conn, "DELETE FROM dbo.REQUISITION_APPROVALS WHERE id_req = ?", array($id_req));
+    run_query($conn, "DELETE FROM dbo.RPT_FUNNEL_HARIAN WHERE id_req = ?", array($id_req));
+    run_query($conn, "DELETE FROM dbo.AUDIT_LOG WHERE nama_tabel = 'REQUISITIONS' AND id_baris = ?", array($id_req));
     run_query($conn, "DELETE FROM dbo.REQUISITIONS WHERE id_req = ?", array($id_req));
     echo "[OK] Data uji coba dibersihkan dengan aman.\n";
 

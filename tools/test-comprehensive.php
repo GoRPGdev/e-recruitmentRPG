@@ -260,8 +260,10 @@ assertTest("Halaman Login memuat elemen UI korporat RPG & 2 quick active test ro
 
 // 4.2 Test Autentikasi User Aktif (USER_DEPT)
 $authDept = loginSession($baseUrl, 'demo_user_dept', 'demo123');
-assertTest("Autentikasi USER_DEPT berhasil (Redirect 302/303 ke dashboard)",
-    in_array($authDept['code'], array(302, 303, 307), true) && strpos($authDept['header'], 'dashboard') !== false
+// USER_DEPT tidak punya akses dashboard -> diarahkan ke halaman kerjanya (/requisitions)
+assertTest("Autentikasi USER_DEPT berhasil (redirect ke halaman kerja USER_DEPT)",
+    in_array($authDept['code'], array(302, 303, 307), true)
+    && (strpos($authDept['header'], 'dashboard') !== false || strpos($authDept['header'], 'requisitions') !== false)
 );
 
 // 4.3 Test Proteksi Dashboard Tanpa Sesi (Unauthenticated)
@@ -285,12 +287,14 @@ assertTest("Dashboard merender Sidebar Navigation Enterprise",
 );
 assertTest("Dashboard merender KPI Cards & Funnel Matrix",
     strpos($dashRes['body'], 'Dalam Proses') !== false &&
-    strpos($dashRes['body'], 'Funnel Konversi Tahapan') !== false &&
+    strpos($dashRes['body'], 'Matriks Funnel Konversi') !== false &&
     strpos($dashRes['body'], 'SCREENING') !== false
 );
-assertTest("Dashboard merender Kecepatan Proses & SLA Alert",
-    strpos($dashRes['body'], 'Kecepatan Proses') !== false &&
-    strpos($dashRes['body'], 'Peringatan Aging SLA') !== false
+// Fitur SLA/Aging sudah dihapus menyeluruh (commit a185c6e); dashboard kini
+// menyajikan ringkasan KPI status pelamar + panel Efisiensi Waktu funnel.
+assertTest("Dashboard merender ringkasan KPI status pelamar & panel Efisiensi Waktu",
+    strpos($dashRes['body'], 'Total Pelamar') !== false &&
+    strpos($dashRes['body'], 'Efisiensi Waktu') !== false
 );
 
 // 4.5 Test Halaman MPR (Requisitions)
@@ -307,7 +311,7 @@ if ($sampleReq) {
     $pipeRes = httpGet("$baseUrl/index.php/pipeline/index/$sampleReq", $authSuper['cookie']);
     assertTest("Pipeline Board (GET /pipeline/index/$sampleReq) merespons HTTP 200", $pipeRes['code'] === 200);
     assertTest("Pipeline Board merender kartu pelamar & dialog aksi",
-        strpos($pipeRes['body'], 'Papan Seleksi Lamaran') !== false &&
+        strpos($pipeRes['body'], 'Papan Seleksi Rekrutmen') !== false &&
         strpos($pipeRes['body'], 'dlg-interview') !== false &&
         strpos($pipeRes['body'], 'dlg-offer') !== false &&
         strpos($pipeRes['body'], 'Proses') !== false
@@ -322,8 +326,12 @@ if ($sampleLamaran) {
     assertTest("SUPER_ADMIN memiliki akses Finansial & Rekening tanpa sensor",
         strpos($candResSuper['body'], 'Data Finansial Terproteksi') === false
     );
+    // Section kesehatan pindah ke formulir cetak (candidates/print_form); di sana
+    // super_admin melihat isinya tanpa penanda "[Terproteksi UU PDP ...]".
+    $healthRes = httpGet("$baseUrl/index.php/candidates/print_form/$sampleLamaran", $authSuper['cookie']);
     assertTest("SUPER_ADMIN memiliki akses Data Kesehatan tanpa batas",
-        strpos($candResSuper['body'], 'Data Kesehatan') !== false
+        strpos($healthRes['body'], 'KEADAAN KESEHATAN') !== false &&
+        strpos($healthRes['body'], 'Terproteksi UU PDP') === false
     );
 }
 
@@ -333,7 +341,7 @@ if ($activeSlug) {
     $lamarRes = httpGet("$baseUrl/index.php/lamar/$activeSlug");
     assertTest("Form Publik Pelamar (GET /lamar/$activeSlug) merespons HTTP 200", $lamarRes['code'] === 200);
     assertTest("Form Publik memuat input Data Diri & Upload CV",
-        strpos($lamarRes['body'], 'Data diri') !== false &&
+        strpos($lamarRes['body'], 'Data Diri') !== false &&
         strpos($lamarRes['body'], 'nama_lengkap') !== false
     );
 }

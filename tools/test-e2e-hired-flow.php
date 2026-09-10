@@ -60,9 +60,9 @@ try {
     // -------------------------------------------------------------
     $userDept = scalar($conn, "SELECT id_user FROM dbo.M_USERS WHERE username = 'demo_user_dept' AND is_aktif = 1");
     $superAdmin = scalar($conn, "SELECT id_user FROM dbo.M_USERS WHERE username = 'demo_super_admin' AND is_aktif = 1");
-    $idPosisi = scalar($conn, "SELECT TOP 1 id_posisi FROM dbo.M_POSISI WHERE kode_posisi = 'MKT-STF' AND is_aktif = 1");
+    $idPosisi = scalar($conn, "SELECT TOP 1 id_posisi FROM dbo.M_POSISI WHERE nama_posisi LIKE 'Marketing%' AND is_aktif = 1 ORDER BY id_posisi");
     if (!$idPosisi) {
-        $idPosisi = scalar($conn, "SELECT TOP 1 id_posisi FROM dbo.M_POSISI WHERE is_aktif = 1");
+        $idPosisi = scalar($conn, "SELECT TOP 1 id_posisi FROM dbo.M_POSISI WHERE is_aktif = 1 ORDER BY id_posisi");
     }
     $idFlow = scalar($conn, "SELECT default_flow FROM dbo.M_POSISI WHERE id_posisi = ?", array($idPosisi));
 
@@ -107,16 +107,16 @@ try {
     testLog("User Dept membuat MPR Draft", $stReq === 'Draft' ? 'OK' : 'FAIL', "id_req: $idReq, status_req: $stReq");
 
     // -------------------------------------------------------------
-    // LANGKAH 3: Ajukan MPR ke BOD (sp_SubmitToBOD)
+    // LANGKAH 3: Teruskan MPR: Draft -> Review_HR -> Review_BOD
+    // (alur baru: sp_SubmitToBOD 2 argumen, tidak lagi menulis REQUISITION_APPROVALS)
     // -------------------------------------------------------------
-    $idApproval = null;
-    $sqlSubmitBOD = "{CALL dbo.sp_SubmitToBOD(?, ?, ?)}";
-    $paramsSubmitBOD = array(
+    q($conn, "{CALL dbo.sp_SubmitToHR(?, ?)}", array($idReq, $userDept));
+
+    $sqlSubmitBOD = "{CALL dbo.sp_SubmitToBOD(?, ?)}";
+    $stmt = sqlsrv_query($conn, $sqlSubmitBOD, array(
         array($idReq, SQLSRV_PARAM_IN),
-        array($userDept, SQLSRV_PARAM_IN),
-        array(&$idApproval, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT)
-    );
-    $stmt = sqlsrv_query($conn, $sqlSubmitBOD, $paramsSubmitBOD);
+        array($userDept, SQLSRV_PARAM_IN)
+    ));
     if ($stmt === false) {
         throw new RuntimeException("Gagal sp_SubmitToBOD: " . print_r(sqlsrv_errors(), true));
     }
@@ -124,38 +124,25 @@ try {
 
     $stReqAfterSubmit = scalar($conn, "SELECT status_req FROM dbo.REQUISITIONS WHERE id_req = ?", array($idReq));
     $noMpr = scalar($conn, "SELECT no_mpr FROM dbo.REQUISITIONS WHERE id_req = ?", array($idReq));
-    testLog("Ajukan MPR ke BOD", $stReqAfterSubmit === 'Menunggu_BOD' ? 'OK' : 'FAIL', "No MPR: $noMpr, id_approval: $idApproval, status_req: $stReqAfterSubmit");
+    testLog("Teruskan MPR ke BOD (Review_BOD)", $stReqAfterSubmit === 'Review_BOD' ? 'OK' : 'FAIL', "No MPR: $noMpr, status_req: $stReqAfterSubmit");
 
     // -------------------------------------------------------------
-    // LANGKAH 4: Catat Keputusan Approval BOD (sp_RecordApproval)
+    // LANGKAH 4: BOD Menyetujui MPR (sp_UpdateRequisitionStatus -> Approved)
     // -------------------------------------------------------------
-    $sqlRecordApp = "{CALL dbo.sp_RecordApproval(?, ?, ?, ?, ?, ?, ?, ?)}";
-    $tglKeputusan = date('Y-m-d');
-    $paramsRecordApp = array(
-        array($idApproval, SQLSRV_PARAM_IN),
-        array('Approved', SQLSRV_PARAM_IN),
-        array(1, SQLSRV_PARAM_IN), // jumlah disetujui 1
-        array($tglKeputusan, SQLSRV_PARAM_IN),
-        array('Direktur Utama (BOD)', SQLSRV_PARAM_IN),
-        array('Disetujui sesuai kuota budget Q3', SQLSRV_PARAM_IN),
-        array(null, SQLSRV_PARAM_IN),
-        array($superAdmin, SQLSRV_PARAM_IN)
-    );
-    $stmt = sqlsrv_query($conn, $sqlRecordApp, $paramsRecordApp);
-    if ($stmt === false) {
-        throw new RuntimeException("Gagal sp_RecordApproval: " . print_r(sqlsrv_errors(), true));
-    }
-    sqlsrv_free_stmt($stmt);
+    q($conn, "{CALL dbo.sp_UpdateRequisitionStatus(?, ?, ?, ?)}", array(
+        $idReq, 'Approved', 'Disetujui BOD sesuai kuota budget Q3 (uji E2E)', $superAdmin
+    ));
 
     $stReqAfterApp = scalar($conn, "SELECT status_req FROM dbo.REQUISITIONS WHERE id_req = ?", array($idReq));
-    $jmlDisetujui = scalar($conn, "SELECT jumlah_disetujui FROM dbo.REQUISITIONS WHERE id_req = ?", array($idReq));
-    testLog("Catat Keputusan Approval BOD", ($stReqAfterApp === 'Sourcing' && (int)$jmlDisetujui === 1) ? 'OK' : 'FAIL', "Status Req: $stReqAfterApp, Jml Disetujui: $jmlDisetujui");
+    // status akan beralih ke 'Sourcing' otomatis saat job posting dibuat (LANGKAH 5)
+    testLog("BOD Menyetujui MPR", $stReqAfterApp === 'Approved' ? 'OK' : 'FAIL', "Status Req: $stReqAfterApp");
 
     // -------------------------------------------------------------
     // LANGKAH 5: Buat Job Posting & Aktifkan Form Publik
     // -------------------------------------------------------------
     $idPosting = null;
-    $sqlCreatePosting = "{CALL dbo.sp_CreatePosting(?, ?, ?, ?, ?, ?, ?)}";
+    // sig: @id_req,@id_channel,@judul_posting,@job_desc,@kualifikasi,@batch_ke,@durasi_hari,@id_posting OUT
+    $sqlCreatePosting = "{CALL dbo.sp_CreatePosting(?, ?, ?, ?, ?, ?, ?, ?)}";
     $paramsCreatePosting = array(
         array($idReq, SQLSRV_PARAM_IN),
         array(null, SQLSRV_PARAM_IN),
@@ -163,6 +150,7 @@ try {
         array('Deskripsi pekerjaan uji sistem e-rekruitmen', SQLSRV_PARAM_IN),
         array('Kualifikasi minimal berpengalaman', SQLSRV_PARAM_IN),
         array(1, SQLSRV_PARAM_IN),
+        array(14, SQLSRV_PARAM_IN),
         array(&$idPosting, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT)
     );
     $stmt = sqlsrv_query($conn, $sqlCreatePosting, $paramsCreatePosting);
@@ -189,7 +177,7 @@ try {
     $emailKandidat = 'e2e_' . time() . '@test-rpg.local';
     $waKandidat = '0812' . rand(10000000, 99999999);
 
-    $sqlSubmitApp = "{CALL dbo.sp_SubmitApplication(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)}";
+    $sqlSubmitApp = "{CALL dbo.sp_SubmitApplication(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)}";
     $paramsSubmitApp = array(
         array($testSlug, SQLSRV_PARAM_IN), // url_slug
         array(null, SQLSRV_PARAM_IN),
@@ -291,16 +279,17 @@ try {
         // B. JIKA TIPE TEST: Catat Nilai Psikotes (sp_SavePsikotes)
         if ($tipe === 'TEST') {
             $idPsi = null;
+            // sig: @id_psikotes OUT, @id_app_stage, @vendor_tes, @tanggal_tes, @skor_total(INT), @hasil, @rekomendasi, @oleh_user
             $sqlPsi = "{CALL dbo.sp_SavePsikotes(?, ?, ?, ?, ?, ?, ?, ?)}";
             $paramsPsi = array(
-                array(null, SQLSRV_PARAM_IN),
+                array(&$idPsi, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
                 array($idAppStage, SQLSRV_PARAM_IN),
                 array('Vendor Psikologi Terakreditasi', SQLSRV_PARAM_IN),
                 array(date('Y-m-d'), SQLSRV_PARAM_IN),
-                array(88.5, SQLSRV_PARAM_IN),
+                array(88, SQLSRV_PARAM_IN),
                 array('Lulus', SQLSRV_PARAM_IN),
                 array('Disarankan untuk posisi strategic execution', SQLSRV_PARAM_IN),
-                array(&$idPsi, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT)
+                array($superAdmin, SQLSRV_PARAM_IN)
             );
             $stPsi = sqlsrv_query($conn, $sqlPsi, $paramsPsi);
             if ($stPsi === false) {
@@ -313,19 +302,21 @@ try {
         // C. JIKA TIPE INTERVIEW: Catat Hasil Wawancara (sp_SaveInterview)
         if ($tipe === 'INTERVIEW') {
             $idIv = null;
+            // sig: @id_interview OUT, @id_app_stage, @tipe(Online/Offline), @jadwal, @lokasi_atau_link,
+            //      @hasil, @skor, @catatan, @id_interviewer, @peran_interviewer(HR/User/BOD), @oleh_user
             $sqlIv = "{CALL dbo.sp_SaveInterview(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)}";
             $paramsIv = array(
-                array(null, SQLSRV_PARAM_IN),
+                array(&$idIv, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
                 array($idAppStage, SQLSRV_PARAM_IN),
-                array('USER', SQLSRV_PARAM_IN), // tipe
-                array(date('Y-m-d H:i:s'), SQLSRV_PARAM_IN), // jadwal
+                array('Offline', SQLSRV_PARAM_IN),
+                array(date('Y-m-d H:i:s'), SQLSRV_PARAM_IN),
                 array('Head Office RPG Lantai 4', SQLSRV_PARAM_IN),
                 array('Lulus', SQLSRV_PARAM_IN),
-                array(85.0, SQLSRV_PARAM_IN),
+                array(85, SQLSRV_PARAM_IN),
                 array('Komunikasi sangat baik, pemahaman teknis relevan', SQLSRV_PARAM_IN),
-                array($userDept, SQLSRV_PARAM_IN), // interviewer
-                array('User Department Head', SQLSRV_PARAM_IN),
-                array(&$idIv, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT)
+                array($userDept, SQLSRV_PARAM_IN),
+                array('User', SQLSRV_PARAM_IN),
+                array($superAdmin, SQLSRV_PARAM_IN)
             );
             $stIv = sqlsrv_query($conn, $sqlIv, $paramsIv);
             if ($stIv === false) {
@@ -338,17 +329,19 @@ try {
         // D. JIKA TIPE OFFER: Catat Penawaran Kerja (sp_SaveOffer)
         if ($tipe === 'OFFER') {
             $idOff = null;
+            // sig: @id_offer OUT, @id_lamaran, @gaji_ditawarkan, @tanggal_penawaran, @tanggal_join_disepakati,
+            //      @tanggal_join_aktual, @status_offer(Nego/Terkirim/Accepted/Ditolak), @alasan, @oleh_user
             $sqlOff = "{CALL dbo.sp_SaveOffer(?, ?, ?, ?, ?, ?, ?, ?, ?)}";
             $paramsOff = array(
-                array(null, SQLSRV_PARAM_IN),
+                array(&$idOff, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
                 array($idLamaran, SQLSRV_PARAM_IN),
                 array(7500000.00, SQLSRV_PARAM_IN),
                 array(date('Y-m-d'), SQLSRV_PARAM_IN),
                 array(date('Y-m-d', strtotime('+14 days')), SQLSRV_PARAM_IN),
                 array(date('Y-m-d', strtotime('+14 days')), SQLSRV_PARAM_IN),
-                array('Accepted', SQLSRV_PARAM_IN),
+                array('Diterima', SQLSRV_PARAM_IN),
                 array('Offering disetujui kandidat tanpa negosiasi tambahan', SQLSRV_PARAM_IN),
-                array(&$idOff, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT)
+                array($superAdmin, SQLSRV_PARAM_IN)
             );
             $stOff = sqlsrv_query($conn, $sqlOff, $paramsOff);
             if ($stOff === false) {
@@ -375,7 +368,7 @@ try {
             array($idRemark, SQLSRV_PARAM_IN),
             array($superAdmin, SQLSRV_PARAM_IN),
             array("Uji otomatis E2E tahap {$cur['nama_tahap']}", SQLSRV_PARAM_IN),
-            array(&$statusBaru, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_VARCHAR, 20)
+            array(&$statusBaru, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_VARCHAR(20))
         );
         $stAdv = sqlsrv_query($conn, $sqlAdv, $paramsAdv);
         if ($stAdv === false) {
@@ -432,7 +425,7 @@ try {
         array('Kandidat membatalkan join sebelum H-1 karena alasan keluarga', SQLSRV_PARAM_IN),
         array($superAdmin, SQLSRV_PARAM_IN),
         array(1, SQLSRV_PARAM_IN), // buka kembali posting publik
-        array(&$statusBatal, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_VARCHAR, 20)
+        array(&$statusBatal, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_STRING(SQLSRV_ENC_CHAR), SQLSRV_SQLTYPE_VARCHAR(20))
     );
     $stCancel = sqlsrv_query($conn, $sqlCancelHired, $paramsCancelHired);
     if ($stCancel === false) {
@@ -463,6 +456,31 @@ try {
     echo "       - id_posting  : $idPosting\n";
     echo "       - id_kandidat : $idKandidat ($namaKandidat)\n";
     echo "       - id_lamaran  : $idLamaran\n\n";
+
+    // -------------------------------------------------------------
+    // LANGKAH 11: Bersihkan seluruh artefak uji (dev only)
+    // -------------------------------------------------------------
+    try {
+        q($conn, "DELETE FROM dbo.INTERVIEW_PARTICIPANTS WHERE id_interview IN
+                  (SELECT i.id_interview FROM dbo.INTERVIEWS i
+                   JOIN dbo.APPLICATION_STAGES s ON s.id_app_stage = i.id_app_stage WHERE s.id_lamaran = ?)", array($idLamaran));
+        q($conn, "DELETE FROM dbo.INTERVIEWS WHERE id_app_stage IN (SELECT id_app_stage FROM dbo.APPLICATION_STAGES WHERE id_lamaran = ?)", array($idLamaran));
+        q($conn, "DELETE FROM dbo.PSIKOTES_RESULTS WHERE id_app_stage IN (SELECT id_app_stage FROM dbo.APPLICATION_STAGES WHERE id_lamaran = ?)", array($idLamaran));
+        foreach (array('APPLICATION_HISTORY','APPLICATION_STAGES','APPLICATION_CONTACTS','APPLICATION_PROFILE','CANDIDATE_DOCUMENTS','CANDIDATE_BANK','OFFERS') as $t) {
+            q($conn, "DELETE FROM dbo.$t WHERE id_lamaran = ?", array($idLamaran));
+        }
+        q($conn, "DELETE FROM dbo.CANDIDATE_HEALTH WHERE id_kandidat = ?", array($idKandidat));
+        q($conn, "DELETE FROM dbo.APPLICATIONS WHERE id_lamaran = ?", array($idLamaran));
+        q($conn, "DELETE FROM dbo.CANDIDATES WHERE id_kandidat = ?", array($idKandidat));
+        q($conn, "DELETE FROM dbo.RPT_FUNNEL_HARIAN WHERE id_req = ?", array($idReq));
+        q($conn, "DELETE FROM dbo.JOB_POSTINGS WHERE id_req = ?", array($idReq));
+        q($conn, "DELETE FROM dbo.REQUISITION_APPROVALS WHERE id_req = ?", array($idReq));
+        q($conn, "DELETE FROM dbo.AUDIT_LOG WHERE nama_tabel IN ('REQUISITIONS','APPLICATIONS') AND id_baris IN (?, ?)", array($idReq, $idLamaran));
+        q($conn, "DELETE FROM dbo.REQUISITIONS WHERE id_req = ?", array($idReq));
+        echo "[INFO] Artefak uji E2E dibersihkan.\n\n";
+    } catch (Exception $ce) {
+        echo "[WARN] Sebagian artefak uji gagal dibersihkan: " . $ce->getMessage() . "\n\n";
+    }
 
 } catch (Exception $e) {
     echo "\n[EXCEPTION OCCURRED]: " . $e->getMessage() . "\n";
