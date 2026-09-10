@@ -397,10 +397,23 @@ foreach ($stages as $s) {
 
 									<!-- Kolom 1: Kandidat & Kontak -->
 									<td style="padding:12px 12px; word-break:break-word">
-										<div style="font-weight:700; font-size:13.5px; line-height:1.3; margin-bottom:3px">
-											<a href="<?= site_url('candidates/detail/' . $id_lamaran) ?>" title="Buka Profil Pelamar" style="color:var(--text); text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+										<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:4px; margin-bottom:3px">
+											<a href="<?= site_url('candidates/detail/' . $id_lamaran) ?>" title="Buka Profil Pelamar" style="font-weight:700; font-size:13.5px; line-height:1.3; color:var(--text); text-decoration:none" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
 												<?= html_escape($c['nama_lengkap']) ?>
 											</a>
+											<div style="position:relative; flex:none">
+												<button type="button" class="btn btn-sm btn-ghost pipe-menu-btn" onclick="toggleMenu(event, 'pmenu-<?= $id_app_stage ?>')" style="padding:1px 5px; font-weight:700; line-height:1; font-size:15px; border-radius:5px" title="Menu kandidat">&#8942;</button>
+												<div id="pmenu-<?= $id_app_stage ?>" class="pipe-dropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:var(--surface); border:1px solid var(--border); border-radius:8px; box-shadow:var(--shadow); min-width:180px; z-index:99; text-align:left; overflow:hidden">
+													<a href="<?= site_url('candidates/cv/' . $id_lamaran) ?>" style="display:flex; align-items:center; gap:8px; padding:9px 14px; font-size:12.5px; color:var(--text); font-weight:600; text-decoration:none; border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background='transparent'">
+														<svg style="width:14px; height:14px; flex:none; color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+														<span>Lihat CV</span>
+													</a>
+													<a href="<?= site_url('candidates/print_form/' . $id_lamaran) ?>" target="_blank" style="display:flex; align-items:center; gap:8px; padding:9px 14px; font-size:12.5px; color:var(--text); font-weight:600; text-decoration:none" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background='transparent'">
+														<svg style="width:14px; height:14px; flex:none; color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+														<span>Generate Form Pelamar</span>
+													</a>
+												</div>
+											</div>
 										</div>
 										<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:5px">
 											<span class="mono faint" style="font-size:11px">#<?= $id_lamaran ?></span>

@@ -833,7 +833,7 @@ function toggleMenu(e, id) {
   var target = document.getElementById(id);
   if (!target) return;
   var isShown = target.style.display === 'block';
-  document.querySelectorAll('.mpr-dropdown').forEach(function(el) {
+  document.querySelectorAll('.mpr-dropdown, .pipe-dropdown').forEach(function(el) {
     el.style.display = 'none';
   });
   if (!isShown) {
@@ -841,8 +841,8 @@ function toggleMenu(e, id) {
   }
 }
 document.addEventListener('click', function(e) {
-  if (!e.target.closest('.mpr-menu-btn') && !e.target.closest('.mpr-dropdown')) {
-    document.querySelectorAll('.mpr-dropdown').forEach(function(el) {
+  if (!e.target.closest('.mpr-menu-btn') && !e.target.closest('.mpr-dropdown') && !e.target.closest('.pipe-menu-btn') && !e.target.closest('.pipe-dropdown')) {
+    document.querySelectorAll('.mpr-dropdown, .pipe-dropdown').forEach(function(el) {
       el.style.display = 'none';
     });
   }
