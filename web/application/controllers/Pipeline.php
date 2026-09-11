@@ -50,6 +50,7 @@ class Pipeline extends Secured_Controller
 					'kode'  => $r['kode_stage'],
 					'tipe'  => $r['tipe_tahap'],
 					'id_stage' => (int) $r['id_stage'],
+					'urutan'   => $key,
 					'cards' => array(),
 				);
 			}

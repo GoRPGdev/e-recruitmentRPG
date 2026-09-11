@@ -104,15 +104,15 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 	background: var(--surface-2);
 }
 	/* Styling Spesifik Matriks Funnel Konversi */
-	.matrix-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; table-layout: auto; }
-	.matrix-table th { padding: 10px 8px; vertical-align: top; background: var(--surface-2); border-bottom: 2px solid var(--border); white-space: normal; }
-	.matrix-table td { padding: 10px 8px; vertical-align: middle; border-bottom: 1px solid var(--border); }
-	.matrix-col-pos { min-width: 170px; text-align: left; vertical-align: top !important; }
-	.matrix-col-stage { text-align: center; min-width: 85px; vertical-align: top !important; }
-	.matrix-stage-name { font-weight: 700; color: var(--text); font-size: 11.5px; line-height: 1.3; word-break: normal; overflow-wrap: break-word; margin-bottom: 4px; }
-	.matrix-stage-badge { font-size: 9px; padding: 2px 6px; display: inline-block; white-space: nowrap; letter-spacing: .03em; font-weight: 700; }
-	.matrix-val-badge { font-size: 11.5px; font-weight: 700; padding: 3px 8px; min-width: 28px; display: inline-block; border-radius: 6px; }
-	.matrix-col-total { text-align: right; width: 75px; min-width: 65px; }
+	.matrix-table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: auto; }
+	.matrix-table th { padding: 10px 8px; vertical-align: middle; background: var(--surface-2); border: 1px solid var(--border); border-bottom: 2px solid var(--border); white-space: normal; text-align: center; }
+	.matrix-table td { padding: 10px 8px; vertical-align: middle; border: 1px solid var(--border); text-align: center; }
+	.matrix-col-pos { min-width: 170px; text-align: left !important; vertical-align: middle !important; }
+	.matrix-col-stage { text-align: center !important; min-width: 90px; vertical-align: middle !important; }
+	.matrix-stage-name { font-weight: 700; color: var(--text); font-size: 11.5px; line-height: 1.3; word-break: normal; overflow-wrap: break-word; margin: 0 auto 4px; text-align: center; }
+	.matrix-stage-badge { font-size: 9px; padding: 2px 6px; display: inline-block; white-space: nowrap; letter-spacing: .03em; font-weight: 700; margin: 0 auto; }
+	.matrix-val-badge { font-size: 11.5px; font-weight: 700; padding: 3px 8px; min-width: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; margin: 0 auto; text-align: center; }
+	.matrix-col-total { text-align: center !important; width: 85px; min-width: 75px; vertical-align: middle !important; }
 
 	/* Modal Popup Fullscreen Matriks */
 	dialog.dialog-fullscreen {
