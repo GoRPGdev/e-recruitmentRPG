@@ -4,33 +4,37 @@
 ERD §10, RENCANA §1.1. Dokumen ini = satu sumber kebenaran untuk RBAC + apa yang
 wajib dicatat ke `ACCESS_LOG_SENSITIF`.
 
-Diperbarui: 2026-09-04 (Kiki, `feat/rbac-akses`).
+Diperbarui: 2026-09-14 (Standardisasi SUPER_ADMIN & USER_DEPT, Alur MPR 2-Putaran HR & BOD).
 
 ---
 
-## 1. Peran & permission (kondisi `main` sekarang)
+## 1. Peran & permission (kondisi terkini)
 
-Sumber: `M_ROLE_PERMISSIONS` (seed `20260908_1200` + `20260909_1000`).
+Sumber: `M_ROLE_PERMISSIONS` (pembaharuan migrasi `20260910_1200__role_super_admin.sql` & `20260910_1300__deactivate_other_roles.sql`).
 
-| Permission | IT_ADMIN | HR_ADMIN | HR_SPV | USER_DEPT | BOD | VIEWER |
-|---|:-:|:-:|:-:|:-:|:-:|:-:|
-| `LIHAT_KANDIDAT` | – | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `LIHAT_CV` | – | ✅ | ✅ | ✅ | ✅ | – |
-| `LIHAT_INTERVIEW` | – | ✅ | ✅ | ✅ | ✅ | – |
-| `LIHAT_DOK_IDENTITAS` (KTP/KK/Ijazah/NPWP) | – | ✅ | ✅ | – | – | – |
-| `LIHAT_GAJI_PELAMAR` (gaji terakhir & harapan) | – | ✅ | ✅ | – | – | – |
-| `LIHAT_FINANSIAL` (no. rekening) | – | – | ✅ | – | – | – |
-| `LIHAT_GAJI` (range gaji & offer) | – | – | ✅ | – | ✅ | – |
-| `LIHAT_KESEHATAN` (riwayat penyakit) | – | – | ✅ | – | – | – |
-| `APPROVE` (keputusan BOD) | – | – | – | – | ✅ | – |
-| `BUAT_MPR` (buat & submit requisition) | – | ✅ | ✅ | ✅ | – | – |
-| `EXPORT` | – | ✅ | ✅ | – | – | – |
-| `KELOLA_REKRUTMEN` (link form, token, entry, import, pipeline, MPR, seleksi) | – | ✅ | ✅ | – | – | – |
-| `EDIT_FLOW_TEMPLATE` (flow/stage/remark/dok wajib) | ✅ | – | –¹ | – | – | – |
+Sistem kini beroperasi dengan 2 peran aktif terpusat:
+- **`SUPER_ADMIN`**: Mengakomodasi seluruh kendali operasional HR, IT, dan BOD tanpa batasan modul maupun departemen (memiliki seluruh 13 permissions).
+- **`USER_DEPT`**: Peran khusus Kepala Departemen / Hiring Manager pemohon (dibatasi scoping departemen sendiri via `current_user_dept()`).
 
-¹ `EDIT_FLOW_TEMPLATE` untuk HR_SPV **sengaja belum di-grant** — dibuka setelah 2 siklus / 2 bulan (ERD §10.1). Cukup 1 INSERT ke `M_ROLE_PERMISSIONS` nanti.
+| Permission | SUPER_ADMIN | USER_DEPT | Keterangan & Tingkat Sensitif |
+|---|:---:|:---:|---|
+| `LIHAT_KANDIDAT` | ✅ | ✅ (Dept sendiri) | Melihat daftar kandidat & pipeline |
+| `LIHAT_CV` | ✅ | ✅ (Dept sendiri) | Mengunduh & melihat berkas CV kandidat |
+| `LIHAT_INTERVIEW` | ✅ | ✅ (Dept sendiri) | Melihat jadwal & hasil evaluasi interview |
+| `LIHAT_DOK_IDENTITAS` | ✅ | – | KTP, KK, Ijazah, NPWP (**Dicatat log sensitif**) |
+| `LIHAT_GAJI_PELAMAR` | ✅ | – | Gaji terakhir & diharapkan kandidat (**Dicatat log sensitif**) |
+| `LIHAT_FINANSIAL` | ✅ | – | Nomor rekening bank kandidat (**Dicatat log sensitif**) |
+| `LIHAT_GAJI` | ✅ | – | Range gaji formasi & penawaran offer (**Dicatat log sensitif**) |
+| `LIHAT_KESEHATAN` | ✅ | – | Riwayat penyakit kandidat UU PDP (**Dicatat log sensitif**) |
+| `APPROVE` | ✅ | – | Keputusan persetujuan formasi MPR tingkat BOD |
+| `BUAT_MPR` | ✅ | ✅ (Dept sendiri) | Membuat & mengajukan dokumen formasi MPR |
+| `EXPORT` | ✅ | – | Ekspor data pelamar ke spreadsheet Excel |
+| `KELOLA_REKRUTMEN` | ✅ | – | Transisi seleksi, link form, token, posting, master |
+| `EDIT_FLOW_TEMPLATE` | ✅ | – | Konfigurasi tahapan & alur rekrutmen |
 
-**Tiga tingkat data pribadi** (CLAUDE.md):
+*(Catatan historis: Peran lawas seperti IT_ADMIN, HR_ADMIN, HR_SPV, BOD, dan VIEWER telah dinonaktifkan dan dilebur fungsinya ke dalam peran SUPER_ADMIN).*
+
+**Tiga tingkat data pribadi** (CLAUDE.md & UU PDP No. 27/2022):
 1. **Umum** — daftar kandidat, CV, interview → `LIHAT_KANDIDAT` / `LIHAT_CV` / `LIHAT_INTERVIEW`. Tidak dicatat per-akses.
 2. **Dokumen identitas** — KTP/KK/Ijazah/NPWP → `LIHAT_DOK_IDENTITAS`. **Dicatat** `ACCESS_LOG_SENSITIF` jenis `DOK_IDENTITAS`.
 3. **Finansial & khusus** — rekening (`LIHAT_FINANSIAL`), gaji (`LIHAT_GAJI` / `LIHAT_GAJI_PELAMAR`), kesehatan (`LIHAT_KESEHATAN`). **Dicatat** jenis `FINANSIAL` / `GAJI` / `KESEHATAN`.
@@ -63,9 +67,10 @@ saat login). Helper: `has_permission()`, `has_any_permission()`, `require_permis
 | **Kelola Penawaran Kerja (Offer)** | `Pipeline::save_offer` | `require_permission('KELOLA_REKRUTMEN')` | ✅ `GAJI` bila nominal gaji disimpan/diubah (`LIHAT_GAJI`) |
 | MPR list | `Requisitions::index` | Terbuka bagi seluruh peran login (G4 ditutup HR) | — |
 | MPR view | `Requisitions::view` | Terbuka bagi seluruh peran login | ✅ `GAJI` bila range gaji tampil (`can_sensitif('GAJI')`), tercatat ke `ACCESS_LOG_SENSITIF` |
-| **MPR create / submit** | `Requisitions::create/submit` | `require_permission('BUAT_MPR')` (G6) | — |
+| **MPR create / edit / submit HR** | `Requisitions::create/edit/submit_hr` | `require_permission('BUAT_MPR')` (G6) | — |
+| **MPR review HR & teruskan ke BOD** | `Requisitions::submit` | `require_permission('BUAT_MPR')` / HR | — |
+| **MPR keputusan & revisi HR/BOD** | `Requisitions::update_status` | `require_any_permission(['APPROVE', 'KELOLA_REKRUTMEN'])` | — |
 | MPR post job | `Requisitions::post_job` | `require_permission('KELOLA_REKRUTMEN')` | — |
-| **Catat keputusan BOD** | `Requisitions::approve` | `require_any_permission(['APPROVE', 'KELOLA_REKRUTMEN'])` (G1) | — |
 
 Kolom gaji di export dipilih `Dashboard_model::candidates_export($f, $perms)` —
 `gaji_terakhir`/`gaji_diharapkan` hanya bila `LIHAT_GAJI_PELAMAR`, `no_rekening`/`nama_bank`

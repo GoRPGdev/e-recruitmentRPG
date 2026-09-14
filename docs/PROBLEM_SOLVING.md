@@ -378,5 +378,89 @@
   Memperbarui `web/application/views/dashboard/index.php` dengan arsitektur CSS 1-layar, komponen tab interaktif ringan, dan sticky matrix scrolling.
 - **Status:** Resolved & Verified.
 
+---
+
+### [PS-042] Implementasi Formulir Data Pelamar Formal A-I dan Generator Tautan Onboarding WhatsApp
+- **Problem:**
+  Pelamar yang melamar via link publik Google Forms hanya mengisi data ringkas (21 field), padahal proses interview tatap muka dan onboarding resmi RPG mensyaratkan dokumen resmi *Formulir Data Pelamar RPG (Bagian A-I)* yang memuat data susunan keluarga, riwayat pendidikan & kursus, rekap pekerjaan lengkap, kuesioner evaluasi diri, riwayat penyakit, kontak darurat, dan pas foto resmi.
+- **Identifikasi:**
+  1. Skema database diperluas melalui migrasi `20260912_1000`, `20260912_1300`, `20260912_1400`, dan `20260912_1500` mencakup:
+     - `dbo.APPLICATION_PROFILE_EXTENDED` (biodata lengkap, evaluasi diri, minat & konsep pribadi, informasi umum).
+     - `dbo.CANDIDATE_FAMILY` (susunan keluarga: orang tua, saudara kandung, pasangan, anak).
+     - `dbo.CANDIDATE_EDUCATION` & `dbo.CANDIDATE_COURSES` (pendidikan formal & non-formal).
+     - `dbo.CANDIDATE_WORK_EXPERIENCE` (riwayat pekerjaan terinci: gaji, tugas, alasan berhenti).
+     - `dbo.CANDIDATE_EMERGENCY_CONTACTS` (kontak darurat keluarga).
+  2. Dibuat Stored Procedure `dbo.sp_SaveOnboardingData`, `dbo.sp_AddCandidateFamilyMember`, dan `dbo.sp_AddCandidateWorkExperience`.
+  3. Dibangun halaman pengisian form pelamar formal publik bertoken (`onboarding/form.php`) yang identik dengan dokumen PDF cetak resmi RPG, dilengkapi validasi interaktif dan upload pas foto.
+  4. Pada papan pipeline (`pipeline/board.php`), ditambahkan menu kebab (⋮) dengan generator link onboarding bertoken (`FORM_TOKENS`) yang dilengkapi tombol salin tautan instan dan tombol share WhatsApp otomatis (`wa.me`) serta opsi cetak dokumen formulir fisik A-I.
+- **Solusi:**
+  Membuat modul onboarding terintegrasi pada `controllers/Onboarding.php`, `models/Candidate_model.php`, dan `views/onboarding/form.php` serta dialog popup token di `views/pipeline/board.php`.
+- **Status:** Resolved & Verified.
+
+---
+
+### [PS-043] Alur Pengajuan MPR 2-Putaran Evaluasi (Review HR & Review BOD) dengan Arahan Catatan Revisi
+- **Problem:**
+  Sebelumnya alur pengajuan penambahan karyawan (MPR) hanya memiliki 1 tahap approval BOD langsung tanpa evaluasi beban kerja oleh Tim HR. HR membutuhkan mekanisme verifikasi awal, dan pemohon membutuhkan transparansi alasan revisi jika formasi dikembalikan oleh HR maupun BOD.
+- **Identifikasi:**
+  1. Skema status MPR diperluas melalui migrasi `20260911_1100`, `20260912_1600`, `20260913_1000`, dan `20260913_1100`:
+     - Status bertahap: `Draft` ➔ `Review_HR` ➔ `Review_BOD` ➔ `Approved`.
+     - Kemungkinan revisi: `Revisi_HR` (dengan kolom `catatan_hr`) dan `Revisi_BOD` (dengan kolom `catatan_bod`).
+     - Status penolakan terpisah: `Ditolak_HR` dan `Ditolak_BOD`.
+  2. Dibuat Stored Procedure `dbo.sp_SubmitToHR`, `dbo.sp_SubmitToBOD`, dan `dbo.sp_UpdateRequisitionCatatanHR`.
+  3. Tampilan detail MPR (`requisitions/view.php`) dan edit form (`requisitions/edit.php`) diperkaya banner peringatan visual arahan revisi (`catatan_hr` / `catatan_bod`) agar pemohon mengetahui poin-poin yang harus diperbaiki sebelum mengajukan ulang.
+  4. Seluruh label status dan teks tampilan yang memuat kata "Direksi" distandarisasikan menjadi "BOD" (*Review BOD*, *Revisi dari BOD*, *Ditolak BOD*).
+- **Solusi:**
+  Memperbarui `controllers/Requisitions.php`, `models/Requisition_model.php`, `helpers/status_helper.php`, dan `views/requisitions/`.
+- **Status:** Resolved & Verified.
+
+---
+
+### [PS-044] Filter Rekap No. MPR Dinamis pada Daftar Pelamar & Dashboard Analitik Rekrutmen
+- **Problem:**
+  Tampilan daftar pelamar (`candidates/index.php`) dan analitik dashboard (`dashboard/index.php`) sebelumnya mencampur seluruh pelamar tanpa opsi filter berdasarkan dokumen nomor MPR lowongan terkait, serta belum membedakan antara MPR yang masih aktif dibuka vs MPR yang sudah selesai/ditutup.
+- **Identifikasi:**
+  1. Pada `Candidate_model.php` dan `Dashboard_model.php`, dibuat method `requisitions()` yang mengelompokkan MPR berdasarkan status aktif:
+     - `is_aktif_mpr = 1`: status `Sourcing`, `Approved`, `Sourcing_Ulang`.
+     - `is_aktif_mpr = 0`: status `Terpenuhi`, `Ditolak_HR`, `Ditolak_BOD`, `Dibatalkan`, `Kadaluarsa`.
+  2. Pada controller `Candidates.php`, parameter filter `id_req` ditangkap dan diterapkan ke query `candidates_list` dan counter data pelamar.
+  3. Pada controller `Dashboard.php` dan `Export.php`, parameter `id_req` diintegrasikan ke `dashboard()` (panggilan 11-param SP `sp_Dashboard`), matriks funnel posisi x tahap `position_stage_funnel()`, distribusi remark `applicant_remarks_summary()`, tren 14 hari `funnel_trend()`, dan ekspor spreadsheet kandidat `candidates_export()`.
+  4. Pada view `candidates/index.php` dan `dashboard/index.php`, dropdown filter No. MPR dirender dengan `<optgroup label="MPR Aktif / Dibuka">` dan `<optgroup label="MPR Selesai / Ditutup">`.
+- **Solusi:**
+  Memperbarui `database/procedures/sp_Dashboard.sql`, `models/Dashboard_model.php`, `models/Candidate_model.php`, `controllers/Dashboard.php`, `controllers/Candidates.php`, `controllers/Export.php`, dan views terkait.
+- **Status:** Resolved & Verified.
+
+---
+
+### [PS-045] Penataan Ulang Alur Tahap Sisipan (Ad-Hoc Stage): Wajib Remark Lanjut, Auto-Pindah Tahap, dan Eliminasi Opsi Duplikat
+- **Problem:**
+  1. Pada modal sisip tahap di papan seleksi (`pipeline/board.php`), tahap aktif saat ini sebelumnya selesai otomatis tanpa mengikat kode remark/keputusan kelulusan, sehingga laporan histori kelolosan menjadi kosong (`id_remark = NULL`).
+  2. Kandidat tidak langsung otomatis berpindah ke tahap sisipan tersebut setelah form disimpan, melainkan tertahan di tahap lama dan harus diproses manual lagi.
+  3. Pilihan dropdown tahap tambahan masih memunculkan tahap yang sudah pernah dilalui kandidat (misal: tes koding sudah pernah disisipkan, namun tetap muncul kembali di dropdown).
+  4. Pengelompokan baris kandidat di `Pipeline.php` sebelumnya memakai integer `$key = (int) $r['urutan']`, sehingga tahap sisipan yang urutannya bertepatan dengan tahap lain tertimpa di view.
+- **Identifikasi:**
+  1. Modal sisip tahap diperbarui untuk mewajibkan pemilihan remark untuk tahap saat ini khusus yang berstatus `LANJUT` (opsi tolak disembunyikan otomatis).
+  2. SP `dbo.sp_InsertAdHocStage` diperbarui dengan parameter `@id_remark`:
+     - Tahap aktif saat ini ditandai `status_tahap = 'Lulus'` dengan mengikat `@id_remark` dan mencatat waktu selesai.
+     - Tahap tambahan baru langsung diaktifkan (`status_tahap = 'Berjalan'`, `is_sisipan = 1`).
+     - Pointer `id_stage_sekarang` di tabel `dbo.APPLICATIONS` otomatis dipindahkan ke tahap tambahan baru tersebut, dan status global dipastikan `In_Progress`.
+  3. Driver multi-statement di `Requisition_model::insert_adhoc` dilengkapi `do { ... } while (sqlsrv_next_result($stmt))` agar transaksi commit SQL Server tuntas dieksekusi.
+  4. Pada controller `Pipeline.php`, diambil data seluruh tahap yang pernah dimiliki tiap kandidat (`get_stages_for_lamaran`), lalu JavaScript modal menyaring dropdown secara dinamis: opsi tahap yang sudah pernah ada pada kandidat otomatis dihilangkan dari dropdown.
+  5. Pengelompokan papan seleksi diubah menjadi per `id_stage` unik dengan lencana khusus *"Tahap Tambahan"*.
+- **Solusi:**
+  Memperbarui `database/procedures/sp_InsertAdHocStage.sql`, `models/Requisition_model.php`, `controllers/Pipeline.php`, dan `views/pipeline/board.php`.
+- **Status:** Resolved & Verified.
+
+---
+
+### [PS-046] Penghapusan Tombol Cepat Pengujian pada Halaman Login Portal Internal RPG
+- **Problem:**
+  Halaman login portal internal RPG (`views/auth/login.php`) sebelumnya menampilkan kotak tombol "Akses Cepat Pengujian" untuk akun demo Super Admin dan User Dept. Untuk kesiapan operasional rilis dan profesionalitas tampilan, pengguna harus memasukkan kredensial autentikasi sendiri secara mandiri.
+- **Identifikasi:**
+  Menghilangkan kontainer tombol pintasan pengujian dan fungsi JavaScript `fillLogin()`, menyisakan form login standar yang bersih, aman, dan profesional.
+- **Solusi:**
+  Memperbarui `web/application/views/auth/login.php`.
+- **Status:** Resolved & Verified.
+
 
 

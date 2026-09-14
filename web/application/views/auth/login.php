@@ -40,29 +40,4 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 		<button type="submit" style="width:100%; padding:10px; font-size:14px">Masuk ke Sistem</button>
 	<?= form_close() ?>
-
-	<div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--border)">
-		<div class="eyebrow" style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:center">
-			<span>Akses Cepat Pengujian (Role Aktif)</span>
-			<span style="color:var(--text-faint); font-weight:normal; text-transform:none">pass: demo123</span>
-		</div>
-		<div style="display:flex; flex-direction:column; gap:8px">
-			<button type="button" class="btn btn-sm btn-primary" onclick="fillLogin('demo_super_admin')" style="width:100%; justify-content:center; padding:9px 12px; font-size:12.5px; background:var(--accent-ink); color:#fff">
-				<svg style="width:15px; height:15px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-				<strong>SUPER_ADMIN (Akses Penuh Semua Modul & Departemen)</strong>
-			</button>
-			<button type="button" class="btn btn-sm btn-ghost" onclick="fillLogin('demo_user_dept')" style="width:100%; justify-content:center; padding:8px 12px; font-size:12px">
-				<svg style="width:14px; height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-				<strong>USER_DEPT (Departemen Marketing)</strong>
-			</button>
-		</div>
-	</div>
 </main>
-
-<script>
-function fillLogin(u) {
-	document.getElementById('username').value = u;
-	document.getElementById('password').value = 'demo123';
-	document.getElementById('loginForm').submit();
-}
-</script>

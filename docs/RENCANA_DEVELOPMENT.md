@@ -386,6 +386,31 @@ Pembagian di bawah bisa ditukar sesuai preferensi — yang penting jangan dua or
 
 ---
 
+### FASE 4b — Peningkatan Alur Kerja HR & Eksekutif · September 2026 · **SELESAI ✅**
+- [x] **Alur Pengajuan MPR 2-Putaran (Review HR & Review BOD):**
+  - Alur review berjenjang: Draft ➔ Review HR (analisis beban kerja & alokasi budget) ➔ Review BOD (persetujuan formasi & headcount).
+  - Mekanisme arahan revisi formal via `catatan_hr` dan `catatan_bod` lengkap dengan banner peringatan visual di halaman detail dan form edit MPR.
+  - Standardisasi seluruh label status pengajuan MPR menjadi **BOD** (*Review BOD*, *Revisi dari BOD*, *Ditolak BOD*).
+- [x] **Formulir Data Pelamar Formal A-I & Onboarding Portal:**
+  - Digitalisasi menyeluruh formulir formal pelamar identik dokumen cetak resmi RPG (Bagian A-I: Biodata, Keluarga, Pendidikan, Pengalaman Kerja, Kuesioner Evaluasi Diri, Riwayat Penyakit, Kontak Darurat, dan Pas Foto).
+  - Generator tautan form pelamar bertoken aman di papan pipeline (`pipeline/board.php`) lengkap dengan tombol salin instan dan tombol buka WhatsApp otomatis (`https://wa.me/...`).
+  - Fitur cetak/print fisik dokumen Form Pelamar A-I untuk arsip HR dan pewawancara.
+- [x] **Standardisasi Alur Tunggal Resmi RPG (`STD_RPG`) & 3 Efek Status Baku:**
+  - Standardisasi alur universal RPG (`STD_RPG`) dan penyederhanaan master remark (`M_REMARKS`) ke 3 efek status baku: `LANJUT`, `HIRED`, `TOLAK`.
+  - Pembersihan modul talent pool agar alur seleksi fokus dan ramping.
+- [x] **Redesain Dashboard Single-Screen & Matriks Dinamis Posisi x Tahap:**
+  - Tata letak pas 1 layar (single-screen viewport) bebas scrollbar ganda dengan tab terpadu (SLA, Aging, Tren 14 Hari).
+  - Matriks dinamis `Posisi Lowongan x Tahapan Seleksi` berbasis filter tanggal spesifik maupun range tanggal.
+  - Filter No. MPR dinamis yang memisahkan kelompok *MPR Aktif / Dibuka* vs *MPR Selesai / Ditutup*.
+- [x] **Penyempurnaan Tahap Sisipan (Ad-Hoc) Auto-Lanjut & Eliminasi Duplikat:**
+  - Modal sisip tahap mewajibkan pemilihan remark `LANJUT` untuk menyelesaikan tahap aktif saat ini (opsi tolak disembunyikan otomatis).
+  - Kandidat yang disisipi tahap otomatis langsung berpindah dan aktif (`status_tahap = 'Berjalan'`, `is_sisipan = 1`) di tahap tambahan tersebut dalam satu aksi tunggal.
+  - Dropdown pilihan tahap tambahan secara dinamis menyembunyikan tahap yang sudah pernah dilalui kandidat (seperti tes koding).
+- [x] **Penataan Halaman Login Portal Internal:**
+  - Form login mandiri, bersih, dan profesional (kotak tombol akses cepat pengujian dihapus).
+
+---
+
 ### FASE 5 — UAT & Go-Live · ± 1–2 minggu · **BARENG**
 - [ ] UAT bersama HR dengan data nyata
 - [ ] Migrasi data historis 2026
