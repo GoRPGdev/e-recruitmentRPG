@@ -150,6 +150,26 @@ class Posting_model extends CI_Model
 
 	/* ================= FORM_TOKENS ================================= */
 
+	public function get_lamaran($id_lamaran)
+	{
+		$q = $this->db->query(
+			'SELECT a.id_lamaran, a.id_req, a.status_global, a.tanggal_lamar,
+			        c.id_kandidat, c.nama_lengkap, c.email, c.no_wa_normal,
+			        pos.nama_posisi, r.no_mpr, d.nama AS nama_departemen, o.nama_outlet
+			 FROM dbo.APPLICATIONS a
+			 JOIN dbo.CANDIDATES c   ON c.id_kandidat = a.id_kandidat
+			 JOIN dbo.REQUISITIONS r ON r.id_req = a.id_req
+			 JOIN dbo.M_POSISI pos   ON pos.id_posisi = r.id_posisi
+			 LEFT JOIN dbo.M_DEPARTEMEN d ON d.id_departemen = pos.id_departemen
+			 LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
+			 WHERE a.id_lamaran = ?',
+			array((int) $id_lamaran)
+		);
+		$row = $q->row_array();
+		$q->free_result();
+		return $row ?: NULL;
+	}
+
 	public function list_tokens($id_lamaran)
 	{
 		$q = $this->db->query(
