@@ -348,8 +348,26 @@ details.stage-section:not([open]) .stage-chevron-icon {
 	overflow: hidden;
 }
 .rpg-modal[open] {
-	display: flex;
-	flex-direction: column;
+	display: flex !important;
+	flex-direction: column !important;
+	position: fixed !important;
+	top: 50% !important;
+	left: 50% !important;
+	transform: translate(-50%, -50%) !important;
+	margin: 0 auto !important;
+	z-index: 100000 !important;
+}
+dialog#dlg-notes-history, .rpg-modal#dlg-notes-history {
+	border: 1px solid var(--border);
+	border-radius: 14px;
+	padding: 0;
+	max-width: 620px;
+	width: 95%;
+	max-height: 85vh;
+	background: var(--surface);
+	color: var(--text);
+	box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+	overflow: hidden;
 }
 .rpg-modal::backdrop {
 	background: rgba(12, 18, 14, 0.6);
@@ -902,7 +920,13 @@ details.stage-section:not([open]) .stage-chevron-icon {
 												<?= html_escape($fc['status_global']) ?>
 											</span>
 										</td>
-										<td style="padding:10px 14px; text-align:right">
+										<td style="padding:10px 14px; text-align:right; white-space:nowrap">
+											<button type="button" class="btn btn-sm btn-ghost" style="padding:4px 9px; font-size:11.5px; margin-right:4px; display:inline-flex; align-items:center; gap:4px"
+												onclick="openNotesHistoryModal(<?= (int) $fc['id_lamaran'] ?>, <?= json_encode($fc['nama_lengkap']) ?>)"
+												title="Lihat riwayat catatan seluruh tahapan">
+												<svg style="width:11px; height:11px; color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+												<span>Riwayat Catatan</span>
+											</button>
 											<a href="<?= site_url('candidates/detail/' . (int) $fc['id_lamaran']) ?>" class="btn btn-sm btn-ghost" style="padding:4px 8px; font-size:11.5px" title="Lihat Profil Pelamar">
 												Profil
 											</a>
@@ -1076,7 +1100,7 @@ details.stage-section:not([open]) .stage-chevron-icon {
 				Kandidat: <strong id="notes-history-nama-kandidat" style="color:var(--text)">-</strong>
 			</div>
 		</div>
-		<button type="button" class="rpg-modal-close" onclick="document.getElementById('dlg-notes-history').close()">&times;</button>
+		<button type="button" class="rpg-modal-close" onclick="closeNotesHistoryModal()">&times;</button>
 	</div>
 	<div class="rpg-modal-body" style="padding:16px 20px; max-height:65vh; overflow-y:auto">
 		<div id="notes-history-container" style="display:flex; flex-direction:column; gap:12px">
@@ -1084,7 +1108,7 @@ details.stage-section:not([open]) .stage-chevron-icon {
 		</div>
 	</div>
 	<div class="rpg-modal-footer" style="background:var(--surface-2); display:flex; justify-content:flex-end">
-		<button type="button" class="btn btn-primary" onclick="document.getElementById('dlg-notes-history').close()">Tutup</button>
+		<button type="button" class="btn btn-primary" onclick="closeNotesHistoryModal()">Tutup</button>
 	</div>
 </dialog>
 
@@ -1785,15 +1809,38 @@ function escapeHtml(str) {
 		.replace(/'/g, '&#039;');
 }
 
+function closeNotesHistoryModal() {
+	var dlg = document.getElementById('dlg-notes-history');
+	if (!dlg) return;
+	if (typeof dlg.close === 'function') {
+		try { dlg.close(); } catch (e) {}
+	}
+	dlg.removeAttribute('open');
+	dlg.style.display = 'none';
+}
+
 function openNotesHistoryModal(idLamaran, namaKandidat) {
+	var dlg = document.getElementById('dlg-notes-history');
+	if (!dlg) {
+		alert('Modal riwayat catatan tidak ditemukan.');
+		return;
+	}
+
 	document.getElementById('notes-history-nama-kandidat').textContent = namaKandidat + ' (#' + idLamaran + ')';
 	var container = document.getElementById('notes-history-container');
 	container.innerHTML = '';
 
-	var list = (candidateStageHistoryMap && candidateStageHistoryMap[idLamaran]) || [];
+	var list = [];
+	if (typeof candidateStageHistoryMap !== 'undefined' && candidateStageHistoryMap) {
+		list = candidateStageHistoryMap[idLamaran] || candidateStageHistoryMap[String(idLamaran)] || [];
+	}
 
-	if (list.length === 0) {
-		container.innerHTML = '<div style="padding:28px 16px; text-align:center; color:var(--text-muted); font-size:13px">Belum ada riwayat catatan tahapan untuk kandidat ini.</div>';
+	if (!list || list.length === 0) {
+		container.innerHTML = '<div style="padding:32px 16px; text-align:center; color:var(--text-muted); font-size:13px">' +
+			'<div style="font-size:24px; margin-bottom:8px">📋</div>' +
+			'<strong style="color:var(--text)">Belum ada catatan evaluasi sebelumnya</strong>' +
+			'<div class="muted" style="margin-top:4px">Kandidat belum memiliki catatan dari tahapan seleksi sebelumnya.</div>' +
+		'</div>';
 	} else {
 		list.forEach(function(item) {
 			var isCurrent = (item.status_tahap === 'Berjalan');
@@ -1815,40 +1862,40 @@ function openNotesHistoryModal(idLamaran, namaKandidat) {
 			}
 
 			var card = document.createElement('div');
-			card.style.cssText = 'border:1px solid ' + (isCurrent ? 'var(--accent)' : 'var(--border)') + '; border-radius:8px; padding:12px 14px; background:' + (isCurrent ? 'rgba(2, 132, 199, 0.05)' : 'var(--surface)');
+			card.style.cssText = 'border:1.5px solid ' + (isCurrent ? 'var(--accent)' : 'var(--border)') + '; border-radius:9px; padding:13px 15px; background:' + (isCurrent ? 'rgba(2, 132, 199, 0.05)' : 'var(--surface)');
 
-			var sisipanBadge = item.is_sisipan == 1 ? '<span style="font-size:9.5px; background:rgba(217,119,6,0.15); color:#d97706; border:1px solid rgba(217,119,6,0.35); padding:1px 5px; border-radius:4px; font-weight:700; margin-left:4px">Tahap Tambahan</span>' : '';
+			var sisipanBadge = (item.is_sisipan == 1) ? '<span style="font-size:9.5px; background:rgba(217,119,6,0.15); color:#d97706; border:1px solid rgba(217,119,6,0.35); padding:1px 6px; border-radius:4px; font-weight:700; margin-left:4px">Tahap Tambahan</span>' : '';
 
 			var headerDiv = document.createElement('div');
 			headerDiv.style.cssText = 'display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:6px';
 			headerDiv.innerHTML = '<div style="display:flex; align-items:center; gap:6px">' +
-				'<span style="font-size:11px; font-weight:700; color:var(--text-muted); font-family:monospace">#' + item.urutan + '</span>' +
+				'<span style="font-size:11px; font-weight:700; color:var(--text-muted); font-family:monospace; background:var(--surface-2); padding:2px 6px; border-radius:4px">#' + item.urutan + '</span>' +
 				'<strong style="font-size:13.5px; color:var(--text)">' + escapeHtml(item.nama_tahap) + '</strong>' +
 				sisipanBadge +
 			'</div>' +
-			'<span class="tag ' + statusTagClass + '" style="font-size:10.5px; padding:2px 7px">' + escapeHtml(statusLabel) + '</span>';
+			'<span class="tag ' + statusTagClass + '" style="font-size:10.5px; padding:2px 8px; font-weight:600">' + escapeHtml(statusLabel) + '</span>';
 
 			var metaDiv = document.createElement('div');
 			metaDiv.style.cssText = 'font-size:11.5px; color:var(--text-muted); margin-bottom:8px; display:flex; gap:12px; flex-wrap:wrap';
 			var dateInfo = item.tanggal_selesai ? 'Selesai: ' + escapeHtml(item.tanggal_selesai) : (item.tanggal_mulai ? 'Mulai: ' + escapeHtml(item.tanggal_mulai) : '');
-			metaDiv.innerHTML = '<span>PIC: <strong>' + escapeHtml(item.nama_pic || 'Tim HR') + '</strong></span>' + (dateInfo ? '<span>' + dateInfo + '</span>' : '');
+			metaDiv.innerHTML = '<span>Evaluator / PIC: <strong>' + escapeHtml(item.nama_pic || 'Tim HR') + '</strong></span>' + (dateInfo ? '<span>&bull; ' + dateInfo + '</span>' : '');
 
 			card.appendChild(headerDiv);
 			card.appendChild(metaDiv);
 
 			if (item.label_remark) {
 				var rmkDiv = document.createElement('div');
-				rmkDiv.style.cssText = 'margin-bottom:6px; font-size:12px';
-				rmkDiv.innerHTML = '<span style="color:var(--text-muted)">Keputusan / Remark: </span><span class="tag accent" style="font-size:10.5px; padding:1px 6px; font-weight:600">' + escapeHtml(item.label_remark) + '</span>';
+				rmkDiv.style.cssText = 'margin-bottom:7px; font-size:12px';
+				rmkDiv.innerHTML = '<span style="color:var(--text-muted); font-weight:500">Keputusan / Remark: </span><span class="tag accent" style="font-size:10.5px; padding:2px 7px; font-weight:600">' + escapeHtml(item.label_remark) + '</span>';
 				card.appendChild(rmkDiv);
 			}
 
 			var noteBox = document.createElement('div');
-			noteBox.style.cssText = 'background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:8px 10px; font-size:12.5px; line-height:1.5; color:var(--text); white-space:pre-line; word-break:break-word';
-			if (item.catatan) {
-				noteBox.innerHTML = '<div style="font-size:10.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:3px">Catatan HR:</div>' + escapeHtml(item.catatan);
+			noteBox.style.cssText = 'background:var(--surface-2); border:1px solid var(--border); border-radius:7px; padding:9px 12px; font-size:12.5px; line-height:1.55; color:var(--text); white-space:pre-line; word-break:break-word';
+			if (item.catatan && String(item.catatan).trim() !== '') {
+				noteBox.innerHTML = '<div style="font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:3px">Catatan HR:</div>' + escapeHtml(item.catatan);
 			} else {
-				noteBox.innerHTML = '<div style="font-size:10.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:3px">Catatan HR:</div><span style="color:var(--text-muted); font-style:italic">Tidak ada catatan pada tahap ini.</span>';
+				noteBox.innerHTML = '<div style="font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:3px">Catatan HR:</div><span style="color:var(--text-muted); font-style:italic">Tidak ada catatan pada tahap ini.</span>';
 			}
 			card.appendChild(noteBox);
 
@@ -1856,8 +1903,34 @@ function openNotesHistoryModal(idLamaran, namaKandidat) {
 		});
 	}
 
-	document.getElementById('dlg-notes-history').showModal();
+	dlg.style.display = 'flex';
+	try {
+		if (typeof dlg.showModal === 'function') {
+			if (dlg.open) dlg.close();
+			dlg.showModal();
+		} else {
+			dlg.setAttribute('open', '');
+		}
+	} catch (e) {
+		console.warn('showModal fallback:', e);
+		dlg.setAttribute('open', '');
+	}
 }
+
+// Tutup modal riwayat catatan saat klik di luar area modal (backdrop)
+(function() {
+	var historyDlg = document.getElementById('dlg-notes-history');
+	if (historyDlg) {
+		historyDlg.addEventListener('click', function(e) {
+			var rect = historyDlg.getBoundingClientRect();
+			var isInDialog = (rect.top <= e.clientY && e.clientY <= rect.top + rect.height
+				&& rect.left <= e.clientX && e.clientX <= rect.left + rect.width);
+			if (!isInDialog) {
+				closeNotesHistoryModal();
+			}
+		});
+	}
+})();
 
 window.addEventListener('scroll', closeCandidateMenu, true);
 window.addEventListener('resize', closeCandidateMenu);

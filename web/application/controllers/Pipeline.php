@@ -103,11 +103,17 @@ class Pipeline extends Secured_Controller
 		// Ambil kandidat dengan status final (Rejected, Hired, Withdrawn, dll.)
 		$final_candidates = $this->requisition_model->final_candidates($id_req);
 
+		$all_lamaran_ids = $lamaran_ids;
+		foreach ($final_candidates as $fc) {
+			$all_lamaran_ids[] = (int) $fc['id_lamaran'];
+		}
+		$all_lamaran_ids = array_values(array_unique($all_lamaran_ids));
+
 		// Ambil data tahap yang sudah pernah dijalani oleh setiap kandidat pada lowongan ini
-		$candidate_existing_stages = $this->requisition_model->get_stages_for_lamaran($lamaran_ids);
+		$candidate_existing_stages = $this->requisition_model->get_stages_for_lamaran($all_lamaran_ids);
 
 		// Ambil riwayat lengkap seluruh catatan & evaluasi tahapan pelamar
-		$candidate_stage_history = $this->requisition_model->get_stage_history_for_lamaran($lamaran_ids);
+		$candidate_stage_history = $this->requisition_model->get_stage_history_for_lamaran($all_lamaran_ids);
 
 		$this->load->view('layouts/main', array(
 			'title'                     => 'Pipeline — ' . ($req['no_mpr'] ?: '#' . $req['id_req']),
