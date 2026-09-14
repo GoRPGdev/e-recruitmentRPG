@@ -813,11 +813,6 @@ dialog#dlg-notes-history, .rpg-modal#dlg-notes-history {
 														<span>Sisip Tahap</span>
 													</button>
 
-													<button type="button" class="icon-pill" title="Lihat riwayat catatan &amp; evaluasi seluruh tahapan"
-														onclick='openNotesHistoryModal(<?= (int) $id_lamaran ?>, <?= json_encode($c["nama_lengkap"]) ?>)'>
-														<svg style="width:12px; height:12px; color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-														<span>Riwayat Catatan</span>
-													</button>
 												</div>
 											<?php endif; ?>
 										</div>
@@ -920,13 +915,7 @@ dialog#dlg-notes-history, .rpg-modal#dlg-notes-history {
 												<?= html_escape($fc['status_global']) ?>
 											</span>
 										</td>
-										<td style="padding:10px 14px; text-align:right; white-space:nowrap">
-											<button type="button" class="btn btn-sm btn-ghost" style="padding:4px 9px; font-size:11.5px; margin-right:4px; display:inline-flex; align-items:center; gap:4px"
-												onclick='openNotesHistoryModal(<?= (int) $fc["id_lamaran"] ?>, <?= json_encode($fc["nama_lengkap"]) ?>)'
-												title="Lihat riwayat catatan seluruh tahapan">
-												<svg style="width:11px; height:11px; color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-												<span>Riwayat Catatan</span>
-											</button>
+										<td style="padding:10px 14px; text-align:right">
 											<a href="<?= site_url('candidates/detail/' . (int) $fc['id_lamaran']) ?>" class="btn btn-sm btn-ghost" style="padding:4px 8px; font-size:11.5px" title="Lihat Profil Pelamar">
 												Profil
 											</a>
