@@ -746,7 +746,7 @@ dialog#dlg-notes-history, .rpg-modal#dlg-notes-history {
 												}
 												?>
 												<div class="pipeline-note-card" style="margin-bottom:0; cursor:pointer"
-													onclick="openNotesHistoryModal(<?= (int) $id_lamaran ?>, <?= json_encode($c['nama_lengkap']) ?>)"
+													onclick='openNotesHistoryModal(<?= (int) $id_lamaran ?>, <?= json_encode($c["nama_lengkap"]) ?>)'
 													title="Klik untuk melihat catatan lengkap seluruh tahapan kandidat ini">
 													<div class="pipeline-note-header">
 														<div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap">
@@ -814,7 +814,7 @@ dialog#dlg-notes-history, .rpg-modal#dlg-notes-history {
 													</button>
 
 													<button type="button" class="icon-pill" title="Lihat riwayat catatan &amp; evaluasi seluruh tahapan"
-														onclick="openNotesHistoryModal(<?= (int) $id_lamaran ?>, <?= json_encode($c['nama_lengkap']) ?>)">
+														onclick='openNotesHistoryModal(<?= (int) $id_lamaran ?>, <?= json_encode($c["nama_lengkap"]) ?>)'>
 														<svg style="width:12px; height:12px; color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
 														<span>Riwayat Catatan</span>
 													</button>
@@ -922,7 +922,7 @@ dialog#dlg-notes-history, .rpg-modal#dlg-notes-history {
 										</td>
 										<td style="padding:10px 14px; text-align:right; white-space:nowrap">
 											<button type="button" class="btn btn-sm btn-ghost" style="padding:4px 9px; font-size:11.5px; margin-right:4px; display:inline-flex; align-items:center; gap:4px"
-												onclick="openNotesHistoryModal(<?= (int) $fc['id_lamaran'] ?>, <?= json_encode($fc['nama_lengkap']) ?>)"
+												onclick='openNotesHistoryModal(<?= (int) $fc["id_lamaran"] ?>, <?= json_encode($fc["nama_lengkap"]) ?>)'
 												title="Lihat riwayat catatan seluruh tahapan">
 												<svg style="width:11px; height:11px; color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
 												<span>Riwayat Catatan</span>
