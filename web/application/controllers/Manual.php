@@ -194,7 +194,8 @@ class Manual extends Secured_Controller
 
 		// -- pindahkan CV ke folder final lamaran -------------------
 		if ($cv_file) {
-			$dir = erec_storage_base() . DIRECTORY_SEPARATOR . 'lamaran' . DIRECTORY_SEPARATOR . (int) $res['id_lamaran'];
+			$sharding = date('Y') . DIRECTORY_SEPARATOR . date('m');
+			$dir = erec_storage_base() . DIRECTORY_SEPARATOR . 'lamaran' . DIRECTORY_SEPARATOR . $sharding . DIRECTORY_SEPARATOR . (int) $res['id_lamaran'];
 			@mkdir($dir, 0770, TRUE);
 			$dest = $dir . DIRECTORY_SEPARATOR . 'CV_' . $cv_file['hash'] . '.' . $cv_file['ext'];
 			if (@rename($cv_file['path_file'], $dest)) {

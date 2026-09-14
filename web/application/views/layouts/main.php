@@ -16,7 +16,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title><?= isset($title) ? html_escape($title) . ' — ' : '' ?>e-Recruitment RPG</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="<?= base_url('assets/fonts/fonts.css') ?>">
 <style>
 :root {
   --bg: #f5f7f4; --surface: #ffffff; --surface-2: #ecefe9; --surface-3: #e3e7dd;

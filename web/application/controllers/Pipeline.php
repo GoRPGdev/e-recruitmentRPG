@@ -38,6 +38,11 @@ class Pipeline extends Secured_Controller
 	{
 		$req = $this->_get_req_scoped($id_req);
 
+		// Lepaskan session lock untuk read view pipeline agar tidak memblokir request tab lain
+		if (session_status() === PHP_SESSION_ACTIVE) {
+			session_write_close();
+		}
+
 		$rows = $this->requisition_model->pipeline($id_req);
 
 		// group per tahap (id_stage) agar setiap tahap (termasuk tahap sisipan) memiliki section tersendiri

@@ -310,7 +310,8 @@ class Onboarding extends MY_Controller
 		}
 
 		$base = rtrim($this->config->item('erec_storage_path') ?: 'D:/erecruitment-storage', '/\\');
-		$dir  = $base . DIRECTORY_SEPARATOR . 'lamaran' . DIRECTORY_SEPARATOR . (int) $id_lamaran;
+		$sharding = date('Y') . DIRECTORY_SEPARATOR . date('m');
+		$dir  = $base . DIRECTORY_SEPARATOR . 'lamaran' . DIRECTORY_SEPARATOR . $sharding . DIRECTORY_SEPARATOR . (int) $id_lamaran;
 		if (!is_dir($dir) && !@mkdir($dir, 0770, TRUE)) {
 			throw new RuntimeException('Folder penyimpanan foto tidak bisa dibuat.');
 		}

@@ -55,7 +55,8 @@ if ( ! function_exists('erec_store_upload')) {
 			throw new RuntimeException('Tipe file tidak diizinkan (' . $mime . ').');
 		}
 
-		$dir = erec_storage_base() . DIRECTORY_SEPARATOR . 'lamaran' . DIRECTORY_SEPARATOR . (int) $id_lamaran;
+		$sharding = date('Y') . DIRECTORY_SEPARATOR . date('m');
+		$dir = erec_storage_base() . DIRECTORY_SEPARATOR . 'lamaran' . DIRECTORY_SEPARATOR . $sharding . DIRECTORY_SEPARATOR . (int) $id_lamaran;
 		if ( ! is_dir($dir) && ! @mkdir($dir, 0770, TRUE)) {
 			throw new RuntimeException('Folder penyimpanan tidak bisa dibuat.');
 		}

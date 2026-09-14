@@ -48,6 +48,11 @@ class Dashboard extends Secured_Controller
 			'id_req'     => $this->input->get('id_req') ?: NULL,
 		);
 
+		// Lepaskan session lock sebelum kalkulasi analitik funnel yang intensif
+		if (session_status() === PHP_SESSION_ACTIVE) {
+			session_write_close();
+		}
+
 		$d = $this->dm->dashboard($f);
 		$pos_stage_funnel = $this->dm->position_stage_funnel($f);
 		$remarks_summary  = $this->dm->applicant_remarks_summary($f);

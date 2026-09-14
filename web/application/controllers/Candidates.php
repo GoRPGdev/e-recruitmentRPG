@@ -42,6 +42,12 @@ class Candidates extends Secured_Controller
 		);
 
 		$offset = ($page - 1) * $per + 1;
+
+		// Lepaskan session lock untuk read view daftar kandidat
+		if (session_status() === PHP_SESSION_ACTIVE) {
+			session_write_close();
+		}
+
 		$total  = $this->candidate_model->count_list($f);
 		$rows   = $this->candidate_model->list_candidates($offset, $per, $f);
 
@@ -79,8 +85,19 @@ class Candidates extends Secured_Controller
 			show_error('Akses ditolak: Kandidat bukan dari lowongan departemen Anda.', 403, '403 Forbidden');
 		}
 
-		// Ambil data pendukung
+		// Evaluasi izin akses data sensitif & pencatatan log
 		$profile   = $this->candidate_model->get_profile($id_lamaran);
+		$can_gaji_pelamar = can_sensitif('GAJI_PELAMAR');
+		if ($can_gaji_pelamar && $profile && ($profile['gaji_terakhir'] !== NULL || $profile['gaji_diharapkan'] !== NULL)) {
+			log_akses_sensitif('GAJI_PELAMAR', (int) $detail['id_req']);
+		}
+
+		// Lepaskan session lock setelah verifikasi izin dan audit log selesai dicatat
+		if (session_status() === PHP_SESSION_ACTIVE) {
+			session_write_close();
+		}
+
+		// Ambil data pendukung
 		$health    = $this->candidate_model->get_health($detail['id_kandidat']);
 		$bank      = $this->candidate_model->get_bank($id_lamaran);
 		$stages    = $this->candidate_model->get_stages($id_lamaran);
@@ -100,9 +117,8 @@ class Candidates extends Secured_Controller
 		$questionnaire    = $this->candidate_model->get_questionnaire($id_lamaran);
 
 		// Evaluasi izin akses data sensitif & pencatatan log
-		$can_gaji_pelamar = can_sensitif('GAJI_PELAMAR');
 		if ($can_gaji_pelamar && $profile && ($profile['gaji_terakhir'] !== NULL || $profile['gaji_diharapkan'] !== NULL)) {
-			log_akses_sensitif('GAJI_PELAMAR', (int) $id_lamaran);
+			// Sudah tercatat di awal
 		}
 
 		$can_kesehatan = can_sensitif('KESEHATAN');

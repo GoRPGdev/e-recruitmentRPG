@@ -170,6 +170,50 @@ class Dashboard_model extends CI_Model
 		return $rows;
 	}
 
+	/**
+	 * Menghasilkan query cursor streaming (sqlsrv_query) untuk ekspor tanpa membebani memori PHP
+	 */
+	public function candidates_export_cursor(array $f, array $perms)
+	{
+		$sel = array(
+			'a.id_lamaran', 'c.nama_lengkap', 'c.no_wa_normal', 'c.email',
+			'c.kota_domisili', 'c.pendidikan_terakhir',
+			'pos.nama_posisi', 'r.no_mpr', 'a.status_global', 'a.intake_method',
+			'sglobal.nama_tahap AS tahap_kini',
+			'a.screening_score', 'a.tanggal_lamar',
+		);
+		if (in_array('LIHAT_GAJI_PELAMAR', $perms, TRUE)) {
+			$sel[] = 'ap.gaji_terakhir';
+			$sel[] = 'ap.gaji_diharapkan';
+		}
+		if (in_array('LIHAT_FINANSIAL', $perms, TRUE)) {
+			$sel[] = 'cb.no_rekening';
+			$sel[] = 'cb.nama_bank';
+		}
+
+		$sql = 'SELECT ' . implode(', ', $sel) . '
+		        FROM dbo.APPLICATIONS a
+		        JOIN dbo.CANDIDATES c    ON c.id_kandidat = a.id_kandidat
+		        JOIN dbo.REQUISITIONS r  ON r.id_req = a.id_req
+		        JOIN dbo.M_POSISI pos    ON pos.id_posisi = r.id_posisi
+		        LEFT JOIN dbo.M_STAGE sglobal ON sglobal.id_stage = a.id_stage_sekarang
+		        LEFT JOIN dbo.APPLICATION_PROFILE ap ON ap.id_lamaran = a.id_lamaran
+		        LEFT JOIN dbo.CANDIDATE_BANK cb ON cb.id_lamaran = a.id_lamaran
+		        WHERE 1=1';
+		$b = array();
+		if ( ! empty($f['dari']))   { $sql .= ' AND a.tanggal_lamar >= ?'; $b[] = $f['dari']; }
+		if ( ! empty($f['sampai'])) { $sql .= ' AND a.tanggal_lamar <= ?'; $b[] = $f['sampai']; }
+		if ( ! empty($f['posisi'])) { $sql .= ' AND r.id_posisi = ?'; $b[] = (int) $f['posisi']; }
+		if ( ! empty($f['status'])) { $sql .= ' AND a.status_global = ?'; $b[] = $f['status']; }
+		if ( ! empty($f['flow']))   { $sql .= ' AND a.id_flow = ?'; $b[] = (int) $f['flow']; }
+		if ( ! empty($f['id_req'])) { $sql .= ' AND r.id_req = ?'; $b[] = (int) $f['id_req']; }
+		if ( ! empty($f['dept']))   { $sql .= ' AND pos.id_departemen = ?'; $b[] = (int) $f['dept']; }
+		$sql .= ' ORDER BY a.id_lamaran DESC';
+
+		// Eksekusi langsung ke driver sqlsrv untuk streaming
+		return sqlsrv_query($this->db->conn_id, $sql, $b);
+	}
+
 	/* =================== KHUSUS ROLE: USER_DEPT ========================= */
 
 	/**

@@ -218,7 +218,8 @@ class Lamar extends MY_Controller
 	private function _finalize_cv(array $cv, $id_lamaran)
 	{
 		$base = rtrim($this->config->item('erec_storage_path'), '/\\');
-		$dir  = $base . DIRECTORY_SEPARATOR . 'lamaran' . DIRECTORY_SEPARATOR . (int) $id_lamaran;
+		$sharding = date('Y') . DIRECTORY_SEPARATOR . date('m');
+		$dir  = $base . DIRECTORY_SEPARATOR . 'lamaran' . DIRECTORY_SEPARATOR . $sharding . DIRECTORY_SEPARATOR . (int) $id_lamaran;
 		if ( ! is_dir($dir) && ! @mkdir($dir, 0770, TRUE)) {
 			throw new RuntimeException('Folder lamaran tidak bisa dibuat.');
 		}

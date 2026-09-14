@@ -923,7 +923,7 @@ dialog#dlg-notes-history, .rpg-modal#dlg-notes-history {
 
 	<!-- ================= ARSIP KANDIDAT FINAL & TERMINAL ================= -->
 	<div id="sec-final-candidates" style="margin-top:28px; border:1px solid var(--border); border-radius:10px; background:var(--surface); overflow:hidden">
-		<details <?= ! empty($final_candidates) ? 'open' : '' ?> style="border:none; margin:0; padding:0">
+		<details <?= (! empty($final_candidates) && count($final_candidates) <= 15) ? 'open' : '' ?> style="border:none; margin:0; padding:0">
 			<summary style="background:var(--surface-2); border-bottom:1px solid var(--border); padding:14px 18px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; list-style:none; user-select:none">
 				<div style="display:flex; align-items:center; gap:10px">
 					<span style="display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:6px; background:var(--surface); border:1px solid var(--border); color:var(--text-muted)">
@@ -962,7 +962,22 @@ dialog#dlg-notes-history, .rpg-modal#dlg-notes-history {
 								</tr>
 							</thead>
 							<tbody>
-								<?php foreach ($final_candidates as $fc): ?>
+								<?php
+								$max_fc = 60;
+								$fc_idx = 0;
+								foreach ($final_candidates as $fc):
+									$fc_idx++;
+									if ($fc_idx > $max_fc):
+								?>
+									<tr style="background:var(--surface-2)">
+										<td colspan="5" style="text-align:center; padding:12px 14px">
+											<span class="muted" style="font-size:12px">Menampilkan 60 dari <?= count($final_candidates) ?> pelamar berstatus final. Seluruh data dapat dicari lengkap via <a href="<?= site_url('candidates') ?>" style="font-weight:600">Daftar Pelamar &rarr;</a></span>
+										</td>
+									</tr>
+								<?php
+										break;
+									endif;
+								?>
 									<?php
 									$fc_status = $fc['status_global'];
 									$fc_badge = 'off';
