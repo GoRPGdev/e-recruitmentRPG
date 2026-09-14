@@ -418,6 +418,99 @@ dialog#dlg-notes-history, .rpg-modal#dlg-notes-history {
 	color: var(--text);
 	background: var(--border);
 }
+	/* Mobile Responsive Ergonomics for Pipeline Board */
+	@media (max-width: 768px) {
+		.pipeline-stat-grid {
+			grid-template-columns: repeat(2, 1fr) !important;
+			gap: 10px !important;
+		}
+		.pipeline-toolbar-wrap {
+			flex-direction: column !important;
+			align-items: stretch !important;
+			gap: 10px !important;
+		}
+		.pipeline-search-box {
+			max-width: 100% !important;
+		}
+		.stage-jump-bar {
+			overflow-x: auto !important;
+			-webkit-overflow-scrolling: touch;
+			padding-bottom: 4px !important;
+			flex-wrap: nowrap !important;
+		}
+		.stage-section table {
+			display: block !important;
+			width: 100% !important;
+		}
+		.stage-section thead {
+			display: none !important;
+		}
+		.stage-section tbody {
+			display: flex !important;
+			flex-direction: column !important;
+			gap: 12px !important;
+			padding: 10px !important;
+		}
+		.candidate-row {
+			display: flex !important;
+			flex-direction: column !important;
+			background: var(--surface) !important;
+			border: 1px solid var(--border) !important;
+			border-radius: 12px !important;
+			padding: 14px 14px !important;
+			box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
+			gap: 12px !important;
+		}
+		.candidate-row td {
+			display: block !important;
+			width: 100% !important;
+			padding: 0 !important;
+			border: none !important;
+		}
+		.candidate-row td:first-child {
+			display: none !important;
+		}
+		.candidate-row-actions {
+			display: flex !important;
+			width: 100% !important;
+			gap: 8px !important;
+			margin-top: 6px !important;
+		}
+		.candidate-row-actions .btn-advance-action {
+			flex: 1 !important;
+			min-height: 42px !important;
+			font-size: 13px !important;
+			padding: 10px 14px !important;
+		}
+		.candidate-row-actions .icon-pill {
+			min-height: 42px !important;
+			font-size: 12.5px !important;
+			padding: 0 14px !important;
+		}
+		.pipe-kebab-btn {
+			width: 36px !important;
+			height: 36px !important;
+			font-size: 18px !important;
+		}
+		.rpg-modal[open], dialog#dlg-notes-history[open] {
+			top: auto !important;
+			left: 0 !important;
+			right: 0 !important;
+			bottom: 0 !important;
+			transform: none !important;
+			max-width: 100vw !important;
+			width: 100vw !important;
+			max-height: 90vh !important;
+			border-radius: 18px 18px 0 0 !important;
+			border-bottom: none !important;
+			animation: sheetSlideUp .22s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+		}
+	}
+	@media (max-width: 480px) {
+		.pipeline-stat-grid {
+			grid-template-columns: 1fr !important;
+		}
+	}
 </style>
 
 <div style="margin-bottom:24px">
@@ -465,7 +558,7 @@ dialog#dlg-notes-history, .rpg-modal#dlg-notes-history {
 	</div>
 
 	<!-- RINGKASAN METRIK OPERASIONAL -->
-	<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom:22px">
+	<div class="pipeline-stat-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom:22px">
 		<div class="pipeline-stat-card">
 			<div class="faint" style="font-size:11.5px; text-transform:uppercase; font-weight:700; letter-spacing:0.04em">Total Kandidat Aktif</div>
 			<div class="mono" style="font-size:24px; font-weight:700; color:var(--text); line-height:1.2"><?= $total_kandidat ?></div>
@@ -491,9 +584,9 @@ dialog#dlg-notes-history, .rpg-modal#dlg-notes-history {
 	</div>
 
 	<!-- TOOLBAR FILTER & NAVIGASI TAHAP -->
-	<div style="display:flex; justify-content:space-between; align-items:center; gap:14px; margin-bottom:20px; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 16px; box-shadow:0 1px 3px rgba(0,0,0,0.02)">
+	<div class="pipeline-toolbar-wrap" style="display:flex; justify-content:space-between; align-items:center; gap:14px; margin-bottom:20px; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 16px; box-shadow:0 1px 3px rgba(0,0,0,0.02)">
 		<div style="display:flex; gap:14px; align-items:center; flex:1; min-width:280px; flex-wrap:wrap">
-			<div style="position:relative; width:100%; max-width:340px">
+			<div class="pipeline-search-box" style="position:relative; width:100%; max-width:340px">
 				<input type="text" id="pipeline-search" placeholder="Cari nama kandidat, nomor WA, status..." oninput="filterPipelineRows()"
 					style="width:100%; padding:8px 12px 8px 34px; font-size:12.5px; border-radius:8px; margin:0; border:1px solid var(--border); background:var(--surface-2); transition:border-color .15s ease">
 				<svg style="position:absolute; left:11px; top:50%; transform:translateY(-50%); width:14px; height:14px; color:var(--text-faint)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -507,7 +600,7 @@ dialog#dlg-notes-history, .rpg-modal#dlg-notes-history {
 		</div>
 
 		<!-- STAGE JUMP & TOGGLE BUTTONS -->
-		<div style="display:flex; gap:6px; align-items:center; overflow-x:auto; padding:2px 0; max-width:100%">
+		<div class="stage-jump-bar" style="display:flex; gap:6px; align-items:center; overflow-x:auto; padding:2px 0; max-width:100%">
 			<button type="button" class="btn btn-sm btn-ghost" onclick="toggleAllStages()" id="btn-toggle-all-stages" style="padding:5px 10px; font-size:11.5px; font-weight:600; white-space:nowrap; border-radius:7px; border:1px solid var(--border); background:var(--surface); display:inline-flex; align-items:center; gap:5px" title="Buka atau lipat seluruh section tahap">
 				<svg style="width:12px; height:12px; color:var(--text-muted)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
 				<span id="btn-toggle-all-label">Lipat Semua Tahap</span>
@@ -596,7 +689,7 @@ dialog#dlg-notes-history, .rpg-modal#dlg-notes-history {
 					</div>
 				<?php else: ?>
 					<div class="table-responsive-fit" style="width:100%; overflow-x:auto">
-						<table style="width:100%; border-collapse:collapse; margin:0; table-layout:fixed">
+						<table class="pipeline-table" style="width:100%; border-collapse:collapse; margin:0; table-layout:fixed">
 							<thead>
 								<tr style="background:var(--surface); font-size:11.5px; color:var(--text-muted); border-bottom:1px solid var(--border)">
 									<th style="width:38px; padding:10px 6px; text-align:center">#</th>
@@ -799,7 +892,7 @@ dialog#dlg-notes-history, .rpg-modal#dlg-notes-history {
 
 											<!-- Baris Tombol Aksi: Proses & Aksi Bertipe -->
 											<?php if ($can_aksi): ?>
-												<div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap">
+												<div class="candidate-row-actions" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap">
 													<!-- Tombol Proses Tunggal -->
 													<button type="button" class="btn-advance-action <?= ($has_remark || $has_catatan) ? 'has-decision' : '' ?>"
 														onclick='openAdvanceModal(<?= (int) $id_app_stage ?>, <?= (int) $id_stage ?>, <?= json_encode($c["nama_lengkap"]) ?>, <?= (int) ($c["id_remark"] ?? 0) ?>, <?= json_encode($c["catatan"] ?? "") ?>)'>

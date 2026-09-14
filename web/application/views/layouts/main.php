@@ -14,7 +14,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title><?= isset($title) ? html_escape($title) . ' — ' : '' ?>e-Recruitment RPG</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -294,41 +294,61 @@ div[style*="overflow-x: auto"],
   -webkit-overflow-scrolling: touch;
   width: 100% !important;
   max-width: 100% !important;
+  position: relative;
+}
+.table-responsive-fit::-webkit-scrollbar {
+  height: 6px;
+}
+.table-responsive-fit::-webkit-scrollbar-track {
+  background: var(--surface-2);
+  border-radius: 4px;
+}
+.table-responsive-fit::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
 }
 
+/* Optional mobile card view only when explicitly tagged via .table-mobile-cards */
 @media (max-width: 768px) {
-  table {
-    display: block;
-    width: 100%;
+  .table-mobile-cards {
+    display: block !important;
+    width: 100% !important;
   }
-  thead {
-    display: none;
+  .table-mobile-cards thead {
+    display: none !important;
   }
-  tr {
-    display: block;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    margin-bottom: 12px;
-    background: var(--surface);
-    padding: 10px 12px;
+  .table-mobile-cards tbody {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
   }
-  td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--surface-2);
-    padding: 7px 0;
-    font-size: 12.5px;
+  .table-mobile-cards tr {
+    display: block !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    background: var(--surface) !important;
+    padding: 14px 16px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
+    margin: 0 !important;
   }
-  td:last-child {
-    border-bottom: none;
+  .table-mobile-cards td {
+    display: block !important;
+    border-bottom: 1px solid var(--surface-2) !important;
+    padding: 8px 0 !important;
+    font-size: 13px !important;
+    width: 100% !important;
+    text-align: left !important;
+  }
+  .table-mobile-cards td:last-child {
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
   }
 }
 
-/* Dialog / Modal */
+/* Dialog / Modal (Desktop Default) */
 dialog {
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   box-shadow: var(--shadow);
   background: var(--surface);
   color: var(--text);
@@ -338,7 +358,81 @@ dialog {
 }
 dialog::backdrop {
   background: rgba(12, 18, 14, 0.45);
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(3px);
+}
+
+/* Mobile Bottom Sheet Transform for Dialogs */
+@media (max-width: 768px) {
+  dialog {
+    position: fixed !important;
+    inset: auto 0 0 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    max-width: 100vw !important;
+    width: 100vw !important;
+    max-height: 90vh !important;
+    border-radius: 18px 18px 0 0 !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.32) !important;
+    animation: sheetSlideUp .22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  dialog[open] {
+    display: flex !important;
+  }
+  dialog::backdrop {
+    background: rgba(10, 15, 12, 0.6) !important;
+    backdrop-filter: blur(4px) !important;
+  }
+  .modal-header-bar, .modal-header {
+    padding: 16px 18px 12px !important;
+    position: relative;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .modal-header-bar::before, .modal-header::before {
+    content: "";
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    border-radius: 99px;
+    background: var(--border-strong);
+  }
+  .modal-form-scroll, .modal-body {
+    padding: 16px 18px !important;
+    flex: 1 1 auto;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    max-height: calc(90vh - 120px) !important;
+  }
+  .modal-footer-dock, .modal-footer {
+    padding: 12px 18px !important;
+    display: flex !important;
+    gap: 10px !important;
+    flex-direction: row-reverse !important;
+    background: var(--surface-2) !important;
+    border-top: 1px solid var(--border);
+    padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+    flex-shrink: 0;
+  }
+  .modal-footer-dock .btn, .modal-footer .btn {
+    flex: 1 !important;
+    min-height: 42px !important;
+    font-size: 14px !important;
+    padding: 10px 14px !important;
+  }
+}
+@keyframes sheetSlideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 
 /* Layout Shell */
@@ -615,21 +709,178 @@ dialog::backdrop {
   max-width: 440px;
 }
 
+/* Sidebar Backdrop Overlay */
+.sidebar-backdrop {
+  display: none;
+}
+
 @media (max-width: 880px) {
-  #app { grid-template-columns: 1fr; }
+  #app {
+    grid-template-columns: 1fr;
+  }
   .sidebar {
     position: fixed;
     left: 0;
     top: 0;
-    width: 250px;
+    width: 270px;
+    max-width: 84vw;
+    height: 100vh;
+    height: 100dvh;
     transform: translateX(-100%);
-    transition: transform .2s ease;
+    transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: var(--shadow);
+    z-index: 60 !important;
   }
-  .sidebar.open { transform: none; }
-  .menu-btn { display: inline-flex !important; }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 16, 12, 0.58);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    z-index: 55;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .sidebar-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .sidebar-close-btn {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0;
+    flex: none;
+    transition: all .15s ease;
+  }
+  .sidebar-close-btn:hover {
+    color: var(--text);
+    background: var(--surface-3);
+  }
+  .menu-btn {
+    display: inline-flex !important;
+  }
 }
+.sidebar-close-btn { display: none; }
 .menu-btn { display: none; }
+
+/* Mobile Bottom Navigation Bar (Thumb Zone) */
+.mobile-bottom-nav {
+  display: none;
+}
+@media (max-width: 768px) {
+  .mobile-bottom-nav {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 45;
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--border);
+    padding: 6px 10px;
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -4px 18px rgba(0,0,0,0.06);
+  }
+  .mob-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: none;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 8px;
+    color: var(--text-muted);
+    text-decoration: none !important;
+    font-size: 10px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    min-width: 56px;
+    min-height: 44px;
+    transition: all .15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mob-nav-item svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2.2;
+    transition: transform .15s ease;
+  }
+  .mob-nav-item.active {
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .mob-nav-item.active svg {
+    transform: translateY(-1px);
+  }
+  .mob-nav-item:active {
+    transform: scale(0.96);
+  }
+
+  /* View and Padding Adjustments for Mobile */
+  .view {
+    padding: 14px 14px 84px 14px !important;
+  }
+  .view.wide {
+    padding: 12px 12px 84px 12px !important;
+  }
+  .topbar {
+    padding: 10px 14px !important;
+  }
+  .wrap-public {
+    padding: 0 14px !important;
+    margin: 2vh auto 80px !important;
+  }
+
+  /* Universal Touch Targets & Auto-Zoom Prevention */
+  input[type=text], input[type=password], input[type=email],
+  input[type=number], input[type=date], input[type=datetime-local],
+  select, textarea {
+    font-size: 16px !important; /* Mencegah auto-zoom di iOS Safari */
+    min-height: 42px !important;
+    padding: 10px 12px !important;
+  }
+  button, .btn {
+    min-height: 38px;
+    padding: 8px 14px;
+  }
+  .btn-sm, .btn--sm {
+    min-height: 34px;
+    padding: 6px 12px;
+  }
+  .pipe-kebab-btn, .mpr-menu-btn {
+    min-width: 36px !important;
+    min-height: 36px !important;
+  }
+}
+
+/* Universal Form Grids auto-collapse on small screens */
+@media (max-width: 640px) {
+  form div[style*="grid-template-columns"],
+  fieldset div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -644,15 +895,23 @@ dialog::backdrop {
     $brand_href = $is_user_dept ? site_url('requisitions') : site_url('dashboard');
 ?>
 <div id="app">
+  <!-- Mobile Sidebar Backdrop Overlay -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeAppSidebar()"></div>
+
   <!-- Sidebar -->
   <aside class="sidebar" id="appSidebar">
-    <a href="<?= $brand_href ?>" class="brand">
-      <div class="brand-mark">RPG</div>
-      <div>
-        <div class="brand-name">e-Recruitment</div>
-        <div class="brand-sub">Ratu Pertiwi Group</div>
-      </div>
-    </a>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding:2px 4px 14px; margin-bottom:4px">
+      <a href="<?= $brand_href ?>" class="brand" style="border:none; padding:0; flex:1">
+        <div class="brand-mark">RPG</div>
+        <div>
+          <div class="brand-name">e-Recruitment</div>
+          <div class="brand-sub">Ratu Pertiwi Group</div>
+        </div>
+      </a>
+      <button type="button" class="sidebar-close-btn" onclick="closeAppSidebar()" aria-label="Tutup Menu">
+        <svg style="width:16px; height:16px" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
 
     <!-- Nav Group: Operasional -->
     <div class="nav-group">
@@ -768,7 +1027,7 @@ dialog::backdrop {
   <!-- Main Container -->
   <div class="main">
     <header class="topbar">
-      <button class="btn btn-sm btn-ghost menu-btn" onclick="document.getElementById('appSidebar').classList.toggle('open')" aria-label="Menu">
+      <button class="btn btn-sm btn-ghost menu-btn" onclick="toggleAppSidebar()" aria-label="Buka Menu">
         <svg style="width:16px; height:16px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
       <div class="topbar-title"><?= isset($title) ? html_escape($title) : 'e-Recruitment RPG' ?></div>
@@ -791,6 +1050,45 @@ dialog::backdrop {
 
       <?php $this->load->view($_content); ?>
     </main>
+
+    <!-- Mobile Bottom App Bar (Thumb Zone Ergonomics) -->
+    <nav class="mobile-bottom-nav" aria-label="Navigasi Cepat Mobile">
+      <?php if ($is_user_dept): ?>
+        <a href="<?= site_url('requisitions') ?>" class="mob-nav-item <?= in_array($seg1, array('', 'requisitions', 'pipeline')) && !($seg1 === 'requisitions' && $this->uri->segment(2) === 'create') ? 'active' : '' ?>">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          <span>MPR Saya</span>
+        </a>
+        <a href="<?= site_url('candidates') ?>" class="mob-nav-item <?= $seg1 === 'candidates' ? 'active' : '' ?>">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+          <span>Pelamar</span>
+        </a>
+        <a href="<?= site_url('requisitions/create') ?>" class="mob-nav-item <?= ($seg1 === 'requisitions' && $this->uri->segment(2) === 'create') ? 'active' : '' ?>">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          <span>+ Ajukan</span>
+        </a>
+        <button type="button" class="mob-nav-item" onclick="toggleAppSidebar()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          <span>Menu</span>
+        </button>
+      <?php else: ?>
+        <a href="<?= site_url('dashboard') ?>" class="mob-nav-item <?= in_array($seg1, array('', 'dashboard')) ? 'active' : '' ?>">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+          <span>Dashboard</span>
+        </a>
+        <a href="<?= site_url('requisitions') ?>" class="mob-nav-item <?= in_array($seg1, array('requisitions', 'pipeline')) ? 'active' : '' ?>">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          <span>MPR</span>
+        </a>
+        <a href="<?= site_url('candidates') ?>" class="mob-nav-item <?= $seg1 === 'candidates' ? 'active' : '' ?>">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+          <span>Pelamar</span>
+        </a>
+        <button type="button" class="mob-nav-item" onclick="toggleAppSidebar()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          <span>Menu</span>
+        </button>
+      <?php endif; ?>
+    </nav>
   </div>
 </div>
 <?php else: ?>
@@ -814,6 +1112,39 @@ dialog::backdrop {
 <?php endif; ?>
 
 <script>
+function toggleAppSidebar() {
+  var sb = document.getElementById('appSidebar');
+  var bd = document.getElementById('sidebarBackdrop');
+  if (!sb) return;
+  var isOpen = sb.classList.contains('open');
+  if (isOpen) {
+    sb.classList.remove('open');
+    if (bd) bd.classList.remove('active');
+  } else {
+    sb.classList.add('open');
+    if (bd) bd.classList.add('active');
+  }
+}
+
+function closeAppSidebar() {
+  var sb = document.getElementById('appSidebar');
+  var bd = document.getElementById('sidebarBackdrop');
+  if (sb) sb.classList.remove('open');
+  if (bd) bd.classList.remove('active');
+}
+
+// Auto-close drawer on mobile when clicking sidebar links
+document.addEventListener('DOMContentLoaded', function() {
+  var links = document.querySelectorAll('#appSidebar a');
+  links.forEach(function(link) {
+    link.addEventListener('click', function() {
+      if (window.innerWidth <= 880) {
+        closeAppSidebar();
+      }
+    });
+  });
+});
+
 function toggleMasterSubmenu(e) {
   if (e) e.stopPropagation();
   var group = document.getElementById('masterNavGroup');

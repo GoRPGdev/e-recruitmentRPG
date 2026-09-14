@@ -1,6 +1,74 @@
 <?php
 // Tampilan Index Manajemen Permintaan Tenaga Kerja (MPR)
 ?>
+<style>
+@media (max-width: 768px) {
+	.mpr-stat-grid {
+		grid-template-columns: repeat(2, 1fr) !important;
+		gap: 10px !important;
+	}
+	.mpr-filter-card form > div {
+		flex-direction: column !important;
+		align-items: stretch !important;
+		gap: 10px !important;
+	}
+	.mpr-filter-card form select, .mpr-filter-card form input {
+		width: 100% !important;
+		min-width: 100% !important;
+	}
+	.mpr-filter-btn-group {
+		margin-left: 0 !important;
+		display: flex !important;
+		gap: 8px !important;
+		width: 100% !important;
+	}
+	.mpr-filter-btn-group .btn {
+		flex: 1 !important;
+		min-height: 40px !important;
+		justify-content: center !important;
+	}
+	.mpr-table {
+		display: block !important;
+		width: 100% !important;
+	}
+	.mpr-table thead {
+		display: none !important;
+	}
+	.mpr-table tbody {
+		display: flex !important;
+		flex-direction: column !important;
+		gap: 12px !important;
+		padding: 10px !important;
+	}
+	.mpr-table .mpr-row {
+		display: flex !important;
+		flex-direction: column !important;
+		background: var(--surface) !important;
+		border: 1px solid var(--border) !important;
+		border-radius: 12px !important;
+		padding: 14px 16px !important;
+		box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
+		gap: 10px !important;
+	}
+	.mpr-table .mpr-row td {
+		display: block !important;
+		width: 100% !important;
+		padding: 0 !important;
+		border: none !important;
+	}
+	.mpr-table .mpr-row .mpr-actions-cell {
+		display: flex !important;
+		justify-content: flex-end !important;
+		padding-top: 8px !important;
+		border-top: 1px solid var(--surface-2) !important;
+	}
+}
+@media (max-width: 440px) {
+	.mpr-stat-grid {
+		grid-template-columns: 1fr !important;
+	}
+}
+</style>
 <div class="container" style="padding-top:20px; padding-bottom:40px">
 	<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; flex-wrap:wrap; gap:12px">
 		<div>
@@ -32,7 +100,7 @@
 	<!-- ================= REKAP & FILTER ================= -->
 	<div style="margin-bottom:24px">
 		<!-- Summary Cards -->
-		<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:16px">
+		<div class="mpr-stat-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:16px">
 			<div class="card" style="padding:14px 16px; display:flex; align-items:center; gap:12px; margin:0">
 				<div style="width:38px; height:38px; border-radius:10px; background:var(--surface-2); display:grid; place-items:center; flex:none; color:var(--text)">
 					<svg style="width:18px; height:18px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -75,7 +143,7 @@
 		</div>
 
 		<!-- Filter Bar (Di Bawah Card) -->
-		<div class="card" style="padding:14px 18px; margin-bottom:20px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px">
+		<div class="card mpr-filter-card" style="padding:14px 18px; margin-bottom:20px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px">
 			<form method="get" action="<?= site_url('requisitions') ?>" style="margin:0">
 				<div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end">
 					<div>
@@ -114,7 +182,7 @@
 							<input type="date" name="sampai" value="<?= html_escape(isset($f['sampai']) ? $f['sampai'] : '') ?>" style="width:135px; padding:6px 8px; font-size:13px; background:var(--surface)">
 						</div>
 					</div>
-					<div style="display:flex; gap:6px; margin-left:auto">
+					<div class="mpr-filter-btn-group" style="display:flex; gap:6px; margin-left:auto">
 						<button type="submit" class="btn btn-sm btn-primary" style="height:35px; padding:0 14px">Filter</button>
 						<a class="btn btn-sm btn-ghost" href="<?= site_url('requisitions') ?>" style="height:35px; padding:0 12px; line-height:33px">Reset</a>
 					</div>
@@ -142,7 +210,7 @@
 				</div>
 			<?php else: ?>
 				<div class="table-responsive-fit" style="overflow-x:visible">
-					<table style="margin:0; width:100%; table-layout:fixed">
+					<table class="mpr-table" style="margin:0; width:100%; table-layout:fixed">
 						<thead>
 							<tr>
 								<th style="width:35%; padding:12px 14px">Posisi Lowongan</th>
@@ -183,7 +251,7 @@
 										</div>
 									<?php endif; ?>
 								</td>
-								<td style="padding:12px 14px; text-align:right; position:relative; overflow:visible">
+								<td class="mpr-actions-cell" style="padding:12px 14px; text-align:right; position:relative; overflow:visible">
 										<?php
 										$can_view_pipeline = (current_user_dept() === NULL || (isset($r['id_departemen']) && (int) $r['id_departemen'] === (int) current_user_dept()));
 										$show_pipeline = $can_view_pipeline && in_array($r['status_req'], array('Approved','Sourcing','Sourcing_Ulang','Terpenuhi_Sebagian','Terpenuhi'));

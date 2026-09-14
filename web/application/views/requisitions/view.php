@@ -84,6 +84,43 @@ $sisa_kuota = max(0, $kuota_ref - $terpenuhi);
 .mpr-grid-2 {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
+	}
+	@media (max-width: 860px) {
+		.mpr-grid-2 {
+			grid-template-columns: 1fr;
+		}
+	}
+	@media (max-width: 768px) {
+		.mpr-hero > div {
+			flex-direction: column !important;
+			gap: 14px !important;
+		}
+		.mpr-hero > div > div:last-child {
+			align-items: flex-start !important;
+			width: 100% !important;
+		}
+		.mpr-hero > div > div:last-child > div {
+			width: 100% !important;
+			justify-content: flex-start !important;
+		}
+		.mpr-hero .btn {
+			flex: 1 !important;
+			justify-content: center !important;
+			min-height: 40px !important;
+		}
+	}
+	@media (max-width: 480px) {
+		.kv-row {
+			flex-direction: column !important;
+			gap: 2px !important;
+		}
+		.kv-label {
+			flex: none !important;
+			font-size: 11px !important;
+		}
+		.kv-val {
+			text-align: left !important;
+		}
 	gap: 18px;
 }
 @media (max-width: 860px) {

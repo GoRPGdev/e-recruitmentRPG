@@ -10,6 +10,68 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  * - Menyediakan pagination dan aksi cepat (lihat detail, proses seleksi, export data).
  */
 ?>
+<style>
+@media (max-width: 768px) {
+	.cand-stat-grid {
+		grid-template-columns: repeat(2, 1fr) !important;
+		gap: 10px !important;
+	}
+	.cand-filter-grid {
+		grid-template-columns: 1fr !important;
+		gap: 10px !important;
+	}
+	.cand-filter-btn-group {
+		width: 100% !important;
+		display: flex !important;
+		gap: 8px !important;
+	}
+	.cand-filter-btn-group .btn {
+		flex: 1 !important;
+		min-height: 40px !important;
+		justify-content: center !important;
+	}
+	.cand-table {
+		display: block !important;
+		width: 100% !important;
+	}
+	.cand-table thead {
+		display: none !important;
+	}
+	.cand-table tbody {
+		display: flex !important;
+		flex-direction: column !important;
+		gap: 12px !important;
+		padding: 10px !important;
+	}
+	.cand-table tbody tr {
+		display: flex !important;
+		flex-direction: column !important;
+		background: var(--surface) !important;
+		border: 1px solid var(--border) !important;
+		border-radius: 12px !important;
+		padding: 14px 16px !important;
+		box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
+		gap: 8px !important;
+	}
+	.cand-table tbody tr td {
+		display: block !important;
+		width: 100% !important;
+		padding: 0 !important;
+		border: none !important;
+	}
+	.cand-table tbody tr .cand-actions-cell {
+		display: flex !important;
+		justify-content: flex-end !important;
+		padding-top: 8px !important;
+		border-top: 1px solid var(--surface-2) !important;
+	}
+}
+@media (max-width: 440px) {
+	.cand-stat-grid {
+		grid-template-columns: 1fr !important;
+	}
+}
+</style>
 
 <div style="margin-bottom:24px">
 	<!-- Page Header -->
@@ -24,7 +86,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 	</div>
 
 	<!-- Ringkasan Metrik / Quick Stat Cards (Di Atas Filter: 3 Status Operasional Utama) -->
-	<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:20px">
+	<div class="cand-stat-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:20px">
 		<div class="card" style="padding:14px 16px; display:flex; align-items:center; gap:12px; margin:0">
 			<div style="width:38px; height:38px; border-radius:10px; background:var(--surface-2); display:grid; place-items:center; flex:none; color:var(--accent)">
 				<svg style="width:18px; height:18px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
@@ -69,7 +131,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 	<!-- Filter Bar (Di Bawah Card) -->
 	<div class="card" style="padding:16px 18px; margin-bottom:20px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px">
 		<?= form_open(site_url('candidates'), array('method' => 'get', 'style' => 'margin:0')) ?>
-			<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:12px; align-items:flex-end">
+			<div class="cand-filter-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:12px; align-items:flex-end">
 				<div>
 					<label for="f-q" style="font-size:11.5px; font-weight:600; margin:0 0 4px; display:block" class="eyebrow">Pencarian</label>
 					<input type="text" id="f-q" name="q" value="<?= html_escape($f['q'] ?? '') ?>" placeholder="Nama, email, WhatsApp, No MPR..." style="margin:0; width:100%; padding:6px 10px; font-size:13px; background:var(--surface)">
@@ -168,7 +230,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 		</div>
 
 		<div class="table-responsive-fit" style="overflow-x:visible">
-			<table style="width:100%; table-layout:fixed; font-size:13px; margin:0">
+			<table class="cand-table" style="width:100%; table-layout:fixed; font-size:13px; margin:0">
 				<thead>
 					<tr>
 						<th style="width:28%; text-align:left; padding:12px 14px">Kandidat &amp; Kontak</th>

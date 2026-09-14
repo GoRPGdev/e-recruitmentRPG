@@ -284,6 +284,35 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 		font-family: inherit;
 		letter-spacing: .02em;
 	}
+
+	/* Mobile Ergonomics for Dashboard */
+	@media (max-width: 768px) {
+		.kpi-grid-4 {
+			grid-template-columns: repeat(2, 1fr) !important;
+			gap: 10px !important;
+		}
+		.kpi-grid-3 {
+			grid-template-columns: 1fr !important;
+			gap: 10px !important;
+		}
+		.dept-dash-grid {
+			grid-template-columns: 1fr !important;
+			gap: 16px !important;
+		}
+		.dash-card {
+			padding: 14px !important;
+			border-radius: 10px !important;
+		}
+		.btn-chart-toggle {
+			font-size: 11px !important;
+			padding: 5px 8px !important;
+		}
+	}
+	@media (max-width: 480px) {
+		.kpi-grid-4 {
+			grid-template-columns: 1fr !important;
+		}
+	}
 </style>
 
 <?php if ($user_role === 'USER_DEPT'): ?>
@@ -356,7 +385,7 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 		</div>
 
 		<!-- 2 Kolom Utama User Dept: Status MPR & Antrean Kandidat -->
-		<div style="display:grid; grid-template-columns:1.2fr 1fr; gap:20px; align-items:start">
+		<div class="dept-dash-grid" style="display:grid; grid-template-columns:1.2fr 1fr; gap:20px; align-items:start">
 			<!-- Kolom Kiri: Status MPR Departemen -->
 			<div class="dash-card" style="padding:0; overflow:hidden">
 				<div style="padding:14px 18px; background:var(--surface-2); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center">

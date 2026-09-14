@@ -395,6 +395,19 @@ $total_evaluasi = count($interviews ?? array()) + count($psikotes ?? array()) + 
 	border-radius: 6px;
 	border-left: 3px solid var(--border);
 }
+@media (max-width: 768px) {
+	.cand-hero { padding: 16px !important; }
+	.cand-hero > div { flex-direction: column !important; gap: 14px !important; }
+	.cand-hero > div > div:first-child { flex-direction: column !important; align-items: center !important; text-align: center !important; min-width: 100% !important; }
+	.cand-hero > div > div:last-child { width: 100% !important; display: flex !important; flex-direction: column !important; gap: 8px !important; }
+	.cand-hero > div > div:last-child .btn { width: 100% !important; min-height: 42px !important; justify-content: center !important; }
+	.kpi-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
+	.cand-advance-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
+	.cand-advance-grid select, .cand-advance-grid input, .cand-advance-grid button { width: 100% !important; min-height: 42px !important; }
+	.profile-tabs-nav { overflow-x: auto !important; -webkit-overflow-scrolling: touch; gap: 2px !important; padding-bottom: 2px !important; }
+	.profile-tab-btn { padding: 8px 12px !important; font-size: 12px !important; white-space: nowrap !important; }
+	.kv-grid { grid-template-columns: 1fr !important; }
+}
 </style>
 
 <div>
@@ -610,7 +623,7 @@ $total_evaluasi = count($interviews ?? array()) + count($psikotes ?? array()) + 
 				<input type="hidden" name="id_app_stage" value="<?= (int) $active_stage['id_app_stage'] ?>">
 				<input type="hidden" name="redirect_to" value="candidates/detail/<?= (int) $c['id_lamaran'] ?>">
 
-				<div style="display:grid; grid-template-columns: 260px 1fr auto; gap:10px; align-items:center">
+				<div class="cand-advance-grid" style="display:grid; grid-template-columns: 260px 1fr auto; gap:10px; align-items:center">
 					<div>
 						<select name="id_remark" required style="width:100%; font-size:12.5px; padding:8px 10px; border-radius:6px; background:var(--surface-2)">
 							<option value="">-- Pilih Hasil / Remark Evaluasi --</option>
