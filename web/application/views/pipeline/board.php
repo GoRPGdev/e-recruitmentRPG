@@ -124,7 +124,10 @@ details.stage-section:not([open]) .stage-chevron-icon {
 	transition: border-color .15s ease, background-color .15s ease;
 }
 .pipeline-note-card:hover {
-	border-color: var(--border-strong);
+	border-color: var(--accent);
+	background: var(--surface);
+	box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+	transform: translateY(-1px);
 }
 .pipeline-note-card.empty {
 	background: transparent;
@@ -792,8 +795,13 @@ details.stage-section:not([open]) .stage-chevron-icon {
 														<span>Sisip Tahap</span>
 													</button>
 
-													</div>
-												<?php endif; ?>
+													<button type="button" class="icon-pill" title="Lihat riwayat catatan &amp; evaluasi seluruh tahapan"
+														onclick="openNotesHistoryModal(<?= (int) $id_lamaran ?>, <?= json_encode($c['nama_lengkap']) ?>)">
+														<svg style="width:12px; height:12px; color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+														<span>Riwayat Catatan</span>
+													</button>
+												</div>
+											<?php endif; ?>
 										</div>
 									</td>
 								</tr>
