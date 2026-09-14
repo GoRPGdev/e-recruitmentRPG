@@ -106,6 +106,9 @@ class Pipeline extends Secured_Controller
 		// Ambil data tahap yang sudah pernah dijalani oleh setiap kandidat pada lowongan ini
 		$candidate_existing_stages = $this->requisition_model->get_stages_for_lamaran($lamaran_ids);
 
+		// Ambil riwayat lengkap seluruh catatan & evaluasi tahapan pelamar
+		$candidate_stage_history = $this->requisition_model->get_stage_history_for_lamaran($lamaran_ids);
+
 		$this->load->view('layouts/main', array(
 			'title'                     => 'Pipeline — ' . ($req['no_mpr'] ?: '#' . $req['id_req']),
 			'_content'                  => 'pipeline/board',
@@ -115,6 +118,7 @@ class Pipeline extends Secured_Controller
 			'remarks'                   => $remarks,
 			'all_stages'                => $this->requisition_model->active_stages(),
 			'candidate_existing_stages' => $candidate_existing_stages,
+			'candidate_stage_history'   => $candidate_stage_history,
 			'can_aksi'                  => has_permission('KELOLA_REKRUTMEN'),
 			'interviews'                => $interviews,
 			'psikotes'                  => $psikotes,

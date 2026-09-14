@@ -467,6 +467,43 @@ class Requisition_model extends CI_Model
 		return $has;
 	}
 
+	public function get_stage_history_for_lamaran(array $lamaran_ids)
+	{
+		if (empty($lamaran_ids)) return array();
+		$lamaran_ids = array_values(array_map('intval', $lamaran_ids));
+		$placeholders = implode(',', array_fill(0, count($lamaran_ids), '?'));
+		$sql = "SELECT aps.id_lamaran, aps.id_app_stage, aps.id_stage, s.nama_tahap, s.tipe_tahap,
+		               aps.urutan, aps.status_tahap, aps.is_sisipan, aps.catatan, aps.id_remark,
+		               rm.label AS label_remark, rm.efek_status,
+		               aps.tanggal_mulai, aps.tanggal_selesai,
+		               u.nama_snapshot AS nama_pic
+		        FROM dbo.APPLICATION_STAGES aps
+		        JOIN dbo.M_STAGE s ON s.id_stage = aps.id_stage
+		        LEFT JOIN dbo.M_REMARKS rm ON rm.id_remark = aps.id_remark
+		        LEFT JOIN dbo.M_USERS u ON u.id_user = aps.pic_user
+		        WHERE aps.id_lamaran IN ($placeholders)
+		        ORDER BY aps.id_lamaran, aps.urutan ASC";
+		$q = $this->db->query($sql, $lamaran_ids);
+		$rows = $q->result_array();
+		$q->free_result();
+
+		$map = array();
+		foreach ($rows as $r) {
+			if ($r['tanggal_mulai'] instanceof DateTime) {
+				$r['tanggal_mulai'] = $r['tanggal_mulai']->format('Y-m-d H:i');
+			}
+			if ($r['tanggal_selesai'] instanceof DateTime) {
+				$r['tanggal_selesai'] = $r['tanggal_selesai']->format('Y-m-d H:i');
+			}
+			$lid = (int) $r['id_lamaran'];
+			if ( ! isset($map[$lid])) {
+				$map[$lid] = array();
+			}
+			$map[$lid][] = $r;
+		}
+		return $map;
+	}
+
 	public function get_stage_info($id_stage)
 	{
 		$q = $this->db->query(

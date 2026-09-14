@@ -704,30 +704,58 @@ details.stage-section:not([open]) .stage-chevron-icon {
 									<!-- Kolom 2: Evaluasi & Aksi Tahap Terpadu (2 Sisi Seimbang) -->
 									<td style="padding:12px 14px">
 										<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:14px">
-											<!-- Sub-kiri: Card Evaluasi, Remark, & Ringkasan Hasil Tahap -->
+											<!-- Sub-kiri: Card Evaluasi HR & Trigger Riwayat Lengkap -->
 											<div style="flex:1; min-width:0">
-												<?php if ($has_catatan || $has_remark): ?>
-													<div class="pipeline-note-card" style="margin-bottom:0">
-														<div class="pipeline-note-header">
-															<div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap">
-																<span style="font-size:10.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em; display:inline-flex; align-items:center; gap:3px">
-																	<svg style="width:11px; height:11px; color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
-																	<span>Catatan Evaluasi</span>
+												<?php
+												$c_hist = isset($candidate_stage_history[$id_lamaran]) ? $candidate_stage_history[$id_lamaran] : array();
+												$curr_catatan = trim($c['catatan'] ?? '');
+												$curr_remark  = trim($c['label_remark'] ?? '');
+
+												// Cari catatan terbaru dari tahap sebelumnya jika tahap saat ini belum ada catatan
+												$prev_note_text  = '';
+												$prev_note_stage = '';
+												if (empty($curr_catatan)) {
+													foreach (array_reverse($c_hist) as $h) {
+														if ((int) $h['id_app_stage'] !== (int) $id_app_stage && ! empty($h['catatan'])) {
+															$prev_note_text  = $h['catatan'];
+															$prev_note_stage = $h['nama_tahap'];
+															break;
+														}
+													}
+												}
+												?>
+												<div class="pipeline-note-card" style="margin-bottom:0; cursor:pointer"
+													onclick="openNotesHistoryModal(<?= (int) $id_lamaran ?>, <?= json_encode($c['nama_lengkap']) ?>)"
+													title="Klik untuk melihat catatan lengkap seluruh tahapan kandidat ini">
+													<div class="pipeline-note-header">
+														<div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap">
+															<span style="font-size:10.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em; display:inline-flex; align-items:center; gap:3px">
+																<svg style="width:11px; height:11px; color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
+																<span><?= ! empty($curr_catatan) ? 'Catatan HR (Tahap Ini)' : (! empty($prev_note_text) ? 'Catatan Terakhir (' . html_escape($prev_note_stage) . ')' : 'Catatan HR') ?></span>
+															</span>
+															<?php if ($has_remark): ?>
+																<span class="tag accent" style="font-size:10px; padding:1px 6px">
+																	<?= html_escape($c['label_remark']) ?>
 																</span>
-																<?php if ($has_remark): ?>
-																	<span class="tag accent" style="font-size:10px; padding:1px 6px">
-																		<?= html_escape($c['label_remark']) ?>
-																	</span>
-<?php endif; ?>
-															</div>
+															<?php endif; ?>
 														</div>
-														<div class="pipeline-note-content"><?= html_escape($c['catatan'] ?: 'Remark: ' . $c['label_remark']) ?></div>
+														<span style="font-size:10.5px; color:var(--accent); font-weight:600; display:inline-flex; align-items:center; gap:3px">
+															<svg style="width:11px; height:11px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+															<span>Riwayat Lengkap &rarr;</span>
+														</span>
 													</div>
-												<?php else: ?>
-													<div class="pipeline-note-card empty" style="margin-bottom:0">
-														<span>Belum ada evaluasi atau catatan pada tahap ini.</span>
+													<div class="pipeline-note-content" style="max-height:54px; overflow:hidden; text-overflow:ellipsis">
+														<?php if (! empty($curr_catatan)): ?>
+															<?= html_escape($curr_catatan) ?>
+														<?php elseif (! empty($prev_note_text)): ?>
+															<span style="color:var(--text-muted); font-style:italic">[Dari <?= html_escape($prev_note_stage) ?>]:</span> <?= html_escape($prev_note_text) ?>
+														<?php elseif ($has_remark): ?>
+															Keputusan: <?= html_escape($c['label_remark']) ?>
+														<?php else: ?>
+															<span class="muted" style="font-style:italic">Belum ada catatan pada tahap ini. Klik untuk riwayat lengkap.</span>
+														<?php endif; ?>
 													</div>
-												<?php endif; ?>
+												</div>
 
 												<!-- Ringkasan Kontekstual Evaluasi Khusus Tahap -->
 												<?php if ($latest_iv && ! empty($latest_iv['hasil'])): ?>
@@ -764,35 +792,8 @@ details.stage-section:not([open]) .stage-chevron-icon {
 														<span>Sisip Tahap</span>
 													</button>
 
-													<?php if ($s['tipe'] === 'INTERVIEW'): ?>
-														<button type="button" class="icon-pill" title="Jadwalkan atau catat evaluasi interview"
-															onclick='openInterviewModal(<?= json_encode(array(
-																"id_app_stage" => $id_app_stage,
-																"nama" => $c["nama_lengkap"],
-																"interview" => $latest_iv
-															)) ?>)'>
-															<svg style="width:12px; height:12px; color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z"/></svg>
-															<span>Interview</span>
-														</button>
-													<?php endif; ?>
-
-													<?php if ($s['tipe'] === 'OFFER'): ?>
-														<button type="button" class="icon-pill" title="Kelola penawaran kerja (Offering)"
-															onclick='openOfferModal(<?= json_encode(array(
-																"id_lamaran" => $id_lamaran,
-																"nama" => $c["nama_lengkap"],
-																"offer" => $cur_off
-															)) ?>)'>
-															<svg style="width:12px; height:12px; color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-															<span>Offer</span>
-														</button>
-													<?php endif; ?>
-												</div>
-											<?php elseif (! $has_catatan && ! $has_remark): ?>
-												<div class="pipeline-note-card empty" style="margin-bottom:0">
-													<span>Belum ada evaluasi atau catatan pada tahap ini.</span>
-												</div>
-											<?php endif; ?>
+													</div>
+												<?php endif; ?>
 										</div>
 									</td>
 								</tr>
@@ -1055,6 +1056,30 @@ details.stage-section:not([open]) .stage-chevron-icon {
 	<?= form_close() ?>
 </dialog>
 
+<!-- ================= MODAL RIWAYAT CATATAN SELURUH TAHAPAN ================= -->
+<dialog id="dlg-notes-history" class="rpg-modal" style="max-width:580px">
+	<div class="rpg-modal-header" style="background:var(--surface-2)">
+		<div>
+			<h3 style="margin:0; font-size:15px; font-weight:700; color:var(--text); display:flex; align-items:center; gap:6px">
+				<svg style="width:16px; height:16px; color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+				<span>Riwayat Catatan &amp; Evaluasi Seleksi</span>
+			</h3>
+			<div class="muted" style="font-size:12px; margin-top:2px">
+				Kandidat: <strong id="notes-history-nama-kandidat" style="color:var(--text)">-</strong>
+			</div>
+		</div>
+		<button type="button" class="rpg-modal-close" onclick="document.getElementById('dlg-notes-history').close()">&times;</button>
+	</div>
+	<div class="rpg-modal-body" style="padding:16px 20px; max-height:65vh; overflow-y:auto">
+		<div id="notes-history-container" style="display:flex; flex-direction:column; gap:12px">
+			<!-- Diisi dinamis via openNotesHistoryModal -->
+		</div>
+	</div>
+	<div class="rpg-modal-footer" style="background:var(--surface-2); display:flex; justify-content:flex-end">
+		<button type="button" class="btn btn-primary" onclick="document.getElementById('dlg-notes-history').close()">Tutup</button>
+	</div>
+</dialog>
+
 
 <!-- ================= MODAL INTERVIEW ================= -->
 <dialog id="dlg-interview" class="rpg-modal">
@@ -1287,6 +1312,8 @@ var stageRemarksMap = <?= json_encode($remarks) ?>;
 var allAvailableStages = <?= json_encode($all_stages) ?>;
 // Peta tahap yang sudah pernah dijalani / ada pada setiap kandidat
 var candidateExistingStagesMap = <?= json_encode($candidate_existing_stages ?? array()) ?>;
+// Riwayat lengkap seluruh catatan & evaluasi tahapan pelamar
+var candidateStageHistoryMap = <?= json_encode($candidate_stage_history ?? array()) ?>;
 
 function toggleAllStages() {
 	var details = document.querySelectorAll('details.stage-section');
@@ -1739,6 +1766,90 @@ document.addEventListener('click', function(e) {
 		closeCandidateMenu();
 	}
 });
+
+function escapeHtml(str) {
+	if (!str) return '';
+	return String(str)
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#039;');
+}
+
+function openNotesHistoryModal(idLamaran, namaKandidat) {
+	document.getElementById('notes-history-nama-kandidat').textContent = namaKandidat + ' (#' + idLamaran + ')';
+	var container = document.getElementById('notes-history-container');
+	container.innerHTML = '';
+
+	var list = (candidateStageHistoryMap && candidateStageHistoryMap[idLamaran]) || [];
+
+	if (list.length === 0) {
+		container.innerHTML = '<div style="padding:28px 16px; text-align:center; color:var(--text-muted); font-size:13px">Belum ada riwayat catatan tahapan untuk kandidat ini.</div>';
+	} else {
+		list.forEach(function(item) {
+			var isCurrent = (item.status_tahap === 'Berjalan');
+			var statusTagClass = 'off';
+			var statusLabel = item.status_tahap;
+
+			if (item.status_tahap === 'Lulus') {
+				statusTagClass = 'on';
+				statusLabel = 'Lulus';
+			} else if (item.status_tahap === 'Berjalan') {
+				statusTagClass = 'warn';
+				statusLabel = 'Sedang Berjalan (Tahap Aktif)';
+			} else if (item.status_tahap === 'Tidak_Lulus') {
+				statusTagClass = 'crit';
+				statusLabel = 'Tidak Lulus';
+			} else if (item.status_tahap === 'Belum') {
+				statusTagClass = 'off';
+				statusLabel = 'Belum Dimulai';
+			}
+
+			var card = document.createElement('div');
+			card.style.cssText = 'border:1px solid ' + (isCurrent ? 'var(--accent)' : 'var(--border)') + '; border-radius:8px; padding:12px 14px; background:' + (isCurrent ? 'rgba(2, 132, 199, 0.05)' : 'var(--surface)');
+
+			var sisipanBadge = item.is_sisipan == 1 ? '<span style="font-size:9.5px; background:rgba(217,119,6,0.15); color:#d97706; border:1px solid rgba(217,119,6,0.35); padding:1px 5px; border-radius:4px; font-weight:700; margin-left:4px">Tahap Tambahan</span>' : '';
+
+			var headerDiv = document.createElement('div');
+			headerDiv.style.cssText = 'display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:6px';
+			headerDiv.innerHTML = '<div style="display:flex; align-items:center; gap:6px">' +
+				'<span style="font-size:11px; font-weight:700; color:var(--text-muted); font-family:monospace">#' + item.urutan + '</span>' +
+				'<strong style="font-size:13.5px; color:var(--text)">' + escapeHtml(item.nama_tahap) + '</strong>' +
+				sisipanBadge +
+			'</div>' +
+			'<span class="tag ' + statusTagClass + '" style="font-size:10.5px; padding:2px 7px">' + escapeHtml(statusLabel) + '</span>';
+
+			var metaDiv = document.createElement('div');
+			metaDiv.style.cssText = 'font-size:11.5px; color:var(--text-muted); margin-bottom:8px; display:flex; gap:12px; flex-wrap:wrap';
+			var dateInfo = item.tanggal_selesai ? 'Selesai: ' + escapeHtml(item.tanggal_selesai) : (item.tanggal_mulai ? 'Mulai: ' + escapeHtml(item.tanggal_mulai) : '');
+			metaDiv.innerHTML = '<span>PIC: <strong>' + escapeHtml(item.nama_pic || 'Tim HR') + '</strong></span>' + (dateInfo ? '<span>' + dateInfo + '</span>' : '');
+
+			card.appendChild(headerDiv);
+			card.appendChild(metaDiv);
+
+			if (item.label_remark) {
+				var rmkDiv = document.createElement('div');
+				rmkDiv.style.cssText = 'margin-bottom:6px; font-size:12px';
+				rmkDiv.innerHTML = '<span style="color:var(--text-muted)">Keputusan / Remark: </span><span class="tag accent" style="font-size:10.5px; padding:1px 6px; font-weight:600">' + escapeHtml(item.label_remark) + '</span>';
+				card.appendChild(rmkDiv);
+			}
+
+			var noteBox = document.createElement('div');
+			noteBox.style.cssText = 'background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:8px 10px; font-size:12.5px; line-height:1.5; color:var(--text); white-space:pre-line; word-break:break-word';
+			if (item.catatan) {
+				noteBox.innerHTML = '<div style="font-size:10.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:3px">Catatan HR:</div>' + escapeHtml(item.catatan);
+			} else {
+				noteBox.innerHTML = '<div style="font-size:10.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:3px">Catatan HR:</div><span style="color:var(--text-muted); font-style:italic">Tidak ada catatan pada tahap ini.</span>';
+			}
+			card.appendChild(noteBox);
+
+			container.appendChild(card);
+		});
+	}
+
+	document.getElementById('dlg-notes-history').showModal();
+}
 
 window.addEventListener('scroll', closeCandidateMenu, true);
 window.addEventListener('resize', closeCandidateMenu);
