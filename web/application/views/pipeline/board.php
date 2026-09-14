@@ -1959,7 +1959,9 @@ function openNotesHistoryModal(idLamaran, namaKandidat) {
 
 			var metaDiv = document.createElement('div');
 			metaDiv.style.cssText = 'font-size:11.5px; color:var(--text-muted); margin-bottom:8px; display:flex; gap:12px; flex-wrap:wrap';
-			var dateInfo = item.tanggal_selesai ? 'Selesai: ' + escapeHtml(item.tanggal_selesai) : (item.tanggal_mulai ? 'Mulai: ' + escapeHtml(item.tanggal_mulai) : '');
+			var rawDate = item.tanggal_selesai || item.tanggal_mulai || '';
+			var cleanDate = rawDate ? rawDate.replace(/\.\d+$/, '').substring(0, 16) : '';
+			var dateInfo = item.tanggal_selesai ? ('Selesai: ' + escapeHtml(cleanDate)) : (item.tanggal_mulai ? ('Mulai: ' + escapeHtml(cleanDate)) : '');
 			metaDiv.innerHTML = '<span>Evaluator / PIC: <strong>' + escapeHtml(item.nama_pic || 'Tim HR') + '</strong></span>' + (dateInfo ? '<span>&bull; ' + dateInfo + '</span>' : '');
 
 			card.appendChild(headerDiv);
