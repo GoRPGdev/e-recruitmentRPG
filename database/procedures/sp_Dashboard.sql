@@ -23,7 +23,8 @@ CREATE PROCEDURE dbo.sp_Dashboard
     @tipe_tahap    VARCHAR(20) = NULL,
     @status_global VARCHAR(20) = NULL,
     @id_channel    INT         = NULL,   -- dipertahankan opsional untuk kompatibilitas
-    @role_pic      VARCHAR(20) = NULL
+    @role_pic      VARCHAR(20) = NULL,
+    @id_req        INT         = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -54,7 +55,8 @@ BEGIN
       AND (@id_flow       IS NULL OR a.id_flow = @id_flow)
       AND (@tipe_tahap    IS NULL OR s.tipe_tahap = @tipe_tahap)
       AND (@status_global IS NULL OR a.status_global = @status_global)
-      AND (@role_pic      IS NULL OR fs.role_pic = @role_pic);
+      AND (@role_pic      IS NULL OR fs.role_pic = @role_pic)
+      AND (@id_req        IS NULL OR r.id_req = @id_req);
 
     /* 1. METRIK */
     SELECT status_global, COUNT(*) AS jumlah

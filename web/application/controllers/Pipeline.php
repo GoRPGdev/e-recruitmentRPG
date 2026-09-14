@@ -40,23 +40,38 @@ class Pipeline extends Secured_Controller
 
 		$rows = $this->requisition_model->pipeline($id_req);
 
-		// group per tahap (urutan)
-		$stages = array();
+		// group per tahap (id_stage) agar setiap tahap (termasuk tahap sisipan) memiliki section tersendiri
+		$stages_by_id = array();
 		foreach ($rows as $r) {
-			$key = (int) $r['urutan'];
-			if ( ! isset($stages[$key])) {
-				$stages[$key] = array(
-					'nama'  => $r['nama_tahap'],
-					'kode'  => $r['kode_stage'],
-					'tipe'  => $r['tipe_tahap'],
-					'id_stage' => (int) $r['id_stage'],
-					'urutan'   => $key,
-					'cards' => array(),
+			$stage_id = (int) $r['id_stage'];
+			if ( ! isset($stages_by_id[$stage_id])) {
+				$stages_by_id[$stage_id] = array(
+					'nama'       => $r['nama_tahap'],
+					'kode'       => $r['kode_stage'],
+					'tipe'       => $r['tipe_tahap'],
+					'id_stage'   => $stage_id,
+					'urutan'     => (float) $r['urutan'],
+					'is_sisipan' => ! empty($r['is_sisipan']),
+					'cards'      => array(),
 				);
 			}
-			$stages[$key]['cards'][] = $r;
+			$stages_by_id[$stage_id]['cards'][] = $r;
 		}
-		ksort($stages);
+
+		// Urutkan tahapan berdasarkan urutan kemunculan di flow
+		uasort($stages_by_id, function ($a, $b) {
+			if ($a['urutan'] == $b['urutan']) {
+				return $a['id_stage'] <=> $b['id_stage'];
+			}
+			return $a['urutan'] <=> $b['urutan'];
+		});
+
+		// Berikan index urutan numerik 1, 2, 3...
+		$stages = array();
+		$idx = 1;
+		foreach ($stages_by_id as $stg) {
+			$stages[$idx++] = $stg;
+		}
 
 		// remark per id_stage (untuk dropdown aksi)
 		$remarks = array();
@@ -88,21 +103,25 @@ class Pipeline extends Secured_Controller
 		// Ambil kandidat dengan status final (Rejected, Hired, Withdrawn, dll.)
 		$final_candidates = $this->requisition_model->final_candidates($id_req);
 
+		// Ambil data tahap yang sudah pernah dijalani oleh setiap kandidat pada lowongan ini
+		$candidate_existing_stages = $this->requisition_model->get_stages_for_lamaran($lamaran_ids);
+
 		$this->load->view('layouts/main', array(
-			'title'            => 'Pipeline — ' . ($req['no_mpr'] ?: '#' . $req['id_req']),
-			'_content'         => 'pipeline/board',
-			'wide'             => TRUE,
-			'req'              => $req,
-			'stages'           => $stages,
-			'remarks'          => $remarks,
-			'all_stages'       => $this->requisition_model->active_stages(),
-			'can_aksi'         => has_permission('KELOLA_REKRUTMEN'),
-			'interviews'       => $interviews,
-			'psikotes'         => $psikotes,
-			'offers'           => $offers,
-			'interviewers'     => $interviewers,
-			'can_gaji'         => $can_gaji,
-			'final_candidates' => $final_candidates,
+			'title'                     => 'Pipeline — ' . ($req['no_mpr'] ?: '#' . $req['id_req']),
+			'_content'                  => 'pipeline/board',
+			'wide'                      => TRUE,
+			'req'                       => $req,
+			'stages'                    => $stages,
+			'remarks'                   => $remarks,
+			'all_stages'                => $this->requisition_model->active_stages(),
+			'candidate_existing_stages' => $candidate_existing_stages,
+			'can_aksi'                  => has_permission('KELOLA_REKRUTMEN'),
+			'interviews'                => $interviews,
+			'psikotes'                  => $psikotes,
+			'offers'                    => $offers,
+			'interviewers'              => $interviewers,
+			'can_gaji'                  => $can_gaji,
+			'final_candidates'          => $final_candidates,
 		));
 	}
 
@@ -140,15 +159,34 @@ class Pipeline extends Secured_Controller
 		}
 		$this->_get_req_scoped($id_req);
 		$id_lamaran = (int) $this->input->post('id_lamaran');
+		$id_stage   = (int) $this->input->post('id_stage');
+		$id_remark  = $this->input->post('id_remark') ? (int) $this->input->post('id_remark') : NULL;
+
+		if ( ! $id_stage) {
+			$this->session->set_flashdata('error', 'Silakan pilih tahap tambahan yang ingin disisipkan.');
+			redirect('pipeline/index/' . (int) $id_req);
+			return;
+		}
+
+		// Validasi ganda: pastikan kandidat belum pernah berada pada tahap tersebut
+		if ($this->requisition_model->has_stage($id_lamaran, $id_stage)) {
+			$stage_info = $this->requisition_model->get_stage_info($id_stage);
+			$nama_tahap = $stage_info ? $stage_info['nama_tahap'] : 'tersebut';
+			$this->session->set_flashdata('error', 'Kandidat sudah pernah berada pada tahap "' . $nama_tahap . '". Tahap yang sama tidak dapat disisipkan kembali.');
+			redirect('pipeline/index/' . (int) $id_req);
+			return;
+		}
+
 		try {
 			$this->requisition_model->insert_adhoc(
 				$id_lamaran,
-				(int) $this->input->post('id_stage'),
+				$id_stage,
 				$this->requisition_model->current_urutan($id_lamaran),
 				(int) $this->auth_user['id_user'],
-				$this->input->post('catatan', TRUE)
+				$this->input->post('catatan', TRUE),
+				$id_remark
 			);
-			$this->session->set_flashdata('ok', 'Tahap sisipan ditambahkan.');
+			$this->session->set_flashdata('ok', 'Tahap tambahan berhasil disisipkan. Kandidat kini langsung berada di tahap tersebut.');
 		} catch (RuntimeException $e) {
 			$this->session->set_flashdata('error', $e->getMessage());
 		}

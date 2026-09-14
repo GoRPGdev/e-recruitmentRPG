@@ -593,6 +593,28 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 							</select>
 						</div>
 					<?php endforeach; ?>
+					<div>
+						<label style="margin:0 0 4px; font-size:11px; display:block" class="faint">FILTER NO. MPR</label>
+						<select name="id_req" style="width:auto; min-width:160px; max-width:240px; padding:6px 8px; font-size:12px">
+							<option value="">Semua No. MPR</option>
+							<?php if (!empty($requisitions)): ?>
+								<optgroup label="MPR Aktif / Dibuka">
+									<?php foreach ($requisitions as $rq): if (empty($rq['is_aktif_mpr'])) continue; ?>
+										<option value="<?= (int) $rq['id_req'] ?>" <?= ((int)($f['id_req'] ?? 0)) === (int)$rq['id_req'] ? 'selected' : '' ?>>
+											<?= html_escape($rq['no_mpr'] ?: '#' . $rq['id_req']) ?> &bull; <?= html_escape($rq['nama_posisi']) ?> [Aktif]
+										</option>
+									<?php endforeach; ?>
+								</optgroup>
+								<optgroup label="MPR Selesai / Ditutup">
+									<?php foreach ($requisitions as $rq): if (!empty($rq['is_aktif_mpr'])) continue; ?>
+										<option value="<?= (int) $rq['id_req'] ?>" <?= ((int)($f['id_req'] ?? 0)) === (int)$rq['id_req'] ? 'selected' : '' ?>>
+											<?= html_escape($rq['no_mpr'] ?: '#' . $rq['id_req']) ?> &bull; <?= html_escape($rq['nama_posisi']) ?> [Tutup]
+										</option>
+									<?php endforeach; ?>
+								</optgroup>
+							<?php endif; ?>
+						</select>
+					</div>
 					<div style="display:flex; gap:6px; margin-left:auto">
 						<button type="submit" class="btn btn-sm btn-primary" style="padding:6px 14px">Terapkan</button>
 						<a class="btn btn-sm btn-ghost" href="<?= site_url('dashboard') ?>" style="padding:6px 12px">Reset</a>
@@ -622,6 +644,9 @@ $total_hired      = (int)($met['Hired'] ?? 0);
 								<?php endif; ?>
 							<?php else: ?>
 								<span class="faint">Semua periode berjalan</span>
+							<?php endif; ?>
+							<?php if (!empty($f['id_req'])): ?>
+								&bull; Filter MPR: <strong style="color:var(--accent)">#<?= (int) $f['id_req'] ?></strong>
 							<?php endif; ?>
 						</div>
 					</div>

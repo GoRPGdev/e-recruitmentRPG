@@ -27,7 +27,15 @@ class Dashboard_model extends CI_Model
 			NULL, // id_channel dilepas
 			$f['pic'] ?: NULL,
 		);
-		$stmt = sqlsrv_query($this->db->conn_id, '{CALL dbo.sp_Dashboard(?,?,?,?,?,?,?,?,?,?)}', $params);
+		$stmt = FALSE;
+		$id_req = ! empty($f['id_req']) ? (int) $f['id_req'] : NULL;
+		if ($id_req !== NULL) {
+			$params11 = array_merge($params, array($id_req));
+			$stmt = @sqlsrv_query($this->db->conn_id, '{CALL dbo.sp_Dashboard(?,?,?,?,?,?,?,?,?,?,?)}', $params11);
+		}
+		if ($stmt === FALSE) {
+			$stmt = sqlsrv_query($this->db->conn_id, '{CALL dbo.sp_Dashboard(?,?,?,?,?,?,?,?,?,?)}', $params);
+		}
 		if ($stmt === FALSE) {
 			$e = sqlsrv_errors(); $last = $e ? end($e) : NULL;
 			throw new RuntimeException($last ? trim($last['message']) : 'sp_Dashboard gagal.');
@@ -51,13 +59,17 @@ class Dashboard_model extends CI_Model
 		);
 	}
 
-	public function funnel_trend($days = 14, $id_dept = NULL)
+	public function funnel_trend($days = 14, $id_dept = NULL, $id_req = NULL)
 	{
 		$where = 'WHERE f.tanggal >= DATEADD(DAY, ?, CAST(GETDATE() AS DATE))';
 		$params = array(-1 * (int) $days);
 		if ($id_dept !== NULL) {
 			$where .= ' AND pos.id_departemen = ?';
 			$params[] = (int) $id_dept;
+		}
+		if ($id_req !== NULL) {
+			$where .= ' AND r.id_req = ?';
+			$params[] = (int) $id_req;
 		}
 		$q = $this->db->query(
 			"SELECT f.tanggal, f.tipe_tahap, SUM(f.jumlah) AS jumlah
@@ -86,6 +98,25 @@ class Dashboard_model extends CI_Model
 		return $this->db->query("SELECT id_posisi, nama_posisi FROM dbo.M_POSISI $where ORDER BY nama_posisi", $params)->result_array();
 	}
 	public function outlets()     { return $this->opt("SELECT id_outlet, nama_outlet FROM dbo.M_OUTLET WHERE is_aktif=1 ORDER BY nama_outlet"); }
+	public function requisitions($id_dept = NULL)
+	{
+		$where = 'WHERE 1=1';
+		$params = array();
+		if ($id_dept !== NULL) {
+			$where .= ' AND p.id_departemen = ?';
+			$params[] = (int) $id_dept;
+		}
+		$sql = "SELECT r.id_req, r.no_mpr, r.status_req, p.nama_posisi,
+		               CASE WHEN r.status_req IN ('Sourcing', 'Approved', 'Sourcing_Ulang') THEN 1 ELSE 0 END AS is_aktif_mpr
+		        FROM dbo.REQUISITIONS r
+		        JOIN dbo.M_POSISI p ON p.id_posisi = r.id_posisi
+		        $where
+		        ORDER BY is_aktif_mpr DESC, r.id_req DESC";
+		$q = $this->db->query($sql, $params);
+		$rows = $q->result_array();
+		$q->free_result();
+		return $rows;
+	}
 	public function flows()       { return $this->opt("SELECT id_flow, kode_flow FROM dbo.M_FLOW WHERE is_aktif=1 ORDER BY kode_flow"); }
 	public function channels()    { return array(); }
 	public function roles()       { return $this->opt("SELECT kode_role FROM dbo.M_ROLES WHERE is_aktif=1 ORDER BY kode_role"); }
@@ -130,6 +161,7 @@ class Dashboard_model extends CI_Model
 		if ( ! empty($f['posisi'])) { $sql .= ' AND r.id_posisi = ?'; $b[] = (int) $f['posisi']; }
 		if ( ! empty($f['status'])) { $sql .= ' AND a.status_global = ?'; $b[] = $f['status']; }
 		if ( ! empty($f['flow']))   { $sql .= ' AND a.id_flow = ?'; $b[] = (int) $f['flow']; }
+		if ( ! empty($f['id_req'])) { $sql .= ' AND r.id_req = ?'; $b[] = (int) $f['id_req']; }
 		if ( ! empty($f['dept']))   { $sql .= ' AND pos.id_departemen = ?'; $b[] = (int) $f['dept']; }
 		$sql .= ' ORDER BY a.id_lamaran DESC';
 
@@ -271,6 +303,10 @@ class Dashboard_model extends CI_Model
 			$where .= " AND a.status_global = ?";
 			$params[] = $f['status'];
 		}
+		if ( ! empty($f['id_req'])) {
+			$where .= " AND r.id_req = ?";
+			$params[] = (int) $f['id_req'];
+		}
 
 		$sql = "SELECT
 					p.id_posisi,
@@ -409,6 +445,10 @@ class Dashboard_model extends CI_Model
 			if ( ! empty($f['status'])) {
 				$where .= " AND a.status_global = ?";
 				$params[] = $f['status'];
+			}
+			if ( ! empty($f['id_req'])) {
+				$where .= " AND r.id_req = ?";
+				$params[] = (int) $f['id_req'];
 			}
 
 			$sql = "SELECT

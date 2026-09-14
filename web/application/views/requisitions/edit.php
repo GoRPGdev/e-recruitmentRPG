@@ -17,7 +17,7 @@
 	</div>
 	<?php elseif ($req['status_req'] === 'Revisi_BOD' && !empty($req['catatan_bod'])): ?>
 	<div style="padding:12px 16px; margin-bottom:18px; border-radius:8px; border:1px solid var(--warn); background:var(--warn-soft)">
-		<div class="eyebrow" style="color:var(--warn); font-size:11px; margin-bottom:4px">Arahan Revisi dari Direksi (BOD):</div>
+		<div class="eyebrow" style="color:var(--warn); font-size:11px; margin-bottom:4px">Arahan Revisi dari BOD:</div>
 		<div style="font-size:13px; color:var(--text); line-height:1.5; white-space:pre-line"><?= html_escape($req['catatan_bod']) ?></div>
 	</div>
 	<?php endif; ?>

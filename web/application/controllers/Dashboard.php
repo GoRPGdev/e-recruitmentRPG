@@ -45,6 +45,7 @@ class Dashboard extends Secured_Controller
 			'status'     => $this->input->get('status') ?: NULL,
 			'channel'    => $this->input->get('channel') ?: NULL,
 			'pic'        => $this->input->get('pic') ?: NULL,
+			'id_req'     => $this->input->get('id_req') ?: NULL,
 		);
 
 		$d = $this->dm->dashboard($f);
@@ -72,10 +73,12 @@ class Dashboard extends Secured_Controller
 			'remarks_summary'  => $remarks_summary,
 			'f'                => $f,
 			'd'               => $d,
-			'trend'           => $this->dm->funnel_trend(14, $f['dept']),
+			'trend'           => $this->dm->funnel_trend(14, $f['dept'], $f['id_req']),
+			'requisitions'    => $this->dm->requisitions($dept),
 			'opt'             => array(
 				'dept'    => $depts,
 				'posisi'  => $this->dm->positions($dept),
+				'mpr'     => $this->dm->requisitions($dept),
 				'outlet'  => $this->dm->outlets(),
 				'flow'    => $this->dm->flows(),
 				'channel' => $this->dm->channels(),

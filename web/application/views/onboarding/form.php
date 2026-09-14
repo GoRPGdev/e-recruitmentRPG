@@ -74,25 +74,27 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 <style>
 .step-chip {
-	padding: 5px 10px;
+	padding: 6px 12px;
 	border-radius: 6px;
 	border: 1px solid var(--border);
 	background: var(--surface-2);
 	color: var(--text-muted);
-	font-size: 11px;
+	font-size: 11.5px;
 	font-weight: 600;
 	white-space: nowrap;
 	cursor: pointer;
-	transition: all 0.2s;
+	transition: all 0.2s ease;
 }
 .step-chip:hover {
 	background: var(--surface);
 	color: var(--text);
+	border-color: var(--accent-soft);
 }
 .step-chip.active {
 	background: var(--accent);
 	color: var(--accent-contrast);
 	border-color: var(--accent);
+	box-shadow: 0 2px 8px var(--accent-soft);
 }
 .step-chip.completed {
 	border-color: var(--good);
@@ -104,10 +106,10 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 }
 .wizard-step.active {
 	display: block;
-	animation: fadeInStep 0.25s ease-in-out;
+	animation: fadeInStep 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 @keyframes fadeInStep {
-	from { opacity: 0; transform: translateY(6px); }
+	from { opacity: 0; transform: translateY(8px); }
 	to { opacity: 1; transform: translateY(0); }
 }
 .wizard-btn-bar {
@@ -115,9 +117,48 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 	justify-content: space-between;
 	align-items: center;
 	gap: 12px;
-	margin-top: 24px;
-	padding-top: 16px;
+	margin-top: 28px;
+	padding-top: 20px;
 	border-top: 1px solid var(--border);
+}
+@media (max-width: 640px) {
+	.wizard-btn-bar {
+		flex-direction: column-reverse;
+		align-items: stretch;
+	}
+	.wizard-btn-bar .btn {
+		width: 100%;
+		justify-content: center;
+	}
+}
+#form-onboarding input[type="text"],
+#form-onboarding input[type="number"],
+#form-onboarding input[type="email"],
+#form-onboarding select,
+#form-onboarding textarea {
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	padding: 8px 12px;
+	background: var(--surface);
+	color: var(--text);
+	font-family: inherit;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+	box-sizing: border-box;
+}
+#form-onboarding input[type="text"]:focus,
+#form-onboarding input[type="number"]:focus,
+#form-onboarding input[type="email"]:focus,
+#form-onboarding select:focus,
+#form-onboarding textarea:focus {
+	outline: none;
+	border-color: var(--accent);
+	box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.fam-card, .exp-card, .trn-card, .ref-card {
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.fam-card:hover, .exp-card:hover, .trn-card:hover, .ref-card:hover {
+	border-color: var(--accent-soft);
 }
 </style>
 
@@ -193,9 +234,9 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 				<!-- Input Upload & Keterangan -->
 				<div style="flex:1; min-width:220px">
 					<label for="pas_foto" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:6px">
-						Pilih Berkas Pas Foto
+						Pilih Berkas Pas Foto <?= (empty($t['foto_path']) || !is_file($t['foto_path'])) ? '<span style="color:var(--crit)">*</span>' : '' ?>
 					</label>
-					<input type="file" id="pas_foto" name="pas_foto" accept="image/jpeg,image/png,image/jpg" onchange="previewPasFoto(this)" style="font-size:12px; width:100%; padding:6px; background:var(--surface); border:1px solid var(--border); border-radius:6px">
+					<input type="file" id="pas_foto" name="pas_foto" accept="image/jpeg,image/png,image/jpg" onchange="previewPasFoto(this)" <?= (empty($t['foto_path']) || !is_file($t['foto_path'])) ? 'required' : '' ?> style="font-size:12px; width:100%; padding:6px; background:var(--surface); border:1px solid var(--border); border-radius:6px">
 					<div class="muted" style="font-size:11.5px; margin-top:6px; line-height:1.4">
 						Gunakan foto formal/semi-formal dengan latar belakang polos. Foto ini akan dicantumkan pada berkas fisik lamaran Anda.
 					</div>
@@ -206,8 +247,8 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 		<!-- Field Input Section I -->
 		<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px">
 			<div>
-				<label for="nama_panggilan" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Nama Panggilan</label>
-				<input type="text" id="nama_panggilan" name="nama_panggilan" value="<?= set_value('nama_panggilan', $t['nama_panggilan'] ?? '') ?>" placeholder="Nama akrab sehari-hari" style="width:100%">
+				<label for="nama_panggilan" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Nama Panggilan <span style="color:var(--crit)">*</span></label>
+				<input type="text" id="nama_panggilan" name="nama_panggilan" value="<?= set_value('nama_panggilan', $t['nama_panggilan'] ?? '') ?>" placeholder="Nama akrab sehari-hari" required style="width:100%">
 			</div>
 
 			<div>
@@ -216,22 +257,22 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 			</div>
 
 			<div>
-				<label for="npwp" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Nomor NPWP</label>
-				<input type="text" id="npwp" name="npwp" value="<?= set_value('npwp', $t['npwp'] ?? '') ?>" placeholder="Nomor NPWP (opsional)" style="width:100%">
+				<label for="npwp" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Nomor NPWP <span style="color:var(--crit)">*</span></label>
+				<input type="text" id="npwp" name="npwp" value="<?= set_value('npwp', $t['npwp'] ?? '') ?>" placeholder="Nomor NPWP (tulis '0' bila belum ada)" required style="width:100%">
 			</div>
 
 			<div>
-					<label for="no_sim" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Kepemilikan SIM</label>
-					<select id="no_sim" name="no_sim" style="width:100%">
-						<?php foreach (array('Tidak', 'SIM A', 'SIM BI', 'SIM BII', 'SIM C') as $sim_opt): ?>
-							<option value="<?= $sim_opt ?>" <?= (set_value('no_sim', $t['no_sim'] ?? 'Tidak') === $sim_opt) ? 'selected' : '' ?>><?= $sim_opt ?></option>
+					<label for="no_sim" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Kepemilikan SIM <span style="color:var(--crit)">*</span></label>
+					<select id="no_sim" name="no_sim" required style="width:100%">
+						<?php foreach (array('Tidak Memiliki SIM', 'SIM A', 'SIM BI', 'SIM BII', 'SIM C', 'SIM A & C') as $sim_opt): ?>
+							<option value="<?= $sim_opt ?>" <?= (set_value('no_sim', $t['no_sim'] ?? 'Tidak Memiliki SIM') === $sim_opt) ? 'selected' : '' ?>><?= $sim_opt ?></option>
 						<?php endforeach; ?>
 					</select>
 				</div>
 
 				<div>
-				<label for="agama" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Agama</label>
-				<select id="agama" name="agama" style="width:100%">
+				<label for="agama" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Agama <span style="color:var(--crit)">*</span></label>
+				<select id="agama" name="agama" required style="width:100%">
 					<option value="">-- Pilih Agama --</option>
 					<?php foreach (array('Islam', 'Kristen Protestan', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Lainnya') as $ag): ?>
 						<option value="<?= $ag ?>" <?= (set_value('agama', $t['agama'] ?? '') === $ag) ? 'selected' : '' ?>><?= $ag ?></option>
@@ -240,23 +281,23 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 			</div>
 
 			<div>
-				<label for="gol_darah" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Golongan Darah</label>
-				<select id="gol_darah" name="gol_darah" style="width:100%">
+				<label for="gol_darah" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Golongan Darah <span style="color:var(--crit)">*</span></label>
+				<select id="gol_darah" name="gol_darah" required style="width:100%">
 					<option value="">-- Pilih Gol. Darah --</option>
-					<?php foreach (array('A', 'B', 'AB', 'O') as $gd): ?>
+					<?php foreach (array('A', 'B', 'AB', 'O', 'Tidak Tahu') as $gd): ?>
 						<option value="<?= $gd ?>" <?= (set_value('gol_darah', $t['gol_darah'] ?? '') === $gd) ? 'selected' : '' ?>><?= $gd ?></option>
 					<?php endforeach; ?>
 				</select>
 			</div>
 
 			<div>
-				<label for="tinggi_badan" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Tinggi Badan (cm)</label>
-				<input type="number" id="tinggi_badan" name="tinggi_badan" value="<?= set_value('tinggi_badan', $t['tinggi_badan'] ?? '') ?>" placeholder="Mis. 170" min="100" max="250" style="width:100%">
+				<label for="tinggi_badan" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Tinggi Badan (cm) <span style="color:var(--crit)">*</span></label>
+				<input type="number" id="tinggi_badan" name="tinggi_badan" value="<?= set_value('tinggi_badan', $t['tinggi_badan'] ?? '') ?>" placeholder="Mis. 170" min="100" max="250" required style="width:100%">
 			</div>
 
 			<div>
-				<label for="berat_badan" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Berat Badan (kg)</label>
-				<input type="number" id="berat_badan" name="berat_badan" value="<?= set_value('berat_badan', $t['berat_badan'] ?? '') ?>" placeholder="Mis. 65" min="30" max="200" style="width:100%">
+				<label for="berat_badan" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Berat Badan (kg) <span style="color:var(--crit)">*</span></label>
+				<input type="number" id="berat_badan" name="berat_badan" value="<?= set_value('berat_badan', $t['berat_badan'] ?? '') ?>" placeholder="Mis. 65" min="30" max="200" required style="width:100%">
 			</div>
 
 			<?php
@@ -267,8 +308,8 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 				$txt_lainnya = set_value('status_tempat_tinggal_lainnya', $is_lainnya ? $cur_stt : '');
 				?>
 				<div style="grid-column: 1 / -1">
-					<label for="status_tempat_tinggal" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Status Tempat Tinggal Saat Ini</label>
-					<select id="status_tempat_tinggal" name="status_tempat_tinggal" style="width:100%" onchange="toggleTempatTinggalLainnya(this.value)">
+					<label for="status_tempat_tinggal" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Status Tempat Tinggal Saat Ini <span style="color:var(--crit)">*</span></label>
+					<select id="status_tempat_tinggal" name="status_tempat_tinggal" required style="width:100%" onchange="toggleTempatTinggalLainnya(this.value)">
 						<option value="">-- Pilih Status Tempat Tinggal --</option>
 						<?php foreach (array('Rumah Sendiri', 'Milik Orang Tua', 'Sewa / Kontrak', 'Kost', 'Lainnya') as $stt): ?>
 							<option value="<?= $stt ?>" <?= ($sel_stt === $stt) ? 'selected' : '' ?>><?= $stt ?></option>
@@ -304,369 +345,395 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 	     STEP 2: SECTION II — SUSUNAN KELUARGA
 	     ========================================================================= -->
 	<div class="wizard-step" id="step-2">
-		<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid var(--border); flex-wrap:wrap; gap:8px">
-			<div>
-				<div class="eyebrow" style="color:var(--accent); font-weight:700">Section II: Susunan Keluarga</div>
-				<h2 style="margin:2px 0; font-size:16px; font-weight:700">Data Keluarga Inti</h2>
+			<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid var(--border); flex-wrap:wrap; gap:8px">
+				<div>
+					<div class="eyebrow" style="color:var(--accent); font-weight:700">Section II: Susunan Keluarga</div>
+					<h2 style="margin:2px 0; font-size:16px; font-weight:700">Data Susunan Anggota Keluarga</h2>
+					<p class="muted" style="margin:0; font-size:12.5px">
+						Lengkapi data anggota keluarga inti Anda sesuai ketentuan status pernikahan yang tercatat.
+					</p>
+				</div>
+				<button type="button" class="btn btn-sm btn-ghost" onclick="addFamilyRow()" style="font-size:12px; font-weight:600">
+					+ Tambah Anggota Keluarga
+				</button>
+			</div>
+
+			<?php
+			$status_nikah = $t['status_pernikahan'] ?? 'Belum_Menikah';
+			$is_belum_nikah = (stripos($status_nikah, 'belum') !== FALSE || $status_nikah === 'Belum_Menikah');
+			$min_fam_rows = $is_belum_nikah ? 2 : 1;
+
+			if (!empty($families)) {
+				$fam_init = $families;
+			} elseif ($is_belum_nikah) {
+				$fam_init = array(
+					array('hubungan' => 'Ayah', 'nama_lengkap' => '', 'jenis_kelamin' => 'L', 'usia' => '', 'pendidikan' => '', 'pekerjaan' => '', 'no_telp' => ''),
+					array('hubungan' => 'Ibu',  'nama_lengkap' => '', 'jenis_kelamin' => 'P', 'usia' => '', 'pendidikan' => '', 'pekerjaan' => '', 'no_telp' => ''),
+				);
+			} else {
+				$pasangan_hub = ($t['jenis_kelamin'] === 'P') ? 'Suami' : 'Istri';
+				$pasangan_jk  = ($t['jenis_kelamin'] === 'P') ? 'L' : 'P';
+				$fam_init = array(
+					array('hubungan' => $pasangan_hub, 'nama_lengkap' => '', 'jenis_kelamin' => $pasangan_jk, 'usia' => '', 'pendidikan' => '', 'pekerjaan' => '', 'no_telp' => ''),
+				);
+			}
+			?>
+
+			<!-- Banner Informasi Aturan Pengisian Data Keluarga -->
+			<div style="background:var(--surface-2); border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:8px; padding:12px 16px; margin-bottom:16px; display:flex; align-items:center; gap:12px">
+				<div style="width:28px; height:28px; border-radius:50%; background:var(--accent-soft); color:var(--accent); display:grid; place-items:center; flex:none; font-weight:700">ℹ</div>
+				<div style="font-size:12.5px; line-height:1.45; color:var(--text)">
+					<?php if ($is_belum_nikah): ?>
+						<strong>Status Pernikahan: Belum Menikah.</strong> Sesuai ketentuan, Anda <strong>wajib mengisi minimal 2 data keluarga orang tua (Ayah dan Ibu)</strong>. Seluruh kolom wajib diisi lengkap.
+					<?php else: ?>
+						<strong>Status Pernikahan: <?= html_escape($status_nikah) ?>.</strong> Sesuai ketentuan, Anda <strong>wajib mengisi minimal 1 data anggota keluarga inti (Pasangan / Anak)</strong>. Seluruh kolom wajib diisi lengkap.
+					<?php endif; ?>
+				</div>
+			</div>
+
+			<div id="family-container" style="display:flex; flex-direction:column; gap:12px">
+				<?php foreach ($fam_init as $fidx => $f): ?>
+					<div class="fam-card" style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:14px; position:relative">
+						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+							<strong style="font-size:12.5px; color:var(--text)" class="fam-num">Anggota Keluarga #<?= $fidx + 1 ?></strong>
+							<button type="button" class="btn-sm btn-ghost fam-del-btn" onclick="removeFamCard(this)" style="color:var(--crit); border:none; background:none; cursor:pointer; font-size:11.5px; display:<?= count($fam_init) <= $min_fam_rows ? 'none' : 'inline-block' ?>">
+								✕ Hapus Baris
+							</button>
+						</div>
+
+						<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px">
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Hubungan Keluarga <span style="color:var(--crit)">*</span></label>
+								<select name="fam[<?= $fidx ?>][hubungan]" required style="width:100%; font-size:12.5px">
+									<?php foreach (array('Ayah', 'Ibu', 'Suami', 'Istri', 'Anak', 'Kakak', 'Adik') as $hub): ?>
+										<option value="<?= $hub ?>" <?= ($f['hubungan'] ?? '') === $hub ? 'selected' : '' ?>><?= $hub ?></option>
+									<?php endforeach; ?>
+								</select>
+							</div>
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nama Lengkap <span style="color:var(--crit)">*</span></label>
+								<input type="text" name="fam[<?= $fidx ?>][nama_lengkap]" value="<?= html_escape($f['nama_lengkap'] ?? '') ?>" placeholder="Nama lengkap anggota keluarga" required style="width:100%; font-size:12.5px">
+							</div>
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Jenis Kelamin <span style="color:var(--crit)">*</span></label>
+								<select name="fam[<?= $fidx ?>][jenis_kelamin]" required style="width:100%; font-size:12.5px">
+									<option value="L" <?= ($f['jenis_kelamin'] ?? '') === 'L' ? 'selected' : '' ?>>Laki-laki (L)</option>
+									<option value="P" <?= ($f['jenis_kelamin'] ?? '') === 'P' ? 'selected' : '' ?>>Perempuan (P)</option>
+								</select>
+							</div>
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Usia (Tahun) <span style="color:var(--crit)">*</span></label>
+								<input type="number" name="fam[<?= $fidx ?>][usia]" value="<?= html_escape($f['usia'] ?? '') ?>" placeholder="Misal: 45" min="1" max="120" required style="width:100%; font-size:12.5px">
+							</div>
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Pendidikan Terakhir <span style="color:var(--crit)">*</span></label>
+								<input type="text" name="fam[<?= $fidx ?>][pendidikan]" value="<?= html_escape($f['pendidikan'] ?? '') ?>" placeholder="Misal: SMA / S1 / SMP" required style="width:100%; font-size:12.5px">
+							</div>
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Pekerjaan / Usaha <span style="color:var(--crit)">*</span></label>
+								<input type="text" name="fam[<?= $fidx ?>][pekerjaan]" value="<?= html_escape($f['pekerjaan'] ?? '') ?>" placeholder="Misal: Karyawan / Wirausaha / IRT" required style="width:100%; font-size:12.5px">
+							</div>
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nomor Telepon / WA <span style="color:var(--crit)">*</span></label>
+								<input type="text" name="fam[<?= $fidx ?>][no_telp]" value="<?= html_escape($f['no_telp'] ?? '') ?>" placeholder="08xxxxxxxxxx (atau tulis '-')" required style="width:100%; font-size:12.5px">
+							</div>
+						</div>
+					</div>
+				<?php endforeach; ?>
+			</div>
+
+			<div class="wizard-btn-bar">
+				<button type="button" class="btn btn-secondary" onclick="prevStep(2)">
+					&larr; Sebelumnya
+				</button>
+				<button type="button" class="btn btn-primary" onclick="nextStep(2)">
+					Selanjutnya: Pendidikan &amp; Pelatihan &rarr;
+				</button>
+			</div>
+		</div>
+
+		<!-- =========================================================================
+		     STEP 3: SECTION III — PENDIDIKAN FORMAL & PELATIHAN NON-FORMAL
+		     ========================================================================= -->
+		<div class="wizard-step" id="step-3">
+			<div style="margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid var(--border)">
+				<div class="eyebrow" style="color:var(--accent); font-weight:700">Section III: Riwayat Pendidikan &amp; Pelatihan</div>
+				<h2 style="margin:2px 0; font-size:16px; font-weight:700">Pendidikan Formal &amp; Kursus / Non-Formal</h2>
 				<p class="muted" style="margin:0; font-size:12.5px">
-					Cantumkan anggota keluarga inti (Ayah, Ibu, Pasangan/Suami/Istri, Anak, atau Saudara Kandung).
+					Pendidikan formal terakhir Anda dan sertifikasi kursus / pelatihan kerja yang pernah diikuti. Seluruh kolom wajib diisi (tulis 'Tidak Ada' atau '-' jika belum pernah kursus).
 				</p>
 			</div>
-			<button type="button" class="btn btn-sm btn-ghost" onclick="addFamilyRow()" style="font-size:12px; font-weight:600">
-				+ Tambah Anggota Keluarga
-			</button>
-		</div>
 
-		<div id="family-container" style="display:flex; flex-direction:column; gap:10px">
-			<?php
-			$fam_init = !empty($families) ? $families : array(
-				array('hubungan' => 'Ayah', 'nama_lengkap' => '', 'jenis_kelamin' => 'L', 'usia' => '', 'pendidikan' => '', 'pekerjaan' => '', 'no_telp' => ''),
-				array('hubungan' => 'Ibu',  'nama_lengkap' => '', 'jenis_kelamin' => 'P', 'usia' => '', 'pendidikan' => '', 'pekerjaan' => '', 'no_telp' => ''),
-			);
-			?>
-
-			<?php foreach ($fam_init as $fidx => $f): ?>
-				<div class="fam-card" style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:12px; position:relative">
-					<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
-						<strong style="font-size:12.5px; color:var(--text)" class="fam-num">Anggota Keluarga #<?= $fidx + 1 ?></strong>
-						<button type="button" class="btn-sm btn-ghost" onclick="removeFamCard(this)" style="color:var(--crit); border:none; background:none; cursor:pointer; font-size:11px">
-							✕ Hapus
-						</button>
-					</div>
-
-					<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px">
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Hubungan Keluarga</label>
-								<select name="fam[<?= $fidx ?>][hubungan]" style="width:100%; font-size:12.5px">
-								<?php foreach (array('Ayah', 'Ibu', 'Suami', 'Istri', 'Anak', 'Kakak', 'Adik') as $hub): ?>
-									<option value="<?= $hub ?>" <?= ($f['hubungan'] ?? '') === $hub ? 'selected' : '' ?>><?= $hub ?></option>
-								<?php endforeach; ?>
-							</select>
-						</div>
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nama Lengkap</label>
-								<input type="text" name="fam[<?= $fidx ?>][nama_lengkap]" value="<?= html_escape($f['nama_lengkap'] ?? '') ?>" placeholder="Nama lengkap anggota keluarga" style="width:100%; font-size:12.5px">
-						</div>
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Jenis Kelamin</label>
-								<select name="fam[<?= $fidx ?>][jenis_kelamin]" style="width:100%; font-size:12.5px">
-								<option value="L" <?= ($f['jenis_kelamin'] ?? '') === 'L' ? 'selected' : '' ?>>L</option>
-								<option value="P" <?= ($f['jenis_kelamin'] ?? '') === 'P' ? 'selected' : '' ?>>P</option>
-							</select>
-						</div>
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Usia (Tahun)</label>
-								<input type="number" name="fam[<?= $fidx ?>][usia]" value="<?= html_escape($f['usia'] ?? '') ?>" placeholder="Misal: 45" style="width:100%; font-size:12.5px">
-						</div>
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Pendidikan Terakhir</label>
-								<input type="text" name="fam[<?= $fidx ?>][pendidikan]" value="<?= html_escape($f['pendidikan'] ?? '') ?>" placeholder="Misal: SMA / S1" style="width:100%; font-size:12.5px">
-						</div>
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Pekerjaan / Usaha</label>
-								<input type="text" name="fam[<?= $fidx ?>][pekerjaan]" value="<?= html_escape($f['pekerjaan'] ?? '') ?>" placeholder="Misal: Wirausaha / Pensiunan / IRT" style="width:100%; font-size:12.5px">
-						</div>
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nomor Telepon / WA</label>
-								<input type="text" name="fam[<?= $fidx ?>][no_telp]" value="<?= html_escape($f['no_telp'] ?? '') ?>" placeholder="08xxxxxxxxxx" style="width:100%; font-size:12.5px">
-						</div>
-					</div>
+			<!-- Pendidikan Formal Terakhir (Read-Only Awal) -->
+			<div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:14px 16px; margin-bottom:18px">
+				<div style="font-size:11.5px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase">
+					Pendidikan Formal Terakhir (Sesuai Lamaran Awal)
 				</div>
-			<?php endforeach; ?>
-		</div>
+				<div style="font-size:13px; color:var(--text)">
+					<strong><?= html_escape($t['pendidikan_terakhir'] ?: '-') ?></strong> &mdash;
+					<?= html_escape($t['nama_sekolah'] ?: '-') ?>
+					<?= !empty($t['jurusan']) ? '(' . html_escape($t['jurusan']) . ')' : '' ?>
+				</div>
+			</div>
 
-		<div class="wizard-btn-bar">
-			<button type="button" class="btn btn-secondary" onclick="prevStep(2)">
+			<!-- Pendidikan Non-Formal / Pelatihan Multi-Item -->
+			<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px">
+				<div style="font-size:13px; font-weight:700; color:var(--text)">
+					Pelatihan / Kursus / Workshop / Sertifikasi (Non-Formal)
+				</div>
+				<button type="button" class="btn btn-sm btn-ghost" onclick="addTrainingRow()" style="font-size:12px; font-weight:600">
+					+ Tambah Pelatihan
+				</button>
+			</div>
+
+			<div id="training-container" style="display:flex; flex-direction:column; gap:10px">
+				<?php
+				$trn_init = !empty($trainings) ? $trainings : array(
+					array('nama_pelatihan' => '', 'penyelenggara' => '', 'tahun' => '', 'keterangan' => '')
+				);
+				?>
+
+				<?php foreach ($trn_init as $tidx => $tr): ?>
+					<div class="trn-card" style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:12px; position:relative">
+						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
+							<strong style="font-size:12.5px; color:var(--text)" class="trn-num">Pelatihan #<?= $tidx + 1 ?></strong>
+							<button type="button" class="btn-sm btn-ghost trn-del-btn" onclick="removeTrnCard(this)" style="color:var(--crit); border:none; background:none; cursor:pointer; font-size:11px; display:<?= count($trn_init) === 1 ? 'none' : 'inline-block' ?>">
+								✕ Hapus
+							</button>
+						</div>
+
+						<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px">
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nama Kursus / Pelatihan <span style="color:var(--crit)">*</span></label>
+								<input type="text" name="trn[<?= $tidx ?>][nama_pelatihan]" value="<?= html_escape($tr['nama_pelatihan'] ?? '') ?>" placeholder="Misal: Barista / Brevet Pajak / Tulis 'Tidak Ada'" required style="width:100%; font-size:12.5px">
+							</div>
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Lembaga Penyelenggara <span style="color:var(--crit)">*</span></label>
+								<input type="text" name="trn[<?= $tidx ?>][penyelenggara]" value="<?= html_escape($tr['penyelenggara'] ?? '') ?>" placeholder="Instansi / Penyelenggara / '-'" required style="width:100%; font-size:12.5px">
+							</div>
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Tahun Pelaksanaan <span style="color:var(--crit)">*</span></label>
+								<input type="text" name="trn[<?= $tidx ?>][tahun]" value="<?= html_escape($tr['tahun'] ?? '') ?>" placeholder="Mis. 2023 / '-'" required style="width:100%; font-size:12.5px">
+							</div>
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Keterangan / No. Sertifikat <span style="color:var(--crit)">*</span></label>
+								<input type="text" name="trn[<?= $tidx ?>][keterangan]" value="<?= html_escape($tr['keterangan'] ?? '') ?>" placeholder="Bersertifikat / Nilai / '-'" required style="width:100%; font-size:12.5px">
+							</div>
+						</div>
+					</div>
+				<?php endforeach; ?>
+			</div>
+
+			<div class="wizard-btn-bar">
+				<button type="button" class="btn btn-secondary" onclick="prevStep(3)">
 					&larr; Sebelumnya
 				</button>
-			<button type="button" class="btn btn-primary" onclick="nextStep(2)">
-				Selanjutnya: Pendidikan &amp; Pelatihan &rarr;
-			</button>
-		</div>
-	</div>
-
-	<!-- =========================================================================
-	     STEP 3: SECTION III — PENDIDIKAN FORMAL & PELATIHAN NON-FORMAL
-	     ========================================================================= -->
-	<div class="wizard-step" id="step-3">
-		<div style="margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid var(--border)">
-			<div class="eyebrow" style="color:var(--accent); font-weight:700">Section III: Riwayat Pendidikan &amp; Pelatihan</div>
-			<h2 style="margin:2px 0; font-size:16px; font-weight:700">Pendidikan Formal &amp; Kursus / Non-Formal</h2>
-			<p class="muted" style="margin:0; font-size:12.5px">
-				Pendidikan formal terakhir Anda dan sertifikasi kursus / pelatihan kerja yang pernah diikuti.
-			</p>
-		</div>
-
-		<!-- Pendidikan Formal Terakhir (Read-Only Awal) -->
-		<div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:14px 16px; margin-bottom:18px">
-			<div style="font-size:11.5px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase">
-				Pendidikan Formal Terakhir
-			</div>
-			<div style="font-size:13px; color:var(--text)">
-				<strong><?= html_escape($t['pendidikan_terakhir'] ?: '-') ?></strong> &mdash;
-				<?= html_escape($t['nama_sekolah'] ?: '-') ?>
-				<?= !empty($t['jurusan']) ? '(' . html_escape($t['jurusan']) . ')' : '' ?>
+				<button type="button" class="btn btn-primary" onclick="nextStep(3)">
+					Selanjutnya: Pengalaman Kerja &rarr;
+				</button>
 			</div>
 		</div>
 
-		<!-- Pendidikan Non-Formal / Pelatihan Multi-Item -->
-		<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px">
-			<div style="font-size:13px; font-weight:700; color:var(--text)">
-				Pelatihan / Kursus / Workshop / Sertifikasi (Non-Formal)
-			</div>
-			<button type="button" class="btn btn-sm btn-ghost" onclick="addTrainingRow()" style="font-size:12px; font-weight:600">
-				+ Tambah Pelatihan
-			</button>
-		</div>
-
-		<div id="training-container" style="display:flex; flex-direction:column; gap:10px">
-			<?php
-			$trn_init = !empty($trainings) ? $trainings : array(
-				array('nama_pelatihan' => '', 'penyelenggara' => '', 'tahun' => '', 'keterangan' => '')
-			);
-			?>
-
-			<?php foreach ($trn_init as $tidx => $tr): ?>
-				<div class="trn-card" style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:12px; position:relative">
-					<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
-						<strong style="font-size:12.5px; color:var(--text)" class="trn-num">Pelatihan #<?= $tidx + 1 ?></strong>
-						<button type="button" class="btn-sm btn-ghost" onclick="removeTrnCard(this)" style="color:var(--crit); border:none; background:none; cursor:pointer; font-size:11px" <?= count($trn_init) === 1 ? 'hidden' : '' ?>>
-							✕ Hapus
-						</button>
-					</div>
-
-					<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px">
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nama Kursus / Pelatihan</label>
-							<input type="text" name="trn[<?= $tidx ?>][nama_pelatihan]" value="<?= html_escape($tr['nama_pelatihan'] ?? '') ?>" placeholder="Misal: Barista / Brevet Pajak / Excel" style="width:100%; font-size:12.5px">
-						</div>
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Lembaga Penyelenggara</label>
-							<input type="text" name="trn[<?= $tidx ?>][penyelenggara]" value="<?= html_escape($tr['penyelenggara'] ?? '') ?>" placeholder="Instansi Penyelenggara" style="width:100%; font-size:12.5px">
-						</div>
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Tahun</label>
-							<input type="text" name="trn[<?= $tidx ?>][tahun]" value="<?= html_escape($tr['tahun'] ?? '') ?>" placeholder="Mis. 2023" style="width:100%; font-size:12.5px">
-						</div>
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Keterangan / No. Sertifikat</label>
-							<input type="text" name="trn[<?= $tidx ?>][keterangan]" value="<?= html_escape($tr['keterangan'] ?? '') ?>" placeholder="Bersertifikat / Nilai" style="width:100%; font-size:12.5px">
-						</div>
-					</div>
+		<!-- =========================================================================
+		     STEP 4: SECTION IV — PENGALAMAN KERJA TERPERINCI
+		     ========================================================================= -->
+		<div class="wizard-step" id="step-4">
+			<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid var(--border); flex-wrap:wrap; gap:8px">
+				<div>
+					<div class="eyebrow" style="color:var(--accent); font-weight:700">Section IV: Pengalaman Kerja</div>
+					<h2 style="margin:2px 0; font-size:16px; font-weight:700">Riwayat Pengalaman Kerja Lengkap</h2>
+					<p class="muted" style="margin:0; font-size:12.5px">
+						Cantumkan riwayat tempat Anda pernah bekerja (urutkan dari pekerjaan terakhir). Tulis 'Fresh Graduate' atau '-' jika belum pernah bekerja.
+					</p>
 				</div>
-			<?php endforeach; ?>
-		</div>
+				<button type="button" class="btn btn-sm btn-ghost" onclick="addExperienceRow()" style="font-size:12px; font-weight:600">
+					+ Tambah Pekerjaan
+				</button>
+			</div>
 
-		<div class="wizard-btn-bar">
-			<button type="button" class="btn btn-secondary" onclick="prevStep(3)">
+			<div id="experience-container" style="display:flex; flex-direction:column; gap:12px">
+				<?php
+				$exp_init = !empty($experiences) ? $experiences : array(
+					array(
+						'nama_perusahaan' => $t['perusahaan_terakhir'] ?? '',
+						'posisi_jabatan'  => $t['jabatan_terakhir'] ?? '',
+						'periode_kerja'   => $t['periode_kerja'] ?? '',
+						'gaji_terakhir'   => $t['gaji_terakhir'] ?? '',
+						'alasan_keluar'   => '',
+						'deskripsi_tugas' => '',
+					)
+				);
+				?>
+
+				<?php foreach ($exp_init as $idx => $e): ?>
+					<div class="exp-card" style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:14px; position:relative">
+						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+							<strong style="font-size:13px; color:var(--text)" class="exp-num">Pekerjaan #<?= $idx + 1 ?></strong>
+							<button type="button" class="btn-sm btn-ghost exp-del-btn" onclick="removeExpCard(this)" style="color:var(--crit); border:none; background:none; cursor:pointer; font-size:11.5px; display:<?= count($exp_init) === 1 ? 'none' : 'inline-block' ?>">
+								✕ Hapus Baris
+							</button>
+						</div>
+
+						<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-bottom:10px">
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nama Perusahaan / Instansi <span style="color:var(--crit)">*</span></label>
+								<input type="text" name="exp[<?= $idx ?>][nama_perusahaan]" value="<?= html_escape($e['nama_perusahaan'] ?? '') ?>" placeholder="PT Nama Perusahaan (atau 'Belum Bekerja')" required style="width:100%; font-size:12.5px">
+							</div>
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Jabatan / Posisi <span style="color:var(--crit)">*</span></label>
+								<input type="text" name="exp[<?= $idx ?>][posisi_jabatan]" value="<?= html_escape($e['posisi_jabatan'] ?? '') ?>" placeholder="Misal: Staff / Kasir / SPV / '-'" required style="width:100%; font-size:12.5px">
+							</div>
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Periode Bekerja <span style="color:var(--crit)">*</span></label>
+								<input type="text" name="exp[<?= $idx ?>][periode_kerja]" value="<?= html_escape($e['periode_kerja'] ?? '') ?>" placeholder="Misal: 2021 - 2023 / '-'" required style="width:100%; font-size:12.5px">
+							</div>
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Gaji Terakhir (Rp) <span style="color:var(--crit)">*</span></label>
+								<input type="text" name="exp[<?= $idx ?>][gaji_terakhir]" value="<?= html_escape($e['gaji_terakhir'] ?? '') ?>" placeholder="Contoh: 5000000 / '0'" required style="width:100%; font-size:12.5px">
+							</div>
+						</div>
+
+						<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:10px">
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Alasan Berhenti / Pindah <span style="color:var(--crit)">*</span></label>
+								<input type="text" name="exp[<?= $idx ?>][alasan_keluar]" value="<?= html_escape($e['alasan_keluar'] ?? '') ?>" placeholder="Misal: Habis kontrak / Belum pernah / '-'" required style="width:100%; font-size:12.5px">
+							</div>
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Uraian Tanggung Jawab / Prestasi <span style="color:var(--crit)">*</span></label>
+								<input type="text" name="exp[<?= $idx ?>][deskripsi_tugas]" value="<?= html_escape($e['deskripsi_tugas'] ?? '') ?>" placeholder="Uraian pekerjaan utama / '-'" required style="width:100%; font-size:12.5px">
+							</div>
+						</div>
+					</div>
+				<?php endforeach; ?>
+			</div>
+
+			<div class="wizard-btn-bar">
+				<button type="button" class="btn btn-secondary" onclick="prevStep(4)">
 					&larr; Sebelumnya
 				</button>
-			<button type="button" class="btn btn-primary" onclick="nextStep(3)">
-				Selanjutnya: Pengalaman Kerja &rarr;
-			</button>
+				<button type="button" class="btn btn-primary" onclick="nextStep(4)">
+					Selanjutnya: Keahlian &amp; Bahasa &rarr;
+				</button>
+			</div>
 		</div>
-	</div>
 
-	<!-- =========================================================================
-	     STEP 4: SECTION IV — PENGALAMAN KERJA TERPERINCI
-	     ========================================================================= -->
-	<div class="wizard-step" id="step-4">
-		<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid var(--border); flex-wrap:wrap; gap:8px">
-			<div>
-				<div class="eyebrow" style="color:var(--accent); font-weight:700">Section IV: Pengalaman Kerja</div>
-				<h2 style="margin:2px 0; font-size:16px; font-weight:700">Riwayat Pengalaman Kerja Lengkap</h2>
+		<!-- =========================================================================
+		     STEP 5: SECTION V — KEAHLIAN KOMPUTER & PENGUASAAN BAHASA
+		     ========================================================================= -->
+		<div class="wizard-step" id="step-5">
+			<div style="margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid var(--border)">
+				<div class="eyebrow" style="color:var(--accent); font-weight:700">Section V: Keahlian &amp; Bahasa</div>
+				<h2 style="margin:2px 0; font-size:16px; font-weight:700">Keahlian Komputer &amp; Penguasaan Bahasa</h2>
 				<p class="muted" style="margin:0; font-size:12.5px">
-					Cantumkan riwayat perusahaan tempat Anda pernah bekerja (urutkan dari pekerjaan terakhir).
+					Informasi kecakapan aplikasi pendukung pekerjaan serta bahasa asing atau daerah yang Anda kuasai.
 				</p>
 			</div>
-			<button type="button" class="btn btn-sm btn-ghost" onclick="addExperienceRow()" style="font-size:12px; font-weight:600">
-				+ Tambah Pekerjaan
-			</button>
-		</div>
 
-		<div id="experience-container" style="display:flex; flex-direction:column; gap:12px">
-			<?php
-			$exp_init = !empty($experiences) ? $experiences : array(
-				array(
-					'nama_perusahaan' => $t['perusahaan_terakhir'] ?? '',
-					'posisi_jabatan'  => $t['jabatan_terakhir'] ?? '',
-					'periode_kerja'   => $t['periode_kerja'] ?? '',
-					'gaji_terakhir'   => $t['gaji_terakhir'] ?? '',
-					'alasan_keluar'   => '',
-					'deskripsi_tugas' => '',
-				)
-			);
-			?>
-
-			<?php foreach ($exp_init as $idx => $e): ?>
-				<div class="exp-card" style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:14px; position:relative">
-					<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
-						<strong style="font-size:13px; color:var(--text)" class="exp-num">Pekerjaan #<?= $idx + 1 ?></strong>
-						<button type="button" class="btn-sm btn-ghost" onclick="removeExpCard(this)" style="color:var(--crit); border:none; background:none; cursor:pointer; font-size:11.5px" <?= count($exp_init) === 1 ? 'hidden' : '' ?>>
-							✕ Hapus Baris
-						</button>
-					</div>
-
-					<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-bottom:10px">
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nama Perusahaan / Instansi</label>
-							<input type="text" name="exp[<?= $idx ?>][nama_perusahaan]" value="<?= html_escape($e['nama_perusahaan'] ?? '') ?>" placeholder="PT Contoh Nama Perusahaan" style="width:100%; font-size:12.5px">
-						</div>
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Jabatan / Posisi</label>
-							<input type="text" name="exp[<?= $idx ?>][posisi_jabatan]" value="<?= html_escape($e['posisi_jabatan'] ?? '') ?>" placeholder="Misal: Staff / Kasir / SPV" style="width:100%; font-size:12.5px">
-						</div>
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Periode Bekerja</label>
-							<input type="text" name="exp[<?= $idx ?>][periode_kerja]" value="<?= html_escape($e['periode_kerja'] ?? '') ?>" placeholder="Misal: 2021 - 2023" style="width:100%; font-size:12.5px">
-						</div>
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Gaji Terakhir (Rp)</label>
-							<input type="text" name="exp[<?= $idx ?>][gaji_terakhir]" value="<?= html_escape($e['gaji_terakhir'] ?? '') ?>" placeholder="Contoh: 5000000" style="width:100%; font-size:12.5px">
-						</div>
-					</div>
-
-					<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:10px">
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Alasan Berhenti / Pindah</label>
-							<input type="text" name="exp[<?= $idx ?>][alasan_keluar]" value="<?= html_escape($e['alasan_keluar'] ?? '') ?>" placeholder="Misal: Habis kontrak / Pengembangan karir" style="width:100%; font-size:12.5px">
-						</div>
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Uraian Tanggung Jawab / Prestasi</label>
-							<input type="text" name="exp[<?= $idx ?>][deskripsi_tugas]" value="<?= html_escape($e['deskripsi_tugas'] ?? '') ?>" placeholder="Uraian pekerjaan utama" style="width:100%; font-size:12.5px">
-						</div>
-					</div>
+			<div style="display:flex; flex-direction:column; gap:16px">
+				<div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:16px">
+					<label for="keahlian_komputer" style="display:block; font-size:13px; font-weight:700; margin-bottom:4px; color:var(--text)">
+						Keahlian Komputer &amp; Aplikasi Lunak <span style="color:var(--crit)">*</span>
+					</label>
+					<p class="muted" style="font-size:12px; margin:0 0 8px">
+						Sebutkan program komputer, software POS kasir, spreadsheet, desain, atau aplikasi yang Anda kuasai. (Tulis 'Dasar / Menguasai Smartphone' bila belum menguasai software khusus).
+					</p>
+					<input type="text" id="keahlian_komputer" name="keahlian_komputer" value="<?= set_value('keahlian_komputer', $t['keahlian_komputer'] ?? '') ?>" placeholder="Misal: MS Excel (Rumus VLOOKUP/Pivot), MS Word, POS Kasir, Canva" required style="width:100%; font-size:13px">
 				</div>
-			<?php endforeach; ?>
-		</div>
 
-		<div class="wizard-btn-bar">
-			<button type="button" class="btn btn-secondary" onclick="prevStep(4)">
-					&larr; Sebelumnya
-				</button>
-			<button type="button" class="btn btn-primary" onclick="nextStep(4)">
-				Selanjutnya: Keahlian &amp; Bahasa &rarr;
-			</button>
-		</div>
-	</div>
-
-	<!-- =========================================================================
-	     STEP 5: SECTION V — KEAHLIAN KOMPUTER & PENGUASAAN BAHASA
-	     ========================================================================= -->
-	<div class="wizard-step" id="step-5">
-		<div style="margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid var(--border)">
-			<div class="eyebrow" style="color:var(--accent); font-weight:700">Section V: Keahlian &amp; Bahasa</div>
-			<h2 style="margin:2px 0; font-size:16px; font-weight:700">Keahlian Komputer &amp; Penguasaan Bahasa</h2>
-			<p class="muted" style="margin:0; font-size:12.5px">
-				Informasi kecakapan aplikasi pendukung pekerjaan serta bahasa asing atau daerah yang Anda kuasai.
-			</p>
-		</div>
-
-		<div style="display:flex; flex-direction:column; gap:16px">
-			<div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:16px">
-				<label for="keahlian_komputer" style="display:block; font-size:13px; font-weight:700; margin-bottom:4px; color:var(--text)">
-					Keahlian Komputer &amp; Aplikasi Lunak
-				</label>
-				<p class="muted" style="font-size:12px; margin:0 0 8px">
-					Sebutkan program komputer, software POS kasir, spreadsheet, desain, atau aplikasi yang Anda kuasai.
-				</p>
-				<input type="text" id="keahlian_komputer" name="keahlian_komputer" value="<?= set_value('keahlian_komputer', $t['keahlian_komputer'] ?? '') ?>" placeholder="Misal: MS Excel (Rumus VLOOKUP/Pivot), MS Word, POS Kasir, Canva, Accurate/ERP" style="width:100%; font-size:13px">
-			</div>
-
-			<div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:16px">
-				<label for="bahasa_asing" style="display:block; font-size:13px; font-weight:700; margin-bottom:4px; color:var(--text)">
-					Penguasaan Bahasa Asing &amp; Bahasa Daerah
-				</label>
-				<p class="muted" style="font-size:12px; margin:0 0 8px">
-					Sebutkan bahasa yang dikuasai beserta tingkat kemampuannya (Aktif / Pasif).
-				</p>
-				<input type="text" id="bahasa_asing" name="bahasa_asing" value="<?= set_value('bahasa_asing', $t['bahasa_asing'] ?? '') ?>" placeholder="Misal: Bahasa Inggris (Aktif Lisan & Tulisan), Bahasa Mandarin (Pasif), Bahasa Jawa" style="width:100%; font-size:13px">
-			</div>
-		</div>
-
-		<div class="wizard-btn-bar">
-			<button type="button" class="btn btn-secondary" onclick="prevStep(5)">
-					&larr; Sebelumnya
-				</button>
-			<button type="button" class="btn btn-primary" onclick="nextStep(5)">
-				Selanjutnya: Referensi Kerja &rarr;
-			</button>
-		</div>
-	</div>
-
-	<!-- =========================================================================
-	     STEP 6: SECTION VI — REFERENSI KERJA PROFESIONAL
-	     ========================================================================= -->
-	<div class="wizard-step" id="step-6">
-		<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid var(--border); flex-wrap:wrap; gap:8px">
-			<div>
-				<div class="eyebrow" style="color:var(--accent); font-weight:700">Section VI: Referensi Kerja</div>
-				<h2 style="margin:2px 0; font-size:16px; font-weight:700">Referensi Profesional / Rekomendasi Kerja</h2>
-				<p class="muted" style="margin:0; font-size:12.5px">
-					Cantumkan atasan langsung, HRD, atau rekan profesional yang dapat dihubungi untuk konfirmasi rekam jejak Anda.
-				</p>
-			</div>
-			<button type="button" class="btn btn-sm btn-ghost" onclick="addReferenceRow()" style="font-size:12px; font-weight:600">
-				+ Tambah Referensi
-			</button>
-		</div>
-
-		<div id="reference-container" style="display:flex; flex-direction:column; gap:10px">
-			<?php
-			$ref_init = !empty($references) ? $references : array(
-				array('nama_referensi' => '', 'perusahaan' => '', 'jabatan' => '', 'no_telp' => '', 'hubungan' => '')
-			);
-			?>
-
-			<?php foreach ($ref_init as $ridx => $rf): ?>
-				<div class="ref-card" style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:12px; position:relative">
-					<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
-						<strong style="font-size:12.5px; color:var(--text)" class="ref-num">Referensi #<?= $ridx + 1 ?></strong>
-						<button type="button" class="btn-sm btn-ghost" onclick="removeRefCard(this)" style="color:var(--crit); border:none; background:none; cursor:pointer; font-size:11px" <?= count($ref_init) === 1 ? 'hidden' : '' ?>>
-							✕ Hapus
-						</button>
-					</div>
-
-					<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px">
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nama Lengkap</label>
-							<input type="text" name="ref[<?= $ridx ?>][nama_referensi]" value="<?= html_escape($rf['nama_referensi'] ?? '') ?>" placeholder="Nama pemberi referensi" style="width:100%; font-size:12.5px">
-						</div>
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Perusahaan / Instansi</label>
-							<input type="text" name="ref[<?= $ridx ?>][perusahaan]" value="<?= html_escape($rf['perusahaan'] ?? '') ?>" placeholder="Nama instansi" style="width:100%; font-size:12.5px">
-						</div>
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Jabatan</label>
-							<input type="text" name="ref[<?= $ridx ?>][jabatan]" value="<?= html_escape($rf['jabatan'] ?? '') ?>" placeholder="Mis. Branch Manager / SPV" style="width:100%; font-size:12.5px">
-						</div>
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nomor Telepon / WA</label>
-							<input type="text" name="ref[<?= $ridx ?>][no_telp]" value="<?= html_escape($rf['no_telp'] ?? '') ?>" placeholder="08xxxxxxxxxx" style="width:100%; font-size:12.5px">
-						</div>
-						<div>
-							<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Hubungan Kerja</label>
-							<input type="text" name="ref[<?= $ridx ?>][hubungan]" value="<?= html_escape($rf['hubungan'] ?? '') ?>" placeholder="Mis. Atasan Langsung / Rekan Kerja" style="width:100%; font-size:12.5px">
-						</div>
-					</div>
+				<div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:16px">
+					<label for="bahasa_asing" style="display:block; font-size:13px; font-weight:700; margin-bottom:4px; color:var(--text)">
+						Penguasaan Bahasa Asing &amp; Bahasa Daerah <span style="color:var(--crit)">*</span>
+					</label>
+					<p class="muted" style="font-size:12px; margin:0 0 8px">
+						Sebutkan bahasa yang dikuasai beserta tingkat kemampuannya (Aktif / Pasif).
+					</p>
+					<input type="text" id="bahasa_asing" name="bahasa_asing" value="<?= set_value('bahasa_asing', $t['bahasa_asing'] ?? '') ?>" placeholder="Misal: Bahasa Indonesia (Aktif), Bahasa Inggris (Pasif), Bahasa Sunda/Jawa" required style="width:100%; font-size:13px">
 				</div>
-			<?php endforeach; ?>
-		</div>
+			</div>
 
-		<div class="wizard-btn-bar">
-			<button type="button" class="btn btn-secondary" onclick="prevStep(6)">
+			<div class="wizard-btn-bar">
+				<button type="button" class="btn btn-secondary" onclick="prevStep(5)">
 					&larr; Sebelumnya
 				</button>
-			<button type="button" class="btn btn-primary" onclick="nextStep(6)">
-				Selanjutnya: Minat &amp; Konsep Diri &rarr;
-			</button>
+				<button type="button" class="btn btn-primary" onclick="nextStep(5)">
+					Selanjutnya: Referensi Kerja &rarr;
+				</button>
+			</div>
 		</div>
-	</div>
 
-	<!-- =========================================================================
-	     STEP 7: SECTION VII — MINAT & KONSEP PRIBADI LENGKAP
-	     ========================================================================= -->
-	<div class="wizard-step" id="step-7">
+		<!-- =========================================================================
+		     STEP 6: SECTION VI — REFERENSI KERJA PROFESIONAL
+		     ========================================================================= -->
+		<div class="wizard-step" id="step-6">
+			<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid var(--border); flex-wrap:wrap; gap:8px">
+				<div>
+					<div class="eyebrow" style="color:var(--accent); font-weight:700">Section VI: Referensi Kerja</div>
+					<h2 style="margin:2px 0; font-size:16px; font-weight:700">Referensi Profesional / Rekomendasi Kerja</h2>
+					<p class="muted" style="margin:0; font-size:12.5px">
+						Cantumkan atasan langsung, HRD, dosen, guru, atau rekan kerja yang dapat dihubungi untuk konfirmasi rekam jejak Anda.
+					</p>
+				</div>
+				<button type="button" class="btn btn-sm btn-ghost" onclick="addReferenceRow()" style="font-size:12px; font-weight:600">
+					+ Tambah Referensi
+				</button>
+			</div>
+
+			<div id="reference-container" style="display:flex; flex-direction:column; gap:10px">
+				<?php
+				$ref_init = !empty($references) ? $references : array(
+					array('nama_referensi' => '', 'perusahaan' => '', 'jabatan' => '', 'no_telp' => '', 'hubungan' => '')
+				);
+				?>
+
+				<?php foreach ($ref_init as $ridx => $rf): ?>
+					<div class="ref-card" style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:12px; position:relative">
+						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
+							<strong style="font-size:12.5px; color:var(--text)" class="ref-num">Referensi #<?= $ridx + 1 ?></strong>
+							<button type="button" class="btn-sm btn-ghost ref-del-btn" onclick="removeRefCard(this)" style="color:var(--crit); border:none; background:none; cursor:pointer; font-size:11px; display:<?= count($ref_init) === 1 ? 'none' : 'inline-block' ?>">
+								✕ Hapus
+							</button>
+						</div>
+
+						<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px">
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nama Lengkap <span style="color:var(--crit)">*</span></label>
+								<input type="text" name="ref[<?= $ridx ?>][nama_referensi]" value="<?= html_escape($rf['nama_referensi'] ?? '') ?>" placeholder="Nama pemberi referensi" required style="width:100%; font-size:12.5px">
+							</div>
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Perusahaan / Instansi <span style="color:var(--crit)">*</span></label>
+								<input type="text" name="ref[<?= $ridx ?>][perusahaan]" value="<?= html_escape($rf['perusahaan'] ?? '') ?>" placeholder="Nama instansi / sekolah / kampus" required style="width:100%; font-size:12.5px">
+							</div>
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Jabatan <span style="color:var(--crit)">*</span></label>
+								<input type="text" name="ref[<?= $ridx ?>][jabatan]" value="<?= html_escape($rf['jabatan'] ?? '') ?>" placeholder="Mis. Branch Manager / SPV / Guru" required style="width:100%; font-size:12.5px">
+							</div>
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nomor Telepon / WA <span style="color:var(--crit)">*</span></label>
+								<input type="text" name="ref[<?= $ridx ?>][no_telp]" value="<?= html_escape($rf['no_telp'] ?? '') ?>" placeholder="08xxxxxxxxxx" required style="width:100%; font-size:12.5px">
+							</div>
+							<div>
+								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Hubungan Kerja <span style="color:var(--crit)">*</span></label>
+								<input type="text" name="ref[<?= $ridx ?>][hubungan]" value="<?= html_escape($rf['hubungan'] ?? '') ?>" placeholder="Mis. Atasan Langsung / Rekan Kerja" required style="width:100%; font-size:12.5px">
+							</div>
+						</div>
+					</div>
+				<?php endforeach; ?>
+			</div>
+
+			<div class="wizard-btn-bar">
+				<button type="button" class="btn btn-secondary" onclick="prevStep(6)">
+					&larr; Sebelumnya
+				</button>
+				<button type="button" class="btn btn-primary" onclick="nextStep(6)">
+					Selanjutnya: Minat &amp; Konsep Diri &rarr;
+				</button>
+			</div>
+		</div>
+
+		<!-- =========================================================================
+		     STEP 7: SECTION VII — MINAT & KONSEP PRIBADI LENGKAP
+		     ========================================================================= -->
+		<div class="wizard-step" id="step-7">
 		<div style="margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid var(--border)">
 			<div class="eyebrow" style="color:var(--accent); font-weight:700">Section VII: Minat &amp; Konsep Pribadi</div>
 			<h2 style="margin:2px 0; font-size:16px; font-weight:700">Evaluasi Minat, Sasaran Karir &amp; Konsep Diri</h2>
@@ -785,9 +852,9 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 				<div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:14px">
 					<label for="q_kendaraan" style="display:block; font-size:12.5px; font-weight:700; margin-bottom:6px; color:var(--text)">
-						Kepemilikan Kendaraan Pribadi &amp; SIM untuk Operasional
+						Kepemilikan Kendaraan Pribadi &amp; SIM untuk Operasional <span style="color:var(--crit)">*</span>
 					</label>
-					<input type="text" id="q_kendaraan" name="quest[kepemilikan_kendaraan]" value="<?= set_value('quest[kepemilikan_kendaraan]', $q['kepemilikan_kendaraan'] ?? '') ?>" placeholder="Misal: Motor pribadi & SIM C aktif / Mobil & SIM A" style="width:100%; font-size:13px">
+					<input type="text" id="q_kendaraan" name="quest[kepemilikan_kendaraan]" value="<?= set_value('quest[kepemilikan_kendaraan]', $q['kepemilikan_kendaraan'] ?? '') ?>" placeholder="Misal: Motor pribadi & SIM C aktif / Tidak Memiliki" required style="width:100%; font-size:13px">
 				</div>
 			</div>
 
@@ -827,15 +894,15 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 			<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:14px">
 				<div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:14px">
 					<label for="q_bisnis" style="display:block; font-size:12.5px; font-weight:700; margin-bottom:6px; color:var(--text)">
-						Pekerjaan sampingan / usaha bisnis pribadi saat ini
+						Pekerjaan sampingan / usaha bisnis pribadi saat ini <span style="color:var(--crit)">*</span>
 					</label>
-					<input type="text" id="q_bisnis" name="quest[punya_bisnis_sampingan]" value="<?= set_value('quest[punya_bisnis_sampingan]', $q['punya_bisnis_sampingan'] ?? '') ?>" placeholder="Tuliskan jenis usaha atau 'Tidak Ada'" style="width:100%; font-size:13px">
+					<input type="text" id="q_bisnis" name="quest[punya_bisnis_sampingan]" value="<?= set_value('quest[punya_bisnis_sampingan]', $q['punya_bisnis_sampingan'] ?? '') ?>" placeholder="Tuliskan jenis usaha atau 'Tidak Ada'" required style="width:100%; font-size:13px">
 				</div>
 				<div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:14px">
 					<label for="q_relasi" style="display:block; font-size:12.5px; font-weight:700; margin-bottom:6px; color:var(--text)">
-						Keluarga / kenalan yang saat ini bekerja di RPG
+						Keluarga / kenalan yang saat ini bekerja di RPG <span style="color:var(--crit)">*</span>
 					</label>
-					<input type="text" id="q_relasi" name="quest[relasi_keluarga_rpg]" value="<?= set_value('quest[relasi_keluarga_rpg]', $q['relasi_keluarga_rpg'] ?? '') ?>" placeholder="Sebutkan Nama & Hubungan atau 'Tidak Ada'" style="width:100%; font-size:13px">
+					<input type="text" id="q_relasi" name="quest[relasi_keluarga_rpg]" value="<?= set_value('quest[relasi_keluarga_rpg]', $q['relasi_keluarga_rpg'] ?? '') ?>" placeholder="Sebutkan Nama & Hubungan atau 'Tidak Ada'" required style="width:100%; font-size:13px">
 				</div>
 			</div>
 
@@ -873,13 +940,13 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 			<!-- KESEHATAN KHUSUS (PDP) -->
 			<div style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:16px">
 				<label for="riwayat_penyakit" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">
-					Riwayat Penyakit Berat / Rawat Inap / Alergi Tertentu (Opsional)
+					Riwayat Penyakit Berat / Rawat Inap / Alergi Khusus <span style="color:var(--crit)">*</span>
 				</label>
-				<textarea id="riwayat_penyakit" name="riwayat_penyakit" rows="2" placeholder="Tuliskan bila ada (misal: riwayat asma, alergi obat). Kosongkan jika tidak ada." style="width:100%; font-size:13px; margin-bottom:10px"><?= set_value('riwayat_penyakit', $t['riwayat_penyakit'] ?? '') ?></textarea>
+				<textarea id="riwayat_penyakit" name="riwayat_penyakit" rows="2" placeholder="Tuliskan bila ada (misal: riwayat asma, alergi obat tertentu). Tulis 'Tidak Ada' bila sehat normal." required style="width:100%; font-size:13px; margin-bottom:10px"><?= set_value('riwayat_penyakit', $t['riwayat_penyakit'] ?? '') ?></textarea>
 				<label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; font-size:11.5px; color:var(--text-muted)">
-					<input type="checkbox" name="consent_kesehatan" value="1" <?= set_checkbox('consent_kesehatan', '1', !empty($t['consent_kesehatan'])) ?> style="margin-top:2px">
+					<input type="checkbox" name="consent_kesehatan" value="1" <?= set_checkbox('consent_kesehatan', '1', !empty($t['consent_kesehatan'])) ?> required style="margin-top:2px">
 					<span>
-						Saya bersedia memberikan informasi riwayat kesehatan ini secara sukarela untuk keperluan penyesuaian lingkungan kerja dan tanggap darurat medis sesuai UU Pelindungan Data Pribadi (UU PDP No. 27/2022).
+						Persetujuan Data Medis: Saya bersedia memberikan informasi riwayat kesehatan ini secara sukarela untuk penyesuaian operasional kerja RPG sesuai UU Pelindungan Data Pribadi (UU PDP No. 27/2022). <span style="color:var(--crit)">*</span>
 					</span>
 				</label>
 			</div>
@@ -914,6 +981,9 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 <script>
 var currentStep = 1;
 var totalSteps = 8;
+
+var isBelumNikah = <?= $is_belum_nikah ? 'true' : 'false' ?>;
+var minFamilyRows = <?= (int) $min_fam_rows ?>;
 
 // Baca parameter query step jika ada (misal setelah simpan draft)
 (function() {
@@ -1106,9 +1176,35 @@ function validateStep(step) {
 	var stepContainer = document.getElementById('step-' + step);
 	if (!stepContainer) return true;
 
+	// 1. Validasi khusus Step 1: Pas Foto
+	if (step === 1) {
+		var hasExistingPhoto = <?= (!empty($t['foto_path']) && is_file($t['foto_path'])) ? 'true' : 'false' ?>;
+		var fotoInput = document.getElementById('pas_foto');
+		if (!hasExistingPhoto && fotoInput && (!fotoInput.files || fotoInput.files.length === 0)) {
+			alert('Pas foto pelamar wajib dipilih dan diunggah pada Langkah 1.');
+			fotoInput.focus();
+			return false;
+		}
+	}
+
+	// 2. Validasi khusus Step 2: Aturan Anggota Keluarga
+	if (step === 2) {
+		var c = document.getElementById('family-container');
+		var currentRows = c ? c.children.length : 0;
+		if (currentRows < minFamilyRows) {
+			alert(isBelumNikah
+				? 'Karena status pernikahan Anda Belum Menikah, wajib mengisi minimal 2 data keluarga orang tua (Ayah dan Ibu).'
+				: 'Wajib mengisi minimal 1 data anggota keluarga inti.');
+			return false;
+		}
+	}
+
+	// 3. Validasi native HTML5 untuk elemen required
 	var inputs = stepContainer.querySelectorAll('input[required], select[required], textarea[required]');
 	for (var i = 0; i < inputs.length; i++) {
 		var inp = inputs[i];
+		// Skip hidden elements (kecuali yang memang aktif di form)
+		if (inp.offsetParent === null && inp.type !== 'hidden') continue;
 		if (!inp.checkValidity()) {
 			inp.reportValidity();
 			inp.focus();
@@ -1120,6 +1216,18 @@ function validateStep(step) {
 
 // Dynamic Multi-Row: Experience
 var expCount = <?= count($exp_init) ?>;
+function updateExpNumbers() {
+	var c = document.getElementById('experience-container');
+	if (!c) return;
+	var cards = c.getElementsByClassName('exp-card');
+	for (var i = 0; i < cards.length; i++) {
+		var num = cards[i].querySelector('.exp-num');
+		if (num) num.textContent = 'Pekerjaan #' + (i + 1);
+		var delBtn = cards[i].querySelector('.exp-del-btn');
+		if (delBtn) delBtn.style.display = (cards.length === 1) ? 'none' : 'inline-block';
+	}
+}
+
 function addExperienceRow() {
 	var c = document.getElementById('experience-container');
 	var idx = expCount++;
@@ -1129,74 +1237,84 @@ function addExperienceRow() {
 	div.innerHTML = `
 		<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
 			<strong style="font-size:13px; color:var(--text)" class="exp-num">Pekerjaan #${c.children.length + 1}</strong>
-			<button type="button" class="btn-sm btn-ghost" onclick="removeExpCard(this)" style="color:var(--crit); border:none; background:none; cursor:pointer; font-size:11.5px">
+			<button type="button" class="btn-sm btn-ghost exp-del-btn" onclick="removeExpCard(this)" style="color:var(--crit); border:none; background:none; cursor:pointer; font-size:11.5px">
 				✕ Hapus Baris
 			</button>
 		</div>
 		<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-bottom:10px">
 			<div>
-				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nama Perusahaan / Instansi</label>
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nama Perusahaan / Instansi <span style="color:var(--crit)">*</span></label>
 				<input type="text" name="exp[${idx}][nama_perusahaan]" placeholder="PT Contoh Nama Perusahaan" style="width:100%; font-size:12.5px" required>
 			</div>
 			<div>
-				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Jabatan / Posisi</label>
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Jabatan / Posisi <span style="color:var(--crit)">*</span></label>
 				<input type="text" name="exp[${idx}][posisi_jabatan]" placeholder="Misal: Staff / Kasir / SPV" style="width:100%; font-size:12.5px" required>
 			</div>
 			<div>
-				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Periode Bekerja</label>
-				<input type="text" name="exp[${idx}][periode_kerja]" placeholder="Misal: 2021 - 2023" style="width:100%; font-size:12.5px">
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Periode Bekerja <span style="color:var(--crit)">*</span></label>
+				<input type="text" name="exp[${idx}][periode_kerja]" placeholder="Misal: 2021 - 2023" style="width:100%; font-size:12.5px" required>
 			</div>
 			<div>
-				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Gaji Terakhir (Rp)</label>
-				<input type="text" name="exp[${idx}][gaji_terakhir]" placeholder="Contoh: 5000000" style="width:100%; font-size:12.5px">
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Gaji Terakhir (Rp) <span style="color:var(--crit)">*</span></label>
+				<input type="text" name="exp[${idx}][gaji_terakhir]" placeholder="Contoh: 5000000" style="width:100%; font-size:12.5px" required>
 			</div>
 		</div>
 		<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:10px">
 			<div>
-				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Alasan Berhenti / Pindah</label>
-				<input type="text" name="exp[${idx}][alasan_keluar]" placeholder="Misal: Habis kontrak / Karir" style="width:100%; font-size:12.5px">
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Alasan Berhenti / Pindah <span style="color:var(--crit)">*</span></label>
+				<input type="text" name="exp[${idx}][alasan_keluar]" placeholder="Misal: Habis kontrak / Pengembangan Karir" style="width:100%; font-size:12.5px" required>
 			</div>
 			<div>
-				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Uraian Tanggung Jawab / Prestasi</label>
-				<input type="text" name="exp[${idx}][deskripsi_tugas]" placeholder="Uraian pekerjaan utama" style="width:100%; font-size:12.5px">
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Uraian Tanggung Jawab / Prestasi <span style="color:var(--crit)">*</span></label>
+				<input type="text" name="exp[${idx}][deskripsi_tugas]" placeholder="Uraian pekerjaan utama" style="width:100%; font-size:12.5px" required>
 			</div>
 		</div>
 	`;
 	c.appendChild(div);
+	updateExpNumbers();
 }
 function removeExpCard(btn) {
 	var c = document.getElementById('experience-container');
 	if (c.children.length > 1) {
 		btn.closest('.exp-card').remove();
-		var cards = c.getElementsByClassName('exp-card');
-		for (var i = 0; i < cards.length; i++) {
-			cards[i].querySelector('.exp-num').textContent = 'Pekerjaan #' + (i + 1);
-		}
+		updateExpNumbers();
 	}
 }
 
 // Dynamic Multi-Row: Family
 var famCount = <?= count($fam_init) ?>;
+function updateFamilyNumbers() {
+	var c = document.getElementById('family-container');
+	if (!c) return;
+	var cards = c.getElementsByClassName('fam-card');
+	for (var i = 0; i < cards.length; i++) {
+		var num = cards[i].querySelector('.fam-num');
+		if (num) num.textContent = 'Anggota Keluarga #' + (i + 1);
+		var delBtn = cards[i].querySelector('.fam-del-btn');
+		if (delBtn) delBtn.style.display = (cards.length <= minFamilyRows) ? 'none' : 'inline-block';
+	}
+}
+
 function toggleTempatTinggalLainnya(val) {
-		var wrap = document.getElementById('wrap_tempat_tinggal_lainnya');
-		var inp  = document.getElementById('status_tempat_tinggal_lainnya');
-		if (!wrap) return;
-		if (val === 'Lainnya') {
-			wrap.style.display = 'block';
-			if (inp) {
-				inp.setAttribute('required', 'required');
-				inp.focus();
-			}
-		} else {
-			wrap.style.display = 'none';
-			if (inp) {
-				inp.removeAttribute('required');
-				inp.value = '';
-			}
+	var wrap = document.getElementById('wrap_tempat_tinggal_lainnya');
+	var inp  = document.getElementById('status_tempat_tinggal_lainnya');
+	if (!wrap) return;
+	if (val === 'Lainnya') {
+		wrap.style.display = 'block';
+		if (inp) {
+			inp.setAttribute('required', 'required');
+			inp.focus();
+		}
+	} else {
+		wrap.style.display = 'none';
+		if (inp) {
+			inp.removeAttribute('required');
+			inp.value = '';
 		}
 	}
+}
 
-	function previewPasFoto(input) {
+function previewPasFoto(input) {
 	if (input.files && input.files[0]) {
 		var file = input.files[0];
 		if (file.size > 3 * 1024 * 1024) {
@@ -1217,70 +1335,86 @@ function toggleTempatTinggalLainnya(val) {
 }
 
 function addFamilyRow() {
-		var c = document.getElementById('family-container');
-		var idx = famCount++;
-		var div = document.createElement('div');
-		div.className = 'fam-card';
-		div.style = 'background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:12px; position:relative';
-		div.innerHTML = `
-			<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
-				<strong style="font-size:12.5px; color:var(--text)" class="fam-num">Anggota Keluarga #${c.children.length + 1}</strong>
-				<button type="button" class="btn-sm btn-ghost" onclick="removeFamCard(this)" style="color:var(--crit); border:none; background:none; cursor:pointer; font-size:11px">
-					✕ Hapus
-				</button>
-			</div>
-			<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px">
-				<div>
-					<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Hubungan Keluarga</label>
-					<select name="fam[${idx}][hubungan]" style="width:100%; font-size:12.5px">
-						<option value="Ayah">Ayah</option><option value="Ibu">Ibu</option>
-						<option value="Suami">Suami</option><option value="Istri">Istri</option>
-						<option value="Anak">Anak</option><option value="Kakak">Kakak</option><option value="Adik">Adik</option>
-					</select>
-				</div>
-				<div>
-					<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nama Lengkap</label>
-					<input type="text" name="fam[${idx}][nama_lengkap]" placeholder="Nama lengkap anggota keluarga" style="width:100%; font-size:12.5px" required>
-				</div>
-				<div>
-					<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Jenis Kelamin</label>
-					<select name="fam[${idx}][jenis_kelamin]" style="width:100%; font-size:12.5px">
-						<option value="L">L</option><option value="P">P</option>
-					</select>
-				</div>
-				<div>
-					<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Usia (Tahun)</label>
-					<input type="number" name="fam[${idx}][usia]" placeholder="Misal: 45" style="width:100%; font-size:12.5px">
-				</div>
-				<div>
-					<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Pendidikan Terakhir</label>
-					<input type="text" name="fam[${idx}][pendidikan]" placeholder="Misal: SMA / S1" style="width:100%; font-size:12.5px">
-				</div>
-				<div>
-					<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Pekerjaan / Usaha</label>
-					<input type="text" name="fam[${idx}][pekerjaan]" placeholder="Misal: Wirausaha / Pensiunan / IRT" style="width:100%; font-size:12.5px">
-				</div>
-				<div>
-					<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nomor Telepon / WA</label>
-					<input type="text" name="fam[${idx}][no_telp]" placeholder="08xxxxxxxxxx" style="width:100%; font-size:12.5px">
-				</div>
-			</div>
-		`;
-		c.appendChild(div);
-	}
-	function removeFamCard(btn) {
 	var c = document.getElementById('family-container');
-	if (c.children.length > 1) {
-		btn.closest('.fam-card').remove();
-		var cards = c.getElementsByClassName('fam-card');
-		for (var i = 0; i < cards.length; i++) {
-			cards[i].querySelector('.fam-num').textContent = 'Anggota Keluarga #' + (i + 1);
-		}
+	var idx = famCount++;
+	var div = document.createElement('div');
+	div.className = 'fam-card';
+	div.style = 'background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:14px; position:relative';
+	div.innerHTML = `
+		<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+			<strong style="font-size:12.5px; color:var(--text)" class="fam-num">Anggota Keluarga #${c.children.length + 1}</strong>
+			<button type="button" class="btn-sm btn-ghost fam-del-btn" onclick="removeFamCard(this)" style="color:var(--crit); border:none; background:none; cursor:pointer; font-size:11.5px">
+				✕ Hapus Baris
+			</button>
+		</div>
+		<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px">
+			<div>
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Hubungan Keluarga <span style="color:var(--crit)">*</span></label>
+				<select name="fam[${idx}][hubungan]" required style="width:100%; font-size:12.5px">
+					<option value="Ayah">Ayah</option><option value="Ibu">Ibu</option>
+					<option value="Suami">Suami</option><option value="Istri">Istri</option>
+					<option value="Anak">Anak</option><option value="Kakak">Kakak</option><option value="Adik">Adik</option>
+				</select>
+			</div>
+			<div>
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nama Lengkap <span style="color:var(--crit)">*</span></label>
+				<input type="text" name="fam[${idx}][nama_lengkap]" placeholder="Nama lengkap anggota keluarga" style="width:100%; font-size:12.5px" required>
+			</div>
+			<div>
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Jenis Kelamin <span style="color:var(--crit)">*</span></label>
+				<select name="fam[${idx}][jenis_kelamin]" required style="width:100%; font-size:12.5px">
+					<option value="L">Laki-laki (L)</option><option value="P">Perempuan (P)</option>
+				</select>
+			</div>
+			<div>
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Usia (Tahun) <span style="color:var(--crit)">*</span></label>
+				<input type="number" name="fam[${idx}][usia]" placeholder="Misal: 45" min="1" max="120" style="width:100%; font-size:12.5px" required>
+			</div>
+			<div>
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Pendidikan Terakhir <span style="color:var(--crit)">*</span></label>
+				<input type="text" name="fam[${idx}][pendidikan]" placeholder="Misal: SMA / S1" style="width:100%; font-size:12.5px" required>
+			</div>
+			<div>
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Pekerjaan / Usaha <span style="color:var(--crit)">*</span></label>
+				<input type="text" name="fam[${idx}][pekerjaan]" placeholder="Misal: Wirausaha / Pensiunan / IRT" style="width:100%; font-size:12.5px" required>
+			</div>
+			<div>
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nomor Telepon / WA <span style="color:var(--crit)">*</span></label>
+				<input type="text" name="fam[${idx}][no_telp]" placeholder="08xxxxxxxxxx (atau tulis '-')" style="width:100%; font-size:12.5px" required>
+			</div>
+		</div>
+	`;
+	c.appendChild(div);
+	updateFamilyNumbers();
+}
+
+function removeFamCard(btn) {
+	var c = document.getElementById('family-container');
+	if (!c) return;
+	if (c.children.length <= minFamilyRows) {
+		alert(isBelumNikah
+			? 'Karena status pernikahan Anda Belum Menikah, wajib mengisi minimal 2 data keluarga orang tua (Ayah dan Ibu).'
+			: 'Wajib mengisi minimal 1 data anggota keluarga.');
+		return;
 	}
+	btn.closest('.fam-card').remove();
+	updateFamilyNumbers();
 }
 
 // Dynamic Multi-Row: Training
 var trnCount = <?= count($trn_init) ?>;
+function updateTrnNumbers() {
+	var c = document.getElementById('training-container');
+	if (!c) return;
+	var cards = c.getElementsByClassName('trn-card');
+	for (var i = 0; i < cards.length; i++) {
+		var num = cards[i].querySelector('.trn-num');
+		if (num) num.textContent = 'Pelatihan #' + (i + 1);
+		var delBtn = cards[i].querySelector('.trn-del-btn');
+		if (delBtn) delBtn.style.display = (cards.length === 1) ? 'none' : 'inline-block';
+	}
+}
+
 function addTrainingRow() {
 	var c = document.getElementById('training-container');
 	var idx = trnCount++;
@@ -1290,42 +1424,52 @@ function addTrainingRow() {
 	div.innerHTML = `
 		<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
 			<strong style="font-size:12.5px; color:var(--text)" class="trn-num">Pelatihan #${c.children.length + 1}</strong>
-			<button type="button" class="btn-sm btn-ghost" onclick="removeTrnCard(this)" style="color:var(--crit); border:none; background:none; cursor:pointer; font-size:11px">
+			<button type="button" class="btn-sm btn-ghost trn-del-btn" onclick="removeTrnCard(this)" style="color:var(--crit); border:none; background:none; cursor:pointer; font-size:11px">
 				✕ Hapus
 			</button>
 		</div>
 		<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px">
 			<div>
-				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nama Kursus / Pelatihan</label>
-				<input type="text" name="trn[${idx}][nama_pelatihan]" placeholder="Nama Kursus / Pelatihan" style="width:100%; font-size:12.5px" required>
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nama Kursus / Pelatihan <span style="color:var(--crit)">*</span></label>
+				<input type="text" name="trn[${idx}][nama_pelatihan]" placeholder="Nama Kursus / Pelatihan / Tulis 'Tidak Ada'" style="width:100%; font-size:12.5px" required>
 			</div>
 			<div>
-				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Lembaga Penyelenggara</label>
-				<input type="text" name="trn[${idx}][penyelenggara]" placeholder="Lembaga Penyelenggara" style="width:100%; font-size:12.5px">
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Lembaga Penyelenggara <span style="color:var(--crit)">*</span></label>
+				<input type="text" name="trn[${idx}][penyelenggara]" placeholder="Lembaga Penyelenggara / '-'" style="width:100%; font-size:12.5px" required>
 			</div>
 			<div>
-				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Tahun</label>
-				<input type="text" name="trn[${idx}][tahun]" placeholder="Tahun" style="width:100%; font-size:12.5px">
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Tahun <span style="color:var(--crit)">*</span></label>
+				<input type="text" name="trn[${idx}][tahun]" placeholder="Tahun / '-'" style="width:100%; font-size:12.5px" required>
 			</div>
 			<div>
-				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Keterangan / No. Sertifikat</label>
-				<input type="text" name="trn[${idx}][keterangan]" placeholder="Keterangan" style="width:100%; font-size:12.5px">
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Keterangan / No. Sertifikat <span style="color:var(--crit)">*</span></label>
+				<input type="text" name="trn[${idx}][keterangan]" placeholder="Keterangan / Sertifikat / '-'" style="width:100%; font-size:12.5px" required>
 			</div>
 		</div>
 	`;
 	c.appendChild(div);
+	updateTrnNumbers();
 }
+
 function removeTrnCard(btn) {
 	btn.closest('.trn-card').remove();
-	var c = document.getElementById('training-container');
-	var cards = c.getElementsByClassName('trn-card');
-	for (var i = 0; i < cards.length; i++) {
-		cards[i].querySelector('.trn-num').textContent = 'Pelatihan #' + (i + 1);
-	}
+	updateTrnNumbers();
 }
 
 // Dynamic Multi-Row: Reference
 var refCount = <?= count($ref_init) ?>;
+function updateRefNumbers() {
+	var c = document.getElementById('reference-container');
+	if (!c) return;
+	var cards = c.getElementsByClassName('ref-card');
+	for (var i = 0; i < cards.length; i++) {
+		var num = cards[i].querySelector('.ref-num');
+		if (num) num.textContent = 'Referensi #' + (i + 1);
+		var delBtn = cards[i].querySelector('.ref-del-btn');
+		if (delBtn) delBtn.style.display = (cards.length === 1) ? 'none' : 'inline-block';
+	}
+}
+
 function addReferenceRow() {
 	var c = document.getElementById('reference-container');
 	var idx = refCount++;
@@ -1335,42 +1479,40 @@ function addReferenceRow() {
 	div.innerHTML = `
 		<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
 			<strong style="font-size:12.5px; color:var(--text)" class="ref-num">Referensi #${c.children.length + 1}</strong>
-			<button type="button" class="btn-sm btn-ghost" onclick="removeRefCard(this)" style="color:var(--crit); border:none; background:none; cursor:pointer; font-size:11px">
+			<button type="button" class="btn-sm btn-ghost ref-del-btn" onclick="removeRefCard(this)" style="color:var(--crit); border:none; background:none; cursor:pointer; font-size:11px">
 				✕ Hapus
 			</button>
 		</div>
 		<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px">
 			<div>
-				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nama Lengkap</label>
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nama Lengkap <span style="color:var(--crit)">*</span></label>
 				<input type="text" name="ref[${idx}][nama_referensi]" placeholder="Nama pemberi referensi" style="width:100%; font-size:12.5px" required>
 			</div>
 			<div>
-				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Perusahaan / Instansi</label>
-				<input type="text" name="ref[${idx}][perusahaan]" placeholder="Nama instansi" style="width:100%; font-size:12.5px">
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Perusahaan / Instansi <span style="color:var(--crit)">*</span></label>
+				<input type="text" name="ref[${idx}][perusahaan]" placeholder="Nama instansi / sekolah / kampus" style="width:100%; font-size:12.5px" required>
 			</div>
 			<div>
-				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Jabatan</label>
-				<input type="text" name="ref[${idx}][jabatan]" placeholder="Mis. Branch Manager / SPV" style="width:100%; font-size:12.5px">
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Jabatan <span style="color:var(--crit)">*</span></label>
+				<input type="text" name="ref[${idx}][jabatan]" placeholder="Mis. Branch Manager / SPV / Guru" style="width:100%; font-size:12.5px" required>
 			</div>
 			<div>
-				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nomor Telepon / WA</label>
-				<input type="text" name="ref[${idx}][no_telp]" placeholder="08xxxxxxxxxx" style="width:100%; font-size:12.5px">
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nomor Telepon / WA <span style="color:var(--crit)">*</span></label>
+				<input type="text" name="ref[${idx}][no_telp]" placeholder="08xxxxxxxxxx" style="width:100%; font-size:12.5px" required>
 			</div>
 			<div>
-				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Hubungan Kerja</label>
-				<input type="text" name="ref[${idx}][hubungan]" placeholder="Hubungan kerja" style="width:100%; font-size:12.5px">
+				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Hubungan Kerja <span style="color:var(--crit)">*</span></label>
+				<input type="text" name="ref[${idx}][hubungan]" placeholder="Hubungan kerja" style="width:100%; font-size:12.5px" required>
 			</div>
 		</div>
 	`;
 	c.appendChild(div);
+	updateRefNumbers();
 }
+
 function removeRefCard(btn) {
 	btn.closest('.ref-card').remove();
-	var c = document.getElementById('reference-container');
-	var cards = c.getElementsByClassName('ref-card');
-	for (var i = 0; i < cards.length; i++) {
-		cards[i].querySelector('.ref-num').textContent = 'Referensi #' + (i + 1);
-	}
+	updateRefNumbers();
 }
 
 // Inisialisasi step awal (menyesuaikan URL ?step=N bila ada)

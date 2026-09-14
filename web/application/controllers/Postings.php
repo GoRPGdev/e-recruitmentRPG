@@ -109,7 +109,7 @@ class Postings extends Secured_Controller
 		$durasi_hari = max(1, (int) ($this->input->post('durasi_hari') ?: 14));
 		try {
 			$this->pm->extend_posting($id_posting, $durasi_hari, (int) $this->auth_user['id_user']);
-			$this->session->set_flashdata('ok', 'Batas waktu lowongan berhasil diperpanjang (+' . $durasi_hari . ' hari) dan status MPR beralih ke Sourcing Ulang.');
+			$this->session->set_flashdata('ok', 'Batas waktu lowongan berhasil diperpanjang (+' . $durasi_hari . ' hari).');
 		} catch (RuntimeException $e) {
 			$this->session->set_flashdata('error', $e->getMessage());
 		}

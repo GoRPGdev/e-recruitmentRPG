@@ -89,7 +89,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 </div>
 
 <!-- ================= TABEL UTAMA FORM PUBLIK & LOWONGAN ================= -->
-<div class="card" style="padding:0; overflow:hidden; margin-bottom:24px">
+<div class="card" style="padding:0; overflow:visible; margin-bottom:24px">
 	<div style="padding:14px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:var(--surface-2); flex-wrap:wrap; gap:10px">
 		<div style="display:flex; align-items:center; gap:10px">
 			<div style="width:8px; height:8px; border-radius:50%; background:var(--accent)"></div>
@@ -292,12 +292,12 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 												<?php endif; ?>
 											<?= form_close() ?>
 
-											<!-- Perpanjang Lowongan (Sourcing Ulang) -->
+											<!-- Perpanjang Masa Aktif Lowongan -->
 											<?= form_open(site_url('postings/extend/' . (int) $r['id_posting']), array('style' => 'margin:0; padding:0; border-top:1px solid var(--surface-2)')) ?>
 												<input type="hidden" name="durasi_hari" value="14">
 												<input type="hidden" name="redirect_to" value="postings">
 												<button type="submit" style="width:100%; border:none; background:none; display:flex; align-items:center; gap:8px; padding:8px 12px; font-size:12.5px; color:var(--accent); text-align:left; cursor:pointer"
-												        onclick="return confirm('Perpanjang lowongan +14 hari? Status MPR akan beralih menjadi Sourcing Ulang.')">
+												        onclick="return confirm('Perpanjang lowongan +14 hari?')">
 													<svg style="width:13px; height:13px; flex:none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
 													<span>Perpanjang (+14 Hari)</span>
 												</button>

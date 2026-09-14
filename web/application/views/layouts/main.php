@@ -732,6 +732,7 @@ dialog::backdrop {
               'posisi'     => 'Posisi',
               'departemen' => 'Departemen',
               'outlet'     => 'Outlet',
+              'tahap'      => 'Tahap Seleksi',
               'remark'      => 'Remark Alur',
             );
             foreach ($m_list as $mk => $ml):
@@ -838,6 +839,37 @@ function toggleMenu(e, id) {
   });
   if (!isShown) {
     target.style.display = 'block';
+    target.style.position = 'fixed';
+    target.style.zIndex = '9999';
+
+    // Viewport-aware positioning: gunakan fixed positioning agar tidak terpotong overflow container tabel
+    var btn = e.currentTarget || e.target.closest('button');
+    if (btn) {
+      var rect = btn.getBoundingClientRect();
+      var menuHeight = target.offsetHeight || 120;
+      var menuWidth = target.offsetWidth || 160;
+      var spaceBelow = window.innerHeight - rect.bottom;
+      var spaceAbove = rect.top;
+
+      // Vertikal: jika ruang bawah tidak cukup, jadikan dropup di atas tombol
+      if (spaceBelow < menuHeight + 12 && spaceAbove > spaceBelow) {
+        target.style.top = 'auto';
+        target.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+      } else {
+        target.style.top = (rect.bottom + 4) + 'px';
+        target.style.bottom = 'auto';
+      }
+
+      // Horizontal: sejajarkan sisi kanan menu dengan sisi kanan tombol
+      var rightDist = window.innerWidth - rect.right;
+      if (window.innerWidth - rightDist < menuWidth) {
+        target.style.right = 'auto';
+        target.style.left = Math.max(8, rect.left) + 'px';
+      } else {
+        target.style.right = Math.max(8, rightDist) + 'px';
+        target.style.left = 'auto';
+      }
+    }
   }
 }
 document.addEventListener('click', function(e) {
@@ -847,6 +879,20 @@ document.addEventListener('click', function(e) {
     });
   }
 });
+window.addEventListener('scroll', function() {
+  document.querySelectorAll('.mpr-dropdown, .pipe-dropdown').forEach(function(el) {
+    if (el.style.display === 'block') {
+      el.style.display = 'none';
+    }
+  });
+}, { passive: true });
+window.addEventListener('resize', function() {
+  document.querySelectorAll('.mpr-dropdown, .pipe-dropdown').forEach(function(el) {
+    if (el.style.display === 'block') {
+      el.style.display = 'none';
+    }
+  });
+}, { passive: true });
 
 /* ===== Auto-fade inline flash messages ===== */
 (function() {

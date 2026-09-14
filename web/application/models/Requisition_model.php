@@ -370,13 +370,51 @@ class Requisition_model extends CI_Model
 		$r = $q->result_array(); $q->free_result(); return $r;
 	}
 
-	public function insert_adhoc($id_lamaran, $id_stage, $setelah_urutan, $pic_user, $catatan)
+	public function insert_adhoc($id_lamaran, $id_stage, $setelah_urutan, $pic_user, $catatan, $id_remark = NULL)
 	{
 		$id = 0;
-		$this->_call('{CALL dbo.sp_InsertAdHocStage(?,?,?,?,?,?)}', array(
-			(int) $id_lamaran, (int) $id_stage, (int) $setelah_urutan, (int) $pic_user, $catatan ?: NULL,
+		$params7 = array(
+			(int) $id_lamaran,
+			(int) $id_stage,
+			(int) $setelah_urutan,
+			! empty($pic_user) ? (int) $pic_user : NULL,
+			$catatan ?: NULL,
+			! empty($id_remark) ? (int) $id_remark : NULL,
 			array(&$id, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
-		));
+		);
+		$stmt = @sqlsrv_query($this->db->conn_id, '{CALL dbo.sp_InsertAdHocStage(?,?,?,?,?,?,?)}', $params7);
+		if ($stmt === FALSE) {
+			// Fallback ke 6 parameter jika SP di database belum dideploy ulang
+			$params6 = array(
+				(int) $id_lamaran,
+				(int) $id_stage,
+				(int) $setelah_urutan,
+				! empty($pic_user) ? (int) $pic_user : NULL,
+				$catatan ?: NULL,
+				array(&$id, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT),
+			);
+			$stmt = sqlsrv_query($this->db->conn_id, '{CALL dbo.sp_InsertAdHocStage(?,?,?,?,?,?)}', $params6);
+		}
+
+		if ($stmt === FALSE) {
+			$e = sqlsrv_errors();
+			$last = $e ? end($e) : NULL;
+			throw new RuntimeException($last ? trim($last['message']) : 'sp_InsertAdHocStage gagal.');
+		}
+
+		// WAJIB drain semua result set agar seluruh statement (UPDATE, INSERT, COMMIT) tuntas dieksekusi di SQL Server
+		do { /* nothing */ } while (sqlsrv_next_result($stmt));
+
+		$e = sqlsrv_errors();
+		if ($e) {
+			$last = end($e);
+			if (isset($last['code']) && $last['code'] != 0) {
+				sqlsrv_free_stmt($stmt);
+				throw new RuntimeException(trim($last['message']));
+			}
+		}
+		sqlsrv_free_stmt($stmt);
+
 		return (int) $id;
 	}
 
@@ -385,18 +423,59 @@ class Requisition_model extends CI_Model
 		$chk = $this->db->query("SELECT COL_LENGTH('dbo.M_STAGE', 'is_sisipan_allowed') AS col_len")->row_array();
 		$where_sisip = ! empty($chk['col_len']) ? ' AND is_sisipan_allowed = 1' : '';
 
-		$q = $this->db->query("SELECT id_stage, nama_tahap, tipe_tahap
+		$q = $this->db->query("SELECT id_stage, kode_stage, nama_tahap, tipe_tahap
 		                       FROM dbo.M_STAGE
 		                       WHERE is_aktif = 1
 		                         {$where_sisip}
-		                         AND id_stage NOT IN (
-		                             SELECT fs.id_stage
-		                             FROM dbo.M_FLOW_STAGE fs
-		                             JOIN dbo.M_FLOW f ON f.id_flow = fs.id_flow
-		                             WHERE f.is_aktif = 1
-		                         )
 		                       ORDER BY nama_tahap");
 		$r = $q->result_array(); $q->free_result(); return $r;
+	}
+
+	public function get_stages_for_lamaran(array $lamaran_ids)
+	{
+		if (empty($lamaran_ids)) return array();
+		$lamaran_ids = array_values(array_map('intval', $lamaran_ids));
+		$placeholders = implode(',', array_fill(0, count($lamaran_ids), '?'));
+		$q = $this->db->query(
+			"SELECT id_lamaran, id_stage
+			 FROM dbo.APPLICATION_STAGES
+			 WHERE id_lamaran IN ($placeholders)",
+			$lamaran_ids
+		);
+		$rows = $q->result_array();
+		$q->free_result();
+		$map = array();
+		foreach ($rows as $r) {
+			$lid = (int) $r['id_lamaran'];
+			$sid = (int) $r['id_stage'];
+			if ( ! isset($map[$lid])) {
+				$map[$lid] = array();
+			}
+			$map[$lid][] = $sid;
+		}
+		return $map;
+	}
+
+	public function has_stage($id_lamaran, $id_stage)
+	{
+		$q = $this->db->query(
+			'SELECT TOP 1 1 AS ada FROM dbo.APPLICATION_STAGES WHERE id_lamaran = ? AND id_stage = ?',
+			array((int) $id_lamaran, (int) $id_stage)
+		);
+		$has = (bool) $q->num_rows();
+		$q->free_result();
+		return $has;
+	}
+
+	public function get_stage_info($id_stage)
+	{
+		$q = $this->db->query(
+			'SELECT id_stage, kode_stage, nama_tahap, tipe_tahap FROM dbo.M_STAGE WHERE id_stage = ?',
+			array((int) $id_stage)
+		);
+		$row = $q->row_array();
+		$q->free_result();
+		return $row;
 	}
 
 	/* current urutan tahap 'Berjalan' untuk 1 lamaran -- titik sisip ad-hoc */

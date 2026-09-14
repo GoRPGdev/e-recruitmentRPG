@@ -18,6 +18,7 @@ class Master extends Secured_Controller
 		'departemen'       => array('label' => 'Departemen',       'pk' => 'id_departemen',       'tabel' => 'M_DEPARTEMEN',       'desc' => 'Unit divisi dan departemen operasional serta back-office RPG.'),
 		'level_organisasi' => array('label' => 'Level Organisasi', 'pk' => 'id_level_organisasi', 'tabel' => 'M_LEVEL_ORGANISASI', 'desc' => 'Tingkat jabatan dan struktur jenjang hierarki organisasi RPG.'),
 		'outlet'           => array('label' => 'Outlet',           'pk' => 'id_outlet',           'tabel' => 'M_OUTLET',           'desc' => 'Titik cabang, outlet gerai, unit brand, dan wilayah region penempatan.'),
+		'tahap'            => array('label' => 'Tahap Seleksi',    'pk' => 'id_stage',            'tabel' => 'M_STAGE',            'desc' => 'Katalog master tahapan seleksi rekrutmen RPG dan konfigurasi izin sisipan ad-hoc.'),
 		'dokumen'          => array('label' => 'Dokumen',          'pk' => 'id_dokumen',          'tabel' => 'M_DOKUMEN',          'desc' => 'Katalog berkas persyaratan pelamar, kategori, dan tingkat sensitivitas PDP.', 'hidden' => TRUE),
 		'remark'           => array('label' => 'Remark Alur',      'pk' => 'id_remark',           'tabel' => 'M_REMARKS',          'desc' => 'Daftar keputusan/alasan mutasi kandidat pada setiap tahap alur seleksi.'),
 	);
@@ -46,6 +47,7 @@ class Master extends Secured_Controller
 				'departemen'       => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_DEPARTEMEN WHERE is_aktif = 1")->row()->n,
 				'level_organisasi' => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_LEVEL_ORGANISASI WHERE is_aktif = 1")->row()->n,
 				'outlet'           => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_OUTLET WHERE is_aktif = 1")->row()->n,
+				'tahap'            => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_STAGE WHERE is_aktif = 1")->row()->n,
 				'dokumen'          => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_DOKUMEN WHERE is_aktif = 1")->row()->n,
 				'remark'           => (int) $this->db->query("SELECT COUNT(*) AS n FROM dbo.M_REMARKS WHERE is_aktif = 1")->row()->n,
 			),
@@ -90,6 +92,14 @@ class Master extends Secured_Controller
 				}
 				break;
 
+			case 'tahap':
+				$data['rows'] = $this->master_model->list_stage();
+				$data['tipe_tahap_list'] = array('SCREENING','KONTAK','FORM','TEST','INTERVIEW','OFFER','ONBOARD');
+				if ($edit_id) {
+					$data['edit_row'] = $this->master_model->get_stage($edit_id);
+				}
+				break;
+
 			case 'dokumen':
 				$data['rows'] = $this->master_model->list_dokumen();
 				if ($edit_id) {
@@ -125,6 +135,7 @@ class Master extends Secured_Controller
 				case 'departemen':       $this->master_model->save_departemen($p, $this->auth_user['id_user']); break;
 				case 'level_organisasi': $this->master_model->save_level_organisasi($p); break;
 				case 'outlet':           $this->master_model->save_outlet($p); break;
+				case 'tahap':            $this->master_model->save_stage($p, $this->auth_user['id_user']); break;
 				case 'dokumen':          $this->master_model->save_dokumen($p); break;
 				case 'remark':           $this->master_model->save_remark($p, $this->auth_user['id_user']); break;
 			}
@@ -153,6 +164,8 @@ class Master extends Secured_Controller
 				$this->master_model->toggle_level_organisasi($id, $akt);
 			} elseif ($t === 'outlet') {
 				$this->master_model->toggle_outlet($id, $akt);
+			} elseif ($t === 'tahap') {
+				$this->master_model->toggle_stage($id, $akt, $this->auth_user['id_user']);
 			} elseif ($t === 'dokumen') {
 				$this->master_model->toggle_dokumen($id, $akt);
 			}

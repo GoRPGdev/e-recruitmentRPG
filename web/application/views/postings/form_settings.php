@@ -171,11 +171,11 @@
 				</div>
 			</div>
 
-			<!-- Tombol Perpanjang Batas Waktu / Sourcing Ulang -->
+			<!-- Tombol Perpanjang Batas Waktu Lowongan -->
 			<div style="margin-top:12px; padding:12px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px">
-				<div style="font-size:12px; font-weight:700; margin-bottom:6px">Perpanjang Lowongan (Sourcing Ulang)</div>
+				<div style="font-size:12px; font-weight:700; margin-bottom:6px">Perpanjang Batas Waktu Lowongan</div>
 				<p class="muted" style="font-size:11px; margin:0 0 8px; line-height:1.4">
-					Menambah masa aktif lowongan publik dan secara otomatis mengubah status MPR menjadi <strong>Sourcing Ulang</strong>.
+					Menambah masa aktif lowongan publik untuk kebutuhan penerimaan berkas pelamar.
 				</p>
 				<?= form_open(site_url('postings/extend/' . (int) $posting['id_posting'])) ?>
 					<div style="display:flex; gap:6px">
@@ -184,7 +184,7 @@
 							<option value="14" selected>+14 Hari</option>
 							<option value="30">+30 Hari</option>
 						</select>
-						<button type="submit" class="btn btn-sm btn-primary" style="font-size:11.5px; padding:5px 12px" onclick="return confirm('Perpanjang lowongan ini? Status MPR akan beralih menjadi Sourcing Ulang.')">
+						<button type="submit" class="btn btn-sm btn-primary" style="font-size:11.5px; padding:5px 12px" onclick="return confirm('Perpanjang lowongan ini?')">
 							Perpanjang &rarr;
 						</button>
 					</div>

@@ -495,7 +495,10 @@ details.stage-section:not([open]) .stage-chevron-icon {
 			<?php foreach ($stages as $urut => $s): ?>
 				<a href="#stage-sec-<?= (int) $urut ?>" class="btn btn-sm btn-ghost" style="padding:5px 11px; font-size:12px; font-weight:600; white-space:nowrap; border-radius:7px; display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border); background:var(--surface)">
 					<span><?= html_escape($s['nama']) ?></span>
-					<span style="background:var(--surface-2); border:1px solid var(--border); padding:1px 6px; border-radius:10px; font-size:10px; font-weight:700; color:var(--text)">
+					<?php if (! empty($s['is_sisipan'])): ?>
+		<span style="font-size:9.5px; background:rgba(217, 119, 6, 0.15); color:#d97706; border:1px solid rgba(217, 119, 6, 0.35); padding:0 5px; border-radius:4px; font-weight:700">Sisipan</span>
+	<?php endif; ?>
+	<span style="background:var(--surface-2); border:1px solid var(--border); padding:1px 6px; border-radius:10px; font-size:10px; font-weight:700; color:var(--text)">
 						<?= count($s['cards']) ?>
 					</span>
 				</a>
@@ -547,6 +550,9 @@ details.stage-section:not([open]) .stage-chevron-icon {
 					<div style="display:flex; align-items:center; gap:10px">
 						<h2 style="margin:0; font-size:15px; font-weight:700; color:var(--text)">
 							<?= html_escape($s['nama']) ?>
+							<?php if (! empty($s['is_sisipan'])): ?>
+								<span class="tag warn" style="font-size:10px; font-weight:700; vertical-align:middle; margin-left:6px">Tahap Tambahan</span>
+							<?php endif; ?>
 						</h2>
 						<span class="tag info" style="font-size:10.5px; text-transform:uppercase">
 							<?= html_escape($s['tipe']) ?>
@@ -753,7 +759,7 @@ details.stage-section:not([open]) .stage-chevron-icon {
 													</button>
 
 													<button type="button" class="icon-pill" title="Sisipkan tahap seleksi ad-hoc untuk kandidat ini"
-														onclick='openAdHocModal(<?= (int) $id_lamaran ?>, <?= json_encode($c["nama_lengkap"]) ?>)'>
+														onclick='openAdHocModal(<?= (int) $id_lamaran ?>, <?= json_encode($c["nama_lengkap"]) ?>, <?= (int) $id_stage ?>, <?= json_encode($s["nama"]) ?>)'>
 														<svg style="width:12px; height:12px; color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
 														<span>Sisip Tahap</span>
 													</button>
@@ -980,11 +986,11 @@ details.stage-section:not([open]) .stage-chevron-icon {
 </dialog>
 
 <!-- ================= MODAL SISIP TAHAP AD-HOC (PER KANDIDAT) ================= -->
-<dialog id="dlg-adhoc" class="rpg-modal" style="max-width:480px">
+<dialog id="dlg-adhoc" class="rpg-modal" style="max-width:500px">
 	<div class="rpg-modal-header">
 		<div>
 			<h3 style="margin:0; font-size:15px; font-weight:700; color:var(--text)">
-				Sisip Tahap Ad-Hoc
+				Sisip Tahap Tambahan (Ad-Hoc)
 			</h3>
 			<div class="muted" style="font-size:12px; margin-top:2px">
 				Kandidat: <strong id="adhoc-nama-kandidat" style="color:var(--text)">-</strong>
@@ -995,27 +1001,56 @@ details.stage-section:not([open]) .stage-chevron-icon {
 	<?= form_open(site_url('pipeline/insert_stage/' . (int) $req['id_req']), array('style' => 'margin:0; display:flex; flex-direction:column; flex:1; min-height:0')) ?>
 		<input type="hidden" name="id_lamaran" id="adhoc-id-lamaran">
 		<div class="rpg-modal-body">
+			<!-- Info Tahap Saat Ini -->
+			<div style="margin-bottom:14px; padding:10px 12px; background:var(--surface-2); border:1px solid var(--border); border-radius:7px; display:flex; align-items:center; justify-content:space-between">
+				<span style="font-size:12px; color:var(--text-muted)">Menyelesaikan Tahap:</span>
+				<strong id="adhoc-stage-kini-nama" style="font-size:12.5px; color:var(--accent)">-</strong>
+			</div>
+
+			<!-- Keputusan / Remark Lanjut Tahap Kini -->
 			<div style="margin-bottom:14px">
+				<label for="adhoc-id-remark" style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">
+					Keputusan / Remark untuk Lanjut <span style="color:var(--crit)">*</span>
+				</label>
+				<select name="id_remark" id="adhoc-id-remark" required style="width:100%; font-size:13px; padding:8px 10px; border-radius:6px">
+					<!-- Diisi dinamis hanya remark dengan efek LANJUT -->
+				</select>
+				<div class="faint" style="font-size:11px; margin-top:4px; color:var(--text-muted)">
+					Pilih keputusan kelulusan tahap saat ini untuk melanjutkan kandidat ke tahap tambahan.
+				</div>
+			</div>
+
+			<!-- Alert jika semua tahap tambahan sudah pernah dijalani oleh kandidat -->
+			<div id="adhoc-no-stages-alert" style="display:none; margin-bottom:14px; padding:12px 14px; background:var(--warn-soft); border:1px solid var(--warn); border-radius:7px; font-size:12.5px; color:var(--text)">
+				<div style="font-weight:700; color:var(--warn); margin-bottom:3px">Tahap Tambahan Tidak Tersedia</div>
+				<div>Seluruh opsi tahap tambahan yang diizinkan sudah pernah ditambahkan atau sedang dijalani oleh kandidat ini.</div>
+			</div>
+
+			<!-- Pilih Tahap Tambahan yang Disisipkan -->
+			<div id="adhoc-stage-select-container" style="margin-bottom:14px">
 				<label for="adhoc-stage" style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">
-					Pilih Tahap yang Akan Disisipkan <span style="color:var(--crit)">*</span>
+					Pilih Tahap Tambahan yang Disisipkan <span style="color:var(--crit)">*</span>
 				</label>
 				<select name="id_stage" id="adhoc-stage" required style="width:100%; font-size:13px; padding:8px 10px; border-radius:6px">
 					<?php foreach ($all_stages as $st): ?>
 						<option value="<?= (int) $st['id_stage'] ?>"><?= html_escape($st['nama_tahap']) ?> (<?= html_escape($st['tipe_tahap']) ?>)</option>
 					<?php endforeach; ?>
 				</select>
+				<div class="faint" style="font-size:11px; margin-top:4px; color:var(--text-muted)">
+					Kandidat akan langsung dipindahkan dan berstatus aktif pada tahap tambahan ini.
+				</div>
 			</div>
 
 			<div>
 				<label for="adhoc-catatan" style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">
 					Catatan / Alasan Sisip Tahap
 				</label>
-				<textarea name="catatan" id="adhoc-catatan" rows="3" style="font-size:12.5px; padding:8px 10px; width:100%; border-radius:6px" placeholder="Mis. Perlu wawancara tambahan dengan user / test teknis ulang..."></textarea>
+				<textarea name="catatan" id="adhoc-catatan" rows="3" style="font-size:12.5px; padding:8px 10px; width:100%; border-radius:6px" placeholder="Mis. Hasil evaluasi memuaskan, diperlukan interview teknis tambahan dengan User/BOD..."></textarea>
 			</div>
 		</div>
 		<div class="rpg-modal-footer">
 			<button type="button" class="btn btn-ghost" onclick="document.getElementById('dlg-adhoc').close()">Batal</button>
-			<button type="submit" class="btn btn-primary" style="padding:7px 18px; font-weight:600">Sisipkan Sekarang</button>
+			<button type="submit" id="adhoc-submit-btn" class="btn btn-primary" style="padding:7px 18px; font-weight:600">Simpan &amp; Lanjut ke Tahap Tambahan</button>
 		</div>
 	<?= form_close() ?>
 </dialog>
@@ -1248,6 +1283,10 @@ details.stage-section:not([open]) .stage-chevron-icon {
 <script>
 // Kamus remarks per id_stage
 var stageRemarksMap = <?= json_encode($remarks) ?>;
+// Seluruh master tahap yang diizinkan untuk disisipkan
+var allAvailableStages = <?= json_encode($all_stages) ?>;
+// Peta tahap yang sudah pernah dijalani / ada pada setiap kandidat
+var candidateExistingStagesMap = <?= json_encode($candidate_existing_stages ?? array()) ?>;
 
 function toggleAllStages() {
 	var details = document.querySelectorAll('details.stage-section');
@@ -1338,10 +1377,76 @@ function openAdvanceModal(idAppStage, idStage, namaKandidat, currentRemarkId, cu
 	dlg.showModal();
 }
 
-function openAdHocModal(idLamaran, namaKandidat) {
+function openAdHocModal(idLamaran, namaKandidat, currentStageId, currentStageName) {
 	document.getElementById('adhoc-id-lamaran').value = idLamaran;
 	document.getElementById('adhoc-nama-kandidat').textContent = namaKandidat + ' (#' + idLamaran + ')';
+	document.getElementById('adhoc-stage-kini-nama').textContent = currentStageName || '-';
 	document.getElementById('adhoc-catatan').value = '';
+
+	// 1. Filter dan isi remark khusus berstatus LANJUT untuk tahap saat ini
+	var selRemark = document.getElementById('adhoc-id-remark');
+	selRemark.innerHTML = '';
+
+	var rmkList = stageRemarksMap[currentStageId] || [];
+	// Filter HANYA remark dengan efek LANJUT (remark TOLAK tidak ditampilkan)
+	var lanjutList = rmkList.filter(function(r) {
+		return r.efek_status === 'LANJUT';
+	});
+
+	if (lanjutList.length > 0) {
+		selRemark.innerHTML = '<option value="">-- Pilih Keputusan Lolos / Lanjut --</option>';
+		lanjutList.forEach(function(r) {
+			var opt = document.createElement('option');
+			opt.value = r.id_remark;
+			opt.textContent = '✔ Lanjut: ' + r.label;
+			selRemark.appendChild(opt);
+		});
+		selRemark.required = true;
+	} else {
+		// Opsi default jika tahap ini belum memiliki daftar remark LANJUT spesifik
+		var opt = document.createElement('option');
+		opt.value = '';
+		opt.textContent = '✔ Lolos / Lanjut ke Tahap Tambahan';
+		selRemark.appendChild(opt);
+		selRemark.required = false;
+	}
+
+	// 2. Filter dropdown tahap tambahan: SEMBUNYIKAN tahap yang sudah pernah dilalui/dimiliki kandidat ini
+	var selStage = document.getElementById('adhoc-stage');
+	selStage.innerHTML = '';
+
+	var usedStages = (candidateExistingStagesMap && candidateExistingStagesMap[idLamaran]) || [];
+	var availableStages = (allAvailableStages || []).filter(function(st) {
+		// Abaikan jika kandidat sudah pernah memiliki/menjalani tahap ini
+		return usedStages.indexOf(parseInt(st.id_stage)) === -1;
+	});
+
+	var alertBox = document.getElementById('adhoc-no-stages-alert');
+	var submitBtn = document.getElementById('adhoc-submit-btn');
+	var stageContainer = document.getElementById('adhoc-stage-select-container');
+
+	if (availableStages.length > 0) {
+		availableStages.forEach(function(st) {
+			var opt = document.createElement('option');
+			opt.value = st.id_stage;
+			opt.textContent = st.nama_tahap + ' (' + st.tipe_tahap + ')';
+			selStage.appendChild(opt);
+		});
+		if (alertBox) alertBox.style.display = 'none';
+		if (stageContainer) stageContainer.style.display = 'block';
+		if (submitBtn) submitBtn.disabled = false;
+		selStage.required = true;
+	} else {
+		var opt = document.createElement('option');
+		opt.value = '';
+		opt.textContent = '-- Tidak ada opsi tahap tambahan yang tersedia --';
+		selStage.appendChild(opt);
+		if (alertBox) alertBox.style.display = 'block';
+		if (stageContainer) stageContainer.style.display = 'none';
+		if (submitBtn) submitBtn.disabled = true;
+		selStage.required = false;
+	}
+
 	document.getElementById('dlg-adhoc').showModal();
 }
 

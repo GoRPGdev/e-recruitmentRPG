@@ -213,11 +213,11 @@ $sisa_kuota = max(0, $kuota_ref - $terpenuhi);
 <?php if (in_array($req['status_req'], array('Ditolak_HR', 'Ditolak_BOD'))): ?>
 	<?php
 	$is_ditolak_hr  = ($req['status_req'] === 'Ditolak_HR');
-	$judul_penolakan = $is_ditolak_hr ? 'Permintaan Tenaga Kerja Ditolak oleh Tim HR' : 'Permintaan Tenaga Kerja Ditolak oleh Direksi (BOD)';
+	$judul_penolakan = $is_ditolak_hr ? 'Permintaan Tenaga Kerja Ditolak oleh Tim HR' : 'Permintaan Tenaga Kerja Ditolak oleh BOD';
 	$alasan_teks    = $is_ditolak_hr
 		? (!empty($req['catatan_hr']) ? $req['catatan_hr'] : 'Tidak ada keterangan alasan penolakan dari Tim HR.')
 		: (!empty($req['catatan_bod']) ? $req['catatan_bod'] : 'Tidak ada keterangan alasan penolakan dari BOD.');
-	$oleh_siapa     = $is_ditolak_hr ? 'Tim HR' : (!empty($req['penolak_bod']) ? $req['penolak_bod'] : 'Direksi (BOD)');
+	$oleh_siapa     = $is_ditolak_hr ? 'Tim HR' : (!empty($req['penolak_bod']) ? $req['penolak_bod'] : 'BOD');
 	?>
 	<div style="margin-bottom:20px; padding:18px 20px; border-radius:10px; border:1.5px solid var(--crit); background:rgba(239, 68, 68, 0.08); display:flex; gap:16px; align-items:flex-start">
 		<div style="width:36px; height:36px; border-radius:50%; background:var(--crit); color:#fff; display:grid; place-items:center; flex:none; margin-top:2px">
@@ -296,7 +296,7 @@ $sisa_kuota = max(0, $kuota_ref - $terpenuhi);
 <div style="padding:16px 20px; margin-bottom:20px; border-radius:10px; border:1px solid <?= $req['status_req'] === 'Revisi_BOD' ? 'var(--warn)' : 'var(--border)' ?>; background:<?= $req['status_req'] === 'Revisi_BOD' ? 'var(--warn-soft)' : 'var(--surface-2)' ?>">
 	<div style="display:flex; align-items:center; gap:8px; margin-bottom:8px">
 		<div class="eyebrow" style="font-size:11px; margin:0; color:<?= $req['status_req'] === 'Revisi_BOD' ? 'var(--warn)' : 'var(--text-muted)' ?>">
-			<?= $req['status_req'] === 'Revisi_BOD' ? 'Arahan Revisi dari Direksi (BOD)' : 'Catatan / Feedback Direksi (BOD)' ?>
+			<?= $req['status_req'] === 'Revisi_BOD' ? 'Arahan Revisi dari BOD' : 'Catatan / Feedback BOD' ?>
 		</div>
 		<span class="tag <?= $req['status_req'] === 'Revisi_BOD' ? 'warn' : 'off' ?>" style="font-size:10px; padding:2px 6px">
 			<?= html_escape(label_status_req($req['status_req'])) ?>
@@ -321,11 +321,11 @@ $sisa_kuota = max(0, $kuota_ref - $terpenuhi);
 				<?php if ($req['status_req'] === 'Revisi_HR'): ?>
 					Permintaan ini berstatus <strong>Revisi HR</strong>. Pastikan formasi atau spesifikasi telah disesuaikan dengan catatan HR sebelum diajukan kembali.
 				<?php elseif ($req['status_req'] === 'Revisi_BOD'): ?>
-					Permintaan ini berstatus <strong>Revisi BOD</strong>. Pastikan data formasi telah disesuaikan dengan arahan catatan Direksi sebelum diajukan kembali.
+					Permintaan ini berstatus <strong>Revisi BOD</strong>. Pastikan data formasi telah disesuaikan dengan arahan catatan BOD sebelum diajukan kembali.
 				<?php elseif (in_array($req['status_req'], array('Ditolak_HR', 'Ditolak_BOD'))): ?>
 					Permintaan ini sebelumnya <strong><?= html_escape(label_status_req($req['status_req'])) ?></strong>. Setelah revisi data formasi, Anda dapat mengajukannya kembali.
 				<?php else: ?>
-					Dokumen MPR akan dievaluasi oleh HR (analisis beban kerja & alokasi budget) sebelum diteruskan ke Direksi (BOD).
+					Dokumen MPR akan dievaluasi oleh HR (analisis beban kerja & alokasi budget) sebelum diteruskan ke BOD.
 				<?php endif; ?>
 			</div>
 		</div>
@@ -352,7 +352,7 @@ $sisa_kuota = max(0, $kuota_ref - $terpenuhi);
 				<div class="eyebrow" style="color:var(--warn); margin-bottom:3px">Evaluasi &amp; Validasi Tim HR</div>
 				<strong style="font-size:15px; color:var(--text); display:block; margin-bottom:3px">Permintaan Tenaga Kerja Sedang Dalam Tahap Review HR</strong>
 				<div class="muted" style="font-size:12.5px; line-height:1.4">
-					Validasi analisis beban kerja, urgensi penambahan posisi, dan ketersediaan alokasi budget sebelum diteruskan ke Direksi.
+					Validasi analisis beban kerja, urgensi penambahan posisi, dan ketersediaan alokasi budget sebelum diteruskan ke BOD.
 				</div>
 			</div>
 			<?php if ($can_kelola): ?>
@@ -409,15 +409,15 @@ $sisa_kuota = max(0, $kuota_ref - $terpenuhi);
 	</div>
 <?php endif; ?>
 
-<!-- 3. BOD: Evaluasi & Persetujuan Direksi (Review_BOD) -->
+<!-- 3. BOD: Evaluasi & Persetujuan BOD (Review_BOD) -->
 <?php if ($req['status_req'] === 'Review_BOD'): ?>
 	<div style="padding:18px 22px; background:var(--warn-soft); border:1px solid var(--warn); border-radius:10px; margin-bottom:20px; box-shadow:var(--shadow-sm)">
 		<div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px">
 			<div>
-				<div class="eyebrow" style="color:var(--warn); margin-bottom:3px">Evaluasi &amp; Persetujuan Direksi</div>
+				<div class="eyebrow" style="color:var(--warn); margin-bottom:3px">Evaluasi &amp; Persetujuan BOD</div>
 				<strong style="font-size:15px; color:var(--text); display:block; margin-bottom:3px">Permintaan Tenaga Kerja Sedang Dalam Tahap Review BOD</strong>
 				<div class="muted" style="font-size:12.5px; line-height:1.4">
-					Menunggu keputusan Direksi (BOD) untuk persetujuan penambahan/penggantian formasi tenaga kerja.
+					Menunggu keputusan BOD untuk persetujuan penambahan/penggantian formasi tenaga kerja.
 				</div>
 			</div>
 			<?php if ($can_kelola): ?>
@@ -435,8 +435,8 @@ $sisa_kuota = max(0, $kuota_ref - $terpenuhi);
 					<!-- Tombol Setujui BOD -->
 					<?= form_open(site_url('requisitions/update_status/' . (int) $req['id_req']), array('class' => 'inline')) ?>
 						<input type="hidden" name="status_baru" value="Approved">
-						<input type="hidden" name="catatan" value="Disetujui oleh Direksi (BOD)">
-						<button type="submit" class="btn btn-sm btn-primary" style="background:var(--good); border-color:var(--good)" onclick="return confirm('Konfirmasi bahwa Direksi (BOD) telah menyetujui permintaan tenaga kerja ini?')">
+						<input type="hidden" name="catatan" value="Disetujui oleh BOD">
+						<button type="submit" class="btn btn-sm btn-primary" style="background:var(--good); border-color:var(--good)" onclick="return confirm('Konfirmasi bahwa BOD telah menyetujui permintaan tenaga kerja ini?')">
 							<span>Setujui (Approved) &rarr;</span>
 						</button>
 					<?= form_close() ?>
@@ -606,7 +606,7 @@ $sisa_kuota = max(0, $kuota_ref - $terpenuhi);
 				<h2 style="font-size:16px; font-weight:700; margin:0">Lowongan Publik &amp; Form Pendaftaran Pelamar</h2>
 			</div>
 			<div class="muted" style="font-size:12px; margin-top:3px">
-				Kontrol publikasi link form online, durasi masa tayang aktif, serta perpanjangan batch sourcing ulang.
+				Kontrol publikasi link form online, durasi masa tayang aktif, serta perpanjangan masa tayang lowongan.
 			</div>
 		</div>
 
@@ -733,7 +733,7 @@ $sisa_kuota = max(0, $kuota_ref - $terpenuhi);
 					<!-- Tombol aksi -->
 					<div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap">
 						<?php if ($can_kelola): ?>
-							<!-- Perpanjang (Sourcing Ulang) -->
+							<!-- Perpanjang Masa Aktif Lowongan -->
 							<details style="position:relative; display:inline-block">
 								<summary class="btn btn-sm btn-ghost" style="font-size:11px; padding:4px 10px; cursor:pointer" title="Perpanjang batas waktu lowongan">
 									+ Perpanjang
@@ -746,8 +746,8 @@ $sisa_kuota = max(0, $kuota_ref - $terpenuhi);
 											<option value="14" selected>+14 Hari (2 Minggu)</option>
 											<option value="30">+30 Hari (1 Bulan)</option>
 										</select>
-										<button type="submit" class="btn btn-sm btn-primary" style="width:100%; font-size:11px" onclick="return confirm('Perpanjang lowongan ini? Status MPR akan beralih menjadi Sourcing Ulang.')">
-											Perpanjang &rarr; Sourcing Ulang
+										<button type="submit" class="btn btn-sm btn-primary" style="width:100%; font-size:11px" onclick="return confirm('Perpanjang lowongan ini?')">
+											Perpanjang Masa Tayang
 										</button>
 									<?= form_close() ?>
 								</div>
@@ -805,8 +805,8 @@ $sisa_kuota = max(0, $kuota_ref - $terpenuhi);
 </div>
 <?php endif; ?>
 
-<!-- Opsi Pembatalan Permintaan Rekrutmen -->
-<?php if (in_array($req['status_req'], array('Draft', 'Review_BOD', 'Sourcing', 'Sourcing_Ulang'))): ?>
+<!-- Opsi Pembatalan Permintaan Rekrutmen (Khusus Tim HR) -->
+<?php if ($can_kelola && in_array($req['status_req'], array('Draft', 'Review_BOD', 'Sourcing', 'Sourcing_Ulang'))): ?>
 <div style="margin-top:16px; padding:14px 18px; border:1px solid var(--border); border-radius:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; background:var(--surface)">
 	<div>
 		<span style="font-size:13px; font-weight:600; color:var(--crit)">Batalkan Permintaan Rekrutmen Ini?</span>

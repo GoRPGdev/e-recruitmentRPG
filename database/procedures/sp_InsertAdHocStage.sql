@@ -10,6 +10,9 @@
    urutan > @setelah_urutan digeser +1 lebih dulu (constraint UNIQUE
    (id_lamaran, urutan) tetap valid karena shift = 1 statement).
 
+   @id_remark      : keputusan/remark lolos untuk menyelesaikan tahap saat ini
+                     sebelum kandidat berpindah ke tahap tambahan.
+
    Deploy:  php tools/migrate.php proc
    ========================================================================= */
 IF OBJECT_ID('dbo.sp_InsertAdHocStage') IS NOT NULL DROP PROCEDURE dbo.sp_InsertAdHocStage;
@@ -21,6 +24,7 @@ CREATE PROCEDURE dbo.sp_InsertAdHocStage
     @setelah_urutan INT,
     @pic_user       INT          = NULL,
     @catatan        VARCHAR(MAX) = NULL,
+    @id_remark      INT          = NULL,
     @id_app_stage   INT OUTPUT
 AS
 BEGIN
@@ -39,24 +43,85 @@ BEGIN
         IF NOT EXISTS (SELECT 1 FROM dbo.M_STAGE WHERE id_stage = @id_stage AND is_aktif = 1)
             RAISERROR('Tahap tidak valid / nonaktif.', 16, 1);
         IF EXISTS (SELECT 1 FROM dbo.APPLICATION_STAGES WHERE id_lamaran = @id_lamaran AND id_stage = @id_stage)
-            RAISERROR('Tahap ini sudah ada di lamaran tersebut.', 16, 1);
+        BEGIN
+            DECLARE @nama_stage_duplikat NVARCHAR(100);
+            SELECT @nama_stage_duplikat = nama_tahap FROM dbo.M_STAGE WHERE id_stage = @id_stage;
+            RAISERROR('Kandidat sudah pernah berada pada tahap "%s". Tahap yang sama tidak dapat disisipkan kembali.', 16, 1, @nama_stage_duplikat);
+        END
 
-        DECLARE @urut_baru INT = @setelah_urutan + 1;
+        -- Validasi @id_remark jika diinput (harus remark dengan efek status Lanjut)
+        DECLARE @label_remark VARCHAR(100) = NULL;
+        IF @id_remark IS NOT NULL
+        BEGIN
+            DECLARE @efek_rmk VARCHAR(20);
+            SELECT @efek_rmk = efek_status, @label_remark = label
+            FROM dbo.M_REMARKS
+            WHERE id_remark = @id_remark AND is_aktif = 1;
+
+            IF @efek_rmk IS NULL
+                RAISERROR('Remark tidak valid atau nonaktif.', 16, 1);
+            IF @efek_rmk <> 'LANJUT' AND @efek_rmk <> 'HIRED'
+                RAISERROR('Hanya keputusan/remark dengan status Lanjut yang dapat dipilih untuk menyisipkan tahap.', 16, 1);
+        END
+
+        -- Tentukan urutan tahap saat ini milik kandidat
+        DECLARE @curr_urutan INT = NULL, @curr_app_stage INT = NULL;
+        SELECT TOP 1 @curr_urutan = aps.urutan, @curr_app_stage = aps.id_app_stage
+        FROM dbo.APPLICATION_STAGES aps
+        JOIN dbo.APPLICATIONS a ON a.id_lamaran = aps.id_lamaran AND a.id_stage_sekarang = aps.id_stage
+        WHERE aps.id_lamaran = @id_lamaran;
+
+        IF @curr_urutan IS NULL
+        BEGIN
+            SELECT TOP 1 @curr_urutan = urutan, @curr_app_stage = id_app_stage
+            FROM dbo.APPLICATION_STAGES
+            WHERE id_lamaran = @id_lamaran AND status_tahap = 'Berjalan'
+            ORDER BY urutan;
+        END
+
+        IF @curr_urutan IS NULL SET @curr_urutan = ISNULL(@setelah_urutan, 0);
+
+        DECLARE @urut_baru INT = @curr_urutan + 1;
 
         -- geser dulu (1 statement -> constraint UNIQUE dicek di akhir statement)
         UPDATE dbo.APPLICATION_STAGES
         SET urutan = urutan + 1
         WHERE id_lamaran = @id_lamaran AND urutan >= @urut_baru;
 
-        INSERT INTO dbo.APPLICATION_STAGES (id_lamaran, id_stage, urutan, status_tahap, is_sisipan, pic_user, catatan)
-        VALUES (@id_lamaran, @id_stage, @urut_baru, 'Belum', 1, @pic_user, @catatan);
+        -- tandai tahap yg sedang Berjalan jadi Lulus (selesai) dengan id_remark yang dipilih
+        UPDATE dbo.APPLICATION_STAGES
+        SET status_tahap = 'Lulus',
+            id_remark = COALESCE(@id_remark, id_remark),
+            tanggal_selesai = GETDATE(),
+            catatan = CASE
+                WHEN @catatan IS NOT NULL AND catatan IS NOT NULL AND LEN(catatan) > 0
+                    THEN catatan + CHAR(13) + CHAR(10) + '[Catatan Sisip Tahap]: ' + @catatan
+                WHEN @catatan IS NOT NULL
+                    THEN '[Catatan Sisip Tahap]: ' + @catatan
+                ELSE catatan
+            END
+        WHERE id_lamaran = @id_lamaran AND (id_app_stage = @curr_app_stage OR status_tahap = 'Berjalan');
+
+        -- sisip tahap baru langsung aktif (Berjalan) agar muncul di pipeline
+        INSERT INTO dbo.APPLICATION_STAGES (id_lamaran, id_stage, urutan, status_tahap, is_sisipan, pic_user, catatan, tanggal_mulai)
+        VALUES (@id_lamaran, @id_stage, @urut_baru, 'Berjalan', 1, @pic_user, @catatan, GETDATE());
 
         SET @id_app_stage = SCOPE_IDENTITY();
 
+        -- pindahkan pointer aktif kandidat ke tahap sisipan dan pastikan status In_Progress
+        UPDATE dbo.APPLICATIONS
+        SET id_stage_sekarang = @id_stage,
+            status_global = 'In_Progress'
+        WHERE id_lamaran = @id_lamaran;
+
+        DECLARE @nama_tahap_baru NVARCHAR(100);
+        SELECT @nama_tahap_baru = nama_tahap FROM dbo.M_STAGE WHERE id_stage = @id_stage;
+
         INSERT INTO dbo.APPLICATION_HISTORY (id_lamaran, jenis_event, id_stage_ke, deskripsi, oleh_user)
         VALUES (@id_lamaran, 'STAGE_CHANGE', @id_stage,
-                'Tahap sisipan ditambahkan pada urutan ' + CONVERT(VARCHAR(10), @urut_baru)
-                + ISNULL(' | ' + @catatan, ''), @pic_user);
+                'Tahap sisipan (' + ISNULL(@nama_tahap_baru, 'Tahap #' + CONVERT(VARCHAR(10), @id_stage)) + ') ditambahkan pada urutan ' + CONVERT(VARCHAR(10), @urut_baru)
+                + ISNULL(' | Keputusan tahap sebelumnya: ' + @label_remark, '')
+                + ISNULL(' | Catatan: ' + @catatan, ''), @pic_user);
 
         IF @outer = 0 COMMIT TRANSACTION;
     END TRY

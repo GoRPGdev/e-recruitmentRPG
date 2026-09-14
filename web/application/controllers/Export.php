@@ -26,6 +26,7 @@ class Export extends Secured_Controller
 			'dari'   => $this->input->get('dari') ?: NULL,
 			'sampai' => $this->input->get('sampai') ?: NULL,
 			'posisi' => $this->input->get('posisi') ?: NULL,
+			'id_req' => $this->input->get('id_req') ?: NULL,
 			'status' => $this->input->get('status') ?: NULL,
 			'flow'   => $this->input->get('flow') ?: NULL,
 		);

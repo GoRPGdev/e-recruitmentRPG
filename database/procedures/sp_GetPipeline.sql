@@ -28,6 +28,7 @@ BEGIN
         aps.id_stage,
         aps.urutan,
         aps.status_tahap,
+        aps.is_sisipan,
         aps.tanggal_mulai,
         aps.catatan,
         aps.id_remark,

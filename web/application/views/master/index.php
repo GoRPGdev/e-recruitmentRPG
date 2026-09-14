@@ -44,6 +44,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 			'departemen'       => '<path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>',
 			'level_organisasi' => '<path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 13h6m-3-3v6"/>',
 			'outlet'           => '<path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>',
+			'tahap'            => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>',
 			'dokumen'          => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>',
 			'remark'           => '<path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>',
 		);
@@ -82,12 +83,14 @@ $col = array(
 	'departemen'       => array('Kode Departemen', 'Nama Departemen'),
 	'level_organisasi' => array('', 'Kode Level', 'Nama Level Organisasi', 'Keterangan'),
 	'outlet'           => array('Kode Outlet', 'Nama Outlet / Cabang', 'Brand', 'Wilayah / Region'),
+	'tahap'            => array('Kode Stage', 'Nama Tahap', 'Tipe (Report)', 'Izin Sisipan', 'Terminal', 'Sistem'),
 	'dokumen'          => array('Nama Dokumen Persyaratan', 'Kategori Berkas', 'Tingkat Sensitif PDP', 'Wajib Default'),
 	'remark'           => array('Tahap Alur', 'Kode', 'Label Keputusan', 'Efek Status Seleksi', 'Urutan'),
 );
 $levels = ! empty($levels) ? $levels : array('MP','Staff','Staff_Krusial','Spv','Manager','Senior_Manager');
 $kat    = array('IDENTITAS','PENDIDIKAN','FINANSIAL','LAMARAN');
 $sens   = array('UMUM','IDENTITAS','FINANSIAL');
+$tipe_tahap_list = ! empty($tipe_tahap_list) ? $tipe_tahap_list : array('SCREENING','KONTAK','FORM','TEST','INTERVIEW','OFFER','ONBOARD');
 ?>
 
 <!-- ================= TABEL DATA UTAMA (FULL WIDTH FIT 1 LAYAR) ================= -->
@@ -143,7 +146,7 @@ $sens   = array('UMUM','IDENTITAS','FINANSIAL');
 				<?php else: ?>
 					<?php foreach ($rows as $r): ?>
 						<?php
-							$row_id = (int) ($r['id_posisi'] ?? ($r['id_departemen'] ?? ($r['id_level_organisasi'] ?? ($r['id_outlet'] ?? ($r['id_dokumen'] ?? ($r['id_remark'] ?? 0))))));
+							$row_id = (int) ($r['id_posisi'] ?? ($r['id_departemen'] ?? ($r['id_level_organisasi'] ?? ($r['id_outlet'] ?? ($r['id_stage'] ?? ($r['id_dokumen'] ?? ($r['id_remark'] ?? 0)))))));
 							$json_data = htmlspecialchars(json_encode($r), ENT_QUOTES, 'UTF-8');
 						?>
 						<tr <?= ($t === 'level_organisasi') ? 'class="level-org-row" data-id="' . $row_id . '" draggable="true"' : '' ?> style="<?= empty($r['is_aktif']) ? 'opacity:.55; background:var(--surface-2);' : '' ?><?= ($t === 'level_organisasi') ? ' cursor:grab; transition:background .15s ease;' : '' ?>">
@@ -215,6 +218,26 @@ $sens   = array('UMUM','IDENTITAS','FINANSIAL');
 								</td>
 								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-size:13px">
 									<?= html_escape($r['region'] ?: '-') ?>
+								</td>
+
+							<?php elseif ($t === 'tahap'): ?>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border)">
+									<code><?= html_escape($r['kode_stage']) ?></code>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-weight:600; color:var(--text); word-break:break-word">
+									<?= html_escape($r['nama_tahap']) ?>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border)">
+									<span class="tag info" style="font-size:11px"><?= html_escape($r['tipe_tahap']) ?></span>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-size:12.5px">
+									<?= ! empty($r['is_sisipan_allowed']) ? '<span style="color:var(--accent); font-weight:600">&#10003; Boleh</span>' : '<span class="muted">&#10005; Tidak</span>' ?>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-size:12.5px">
+									<?= ! empty($r['is_terminal']) ? '<span class="tag off" style="font-size:10.5px">Terminal</span>' : '<span class="muted">-</span>' ?>
+								</td>
+								<td style="padding:11px 14px; border-bottom:1px solid var(--border); font-size:12px">
+									<?= ! empty($r['is_sistem']) ? '<span class="tag on" style="font-size:10.5px" title="Tahap bawaan sistem">&#128274; Sistem</span>' : '<span class="muted">Kustom</span>' ?>
 								</td>
 
 							<?php elseif ($t === 'dokumen'): ?>
@@ -364,6 +387,7 @@ $sens   = array('UMUM','IDENTITAS','FINANSIAL');
 			<input type="hidden" name="id_departemen" id="field-id-departemen" value="">
 			<input type="hidden" name="id_level_organisasi" id="field-id-level-organisasi" value="">
 			<input type="hidden" name="id_outlet" id="field-id-outlet" value="">
+			<input type="hidden" name="id_stage" id="field-id-stage-pk" value="">
 			<input type="hidden" name="id_dokumen" id="field-id-dokumen" value="">
 			<input type="hidden" name="id_remark" id="field-id-remark" value="">
 
@@ -504,6 +528,52 @@ $sens   = array('UMUM','IDENTITAS','FINANSIAL');
 					</div>
 				</div>
 
+			<!-- ================= FORM TAHAP SELEKSI ================= -->
+			<?php elseif ($t === 'tahap'): ?>
+				<div style="display:grid; grid-template-columns:140px 1fr; gap:12px">
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Kode Stage <span style="color:var(--crit)">*</span></label>
+						<input type="text" name="kode_stage" id="field-kode-stage" placeholder="Mis. PSY_TEST" required style="width:100%">
+					</div>
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Nama Tahap Seleksi <span style="color:var(--crit)">*</span></label>
+						<input type="text" name="nama_tahap" id="field-nama-stage" placeholder="Mis. Psikotes & Tes Logika" required style="width:100%">
+					</div>
+				</div>
+
+				<div style="display:grid; grid-template-columns:1fr; gap:12px">
+					<div>
+						<label style="display:block; font-size:12.5px; font-weight:600; margin:0 0 6px">Tipe Tahap (Sumbu Laporan) <span style="color:var(--crit)">*</span></label>
+						<select name="tipe_tahap" id="field-tipe-stage" required style="width:100%">
+							<?php foreach ($tipe_tahap_list as $tp): ?>
+								<option value="<?= $tp ?>"><?= $tp ?></option>
+							<?php endforeach; ?>
+						</select>
+						<span class="muted" style="font-size:11px; margin-top:3px; display:block">Tipe tahap wajib mengacu pada 7 sumbu tetap RPG (SCREENING, KONTAK, FORM, TEST, INTERVIEW, OFFER, ONBOARD).</span>
+					</div>
+				</div>
+
+				<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:4px; padding:12px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px">
+					<label style="display:flex; align-items:flex-start; gap:8px; font-size:12.5px; cursor:pointer">
+						<input type="checkbox" name="is_sisipan_allowed" id="field-is-sisipan" value="1" checked style="margin-top:2px">
+						<div>
+							<span style="font-weight:600">Izin Sisipan Ad-Hoc</span>
+							<span class="muted" style="display:block; font-size:11px">Boleh dipilih saat rekruter menambah tahap sisipan di pipeline.</span>
+						</div>
+					</label>
+					<label style="display:flex; align-items:flex-start; gap:8px; font-size:12.5px; cursor:pointer">
+						<input type="checkbox" name="is_terminal" id="field-is-terminal" value="1" style="margin-top:2px">
+						<div>
+							<span style="font-weight:600">Tahap Terminal</span>
+							<span class="muted" style="display:block; font-size:11px">Merupakan titik akhir proses seleksi kandidat.</span>
+						</div>
+					</label>
+				</div>
+
+				<div id="notice-sistem-stage" style="display:none; padding:8px 12px; background:var(--accent-soft); border:1px solid var(--accent); border-radius:6px; font-size:12px; color:var(--accent-ink)">
+					&#128274; <strong>Tahap Sistem:</strong> Kode stage dan tipe tahap terkunci untuk melindungi integritas reporting sistem.
+				</div>
+
 			<!-- ================= FORM DOKUMEN ================= -->
 			<?php elseif ($t === 'dokumen'): ?>
 				<div>
@@ -606,8 +676,20 @@ function openAddModal() {
 	if (document.getElementById('field-id-departemen')) document.getElementById('field-id-departemen').value = '';
 	if (document.getElementById('field-id-level-organisasi')) document.getElementById('field-id-level-organisasi').value = '';
 	if (document.getElementById('field-id-outlet')) document.getElementById('field-id-outlet').value = '';
+	if (document.getElementById('field-id-stage-pk')) document.getElementById('field-id-stage-pk').value = '';
 	if (document.getElementById('field-id-dokumen')) document.getElementById('field-id-dokumen').value = '';
 	if (document.getElementById('field-id-remark')) document.getElementById('field-id-remark').value = '';
+
+	if (currentType === 'tahap') {
+		var kodeSt = document.getElementById('field-kode-stage');
+		var tipeSt = document.getElementById('field-tipe-stage');
+		var noticeSt = document.getElementById('notice-sistem-stage');
+		if (kodeSt) kodeSt.readOnly = false;
+		if (tipeSt) tipeSt.disabled = false;
+		if (noticeSt) noticeSt.style.display = 'none';
+		if (document.getElementById('field-is-sisipan')) document.getElementById('field-is-sisipan').checked = true;
+		if (document.getElementById('field-is-terminal')) document.getElementById('field-is-terminal').checked = false;
+	}
 
 	document.getElementById('modal-title').textContent = 'Tambah ' + <?= json_encode($types[$t]['label']) ?> + ' Baru';
 	document.getElementById('modal-sub').textContent = 'Lengkapi formulir di bawah ini untuk menyimpan data baru.';
@@ -623,7 +705,7 @@ function openEditModal(data) {
 	document.getElementById('form-master').reset();
 
 	var labelTipe = <?= json_encode($types[$t]['label']) ?>;
-	var pkVal = data.id_posisi || data.id_departemen || data.id_level_organisasi || data.id_outlet || data.id_dokumen || data.id_remark || '';
+	var pkVal = data.id_posisi || data.id_departemen || data.id_level_organisasi || data.id_outlet || data.id_stage || data.id_dokumen || data.id_remark || '';
 
 	document.getElementById('field-id').value = pkVal;
 	document.getElementById('modal-title').textContent = 'Edit ' + labelTipe + ' #' + pkVal;
@@ -656,6 +738,42 @@ function openEditModal(data) {
 		document.getElementById('field-nama-outlet').value = data.nama_outlet || '';
 		document.getElementById('field-brand').value = data.brand || '';
 		document.getElementById('field-region').value = data.region || '';
+	} else if (currentType === 'tahap') {
+		document.getElementById('field-id-stage-pk').value = data.id_stage || '';
+		var kodeSt = document.getElementById('field-kode-stage');
+		var namaSt = document.getElementById('field-nama-stage');
+		var tipeSt = document.getElementById('field-tipe-stage');
+		var sisipSt = document.getElementById('field-is-sisipan');
+		var termSt = document.getElementById('field-is-terminal');
+		var noticeSt = document.getElementById('notice-sistem-stage');
+
+		if (kodeSt) kodeSt.value = data.kode_stage || '';
+		if (namaSt) namaSt.value = data.nama_tahap || '';
+		if (tipeSt) tipeSt.value = data.tipe_tahap || 'SCREENING';
+		if (sisipSt) sisipSt.checked = (data.is_sisipan_allowed == 1);
+		if (termSt) termSt.checked = (data.is_terminal == 1);
+
+		var isSistem = (data.is_sistem == 1);
+		if (kodeSt) kodeSt.readOnly = isSistem;
+		if (tipeSt) {
+			tipeSt.disabled = isSistem;
+			if (isSistem) {
+				// Pastikan nilai tetap terkirim saat form submit meski select disabled
+				var hiddenTipe = document.getElementById('field-hidden-tipe-stage');
+				if (!hiddenTipe) {
+					hiddenTipe = document.createElement('input');
+					hiddenTipe.type = 'hidden';
+					hiddenTipe.name = 'tipe_tahap';
+					hiddenTipe.id = 'field-hidden-tipe-stage';
+					tipeSt.parentNode.appendChild(hiddenTipe);
+				}
+				hiddenTipe.value = data.tipe_tahap || 'SCREENING';
+			} else {
+				var hiddenTipe = document.getElementById('field-hidden-tipe-stage');
+				if (hiddenTipe) hiddenTipe.remove();
+			}
+		}
+		if (noticeSt) noticeSt.style.display = isSistem ? 'block' : 'none';
 	} else if (currentType === 'dokumen') {
 		document.getElementById('field-id-dokumen').value = data.id_dokumen || '';
 		document.getElementById('field-nama-dokumen').value = data.nama_dokumen || '';

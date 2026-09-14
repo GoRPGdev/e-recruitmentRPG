@@ -185,6 +185,43 @@ class Onboarding extends MY_Controller
 		$action_mode = $this->input->post('action_mode', TRUE);
 		$is_final = ($action_mode === 'final') ? 1 : 0;
 
+		// Validasi kelengkapan saat pengiriman final
+		if ($is_final) {
+			$status_nikah = $t['status_pernikahan'] ?? 'Belum_Menikah';
+			$is_belum_nikah = (stripos($status_nikah, 'belum') !== FALSE || $status_nikah === 'Belum_Menikah');
+			$min_fam = $is_belum_nikah ? 2 : 1;
+
+			if (count($family) < $min_fam) {
+				$msg = $is_belum_nikah
+					? 'Karena status pernikahan Anda Belum Menikah, wajib mengisi minimal 2 data keluarga orang tua (Ayah dan Ibu).'
+					: 'Wajib mengisi minimal 1 data anggota keluarga inti.';
+				$this->session->set_flashdata('error', $msg);
+				redirect('onboarding/' . $token . '?step=2');
+				return;
+			}
+
+			// Validasi pas foto
+			if (empty($t['foto_path']) && empty($foto_info)) {
+				$this->session->set_flashdata('error', 'Pas foto pelamar wajib diunggah pada Langkah 1 (Section I).');
+				redirect('onboarding/' . $token . '?step=1');
+				return;
+			}
+
+			// Validasi kolom penting identitas
+			if (empty($this->input->post('nik', TRUE))) {
+				$this->session->set_flashdata('error', 'Nomor Induk Kependudukan (NIK KTP) wajib diisi.');
+				redirect('onboarding/' . $token . '?step=1');
+				return;
+			}
+
+			// Validasi rekening payroll
+			if (empty($this->input->post('nama_bank', TRUE)) || empty($this->input->post('no_rekening', TRUE)) || empty($this->input->post('nama_pemilik_bank', TRUE))) {
+				$this->session->set_flashdata('error', 'Data rekening bank payroll (Nama Bank, No. Rekening, Nama Pemilik) wajib diisi lengkap.');
+				redirect('onboarding/' . $token . '?step=8');
+				return;
+			}
+		}
+
 		$in = array(
 			'id_lamaran'            => (int) $t['id_lamaran'],
 			'id_kandidat'           => (int) $t['id_kandidat'],

@@ -395,6 +395,10 @@ class Candidate_model extends CI_Model
 			$w[] = 'r.id_posisi = ?';
 			$b[] = (int) $f['posisi'];
 		}
+		if ( ! empty($f['id_req'])) {
+			$w[] = 'r.id_req = ?';
+			$b[] = (int) $f['id_req'];
+		}
 		if ( ! empty($f['dept'])) {
 			$w[] = 'p.id_departemen = ?';
 			$b[] = (int) $f['dept'];
@@ -524,6 +528,27 @@ class Candidate_model extends CI_Model
 			$p[] = (int) $dept;
 		}
 		$q = $this->db->query("SELECT id_posisi, nama_posisi FROM dbo.M_POSISI $w ORDER BY nama_posisi", $p);
+		$rows = $q->result_array();
+		$q->free_result();
+		return $rows;
+	}
+
+	public function get_requisitions()
+	{
+		$dept = current_user_dept();
+		$w = 'WHERE 1=1';
+		$p = array();
+		if ($dept !== NULL) {
+			$w .= ' AND p.id_departemen = ?';
+			$p[] = (int) $dept;
+		}
+		$sql = "SELECT r.id_req, r.no_mpr, r.status_req, p.nama_posisi,
+		               CASE WHEN r.status_req IN ('Sourcing', 'Approved', 'Sourcing_Ulang') THEN 1 ELSE 0 END AS is_aktif_mpr
+		        FROM dbo.REQUISITIONS r
+		        JOIN dbo.M_POSISI p ON p.id_posisi = r.id_posisi
+		        $w
+		        ORDER BY is_aktif_mpr DESC, r.id_req DESC";
+		$q = $this->db->query($sql, $p);
 		$rows = $q->result_array();
 		$q->free_result();
 		return $rows;

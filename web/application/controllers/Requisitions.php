@@ -6,7 +6,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  *
  * Fungsi:
  * - Pembuatan dokumen MPR baru oleh Pemohon (User Dept / HR).
- * - Pengajuan peninjauan dokumen MPR ke Tim HR (Review HR) dan Direksi (Review BOD).
+ * - Pengajuan peninjauan dokumen MPR ke Tim HR (Review HR) dan BOD (Review BOD).
  * - Manajemen status alur: Draft, Review_HR, Revisi_HR, Review_BOD, Revisi_BOD, Approved, Sourcing, Sourcing_Ulang, Ditolak_HR, Ditolak_BOD, Kadaluarsa, Dibatalkan.
  * - Penyampaian umpan balik dan catatan arahan revisi (catatan_hr / catatan_bod) untuk Pemohon.
  */
@@ -373,7 +373,7 @@ class Requisitions extends Secured_Controller
 		$durasi_hari = max(1, (int) ($this->input->post('durasi_hari') ?: 14));
 		try {
 			$this->rm->extend_posting($id_posting, $durasi_hari, (int) $this->auth_user['id_user']);
-			$this->session->set_flashdata('ok', 'Batas waktu lowongan berhasil diperpanjang (+' . $durasi_hari . ' hari) dan status MPR beralih ke Sourcing Ulang.');
+			$this->session->set_flashdata('ok', 'Batas waktu lowongan berhasil diperpanjang (+' . $durasi_hari . ' hari).');
 		} catch (RuntimeException $e) {
 			$this->session->set_flashdata('error', $e->getMessage());
 		}
@@ -382,7 +382,7 @@ class Requisitions extends Secured_Controller
 
 	public function cancel($id_req = NULL)
 	{
-		$this->require_any_permission(array('BUAT_MPR', 'KELOLA_REKRUTMEN'));
+		$this->require_permission('KELOLA_REKRUTMEN');
 		if ( ! $id_req || $this->input->method() !== 'post') {
 			show_404();
 		}
@@ -390,11 +390,6 @@ class Requisitions extends Secured_Controller
 		$req = $this->rm->get($id_req);
 		if ( ! $req) {
 			show_404();
-		}
-
-		$dept = current_user_dept();
-		if ($dept !== NULL && (int) $req['id_departemen'] !== (int) $dept) {
-			show_error('Akses ditolak: Anda hanya dapat membatalkan MPR dari departemen Anda.', 403, '403 Forbidden');
 		}
 
 		$alasan = $this->input->post('alasan_batal', TRUE);

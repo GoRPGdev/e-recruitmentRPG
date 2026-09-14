@@ -94,6 +94,28 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 						<?php endforeach; ?>
 					</select>
 				</div>
+				<div>
+					<label for="f-id-req" style="font-size:11.5px; font-weight:600; margin:0 0 4px; display:block" class="eyebrow">Filter No. MPR</label>
+					<select id="f-id-req" name="id_req" style="margin:0; width:100%; padding:6px 10px; font-size:13px; background:var(--surface)">
+						<option value="">Semua No. MPR</option>
+						<?php if (!empty($requisitions)): ?>
+							<optgroup label="MPR Aktif / Dibuka">
+								<?php foreach ($requisitions as $rq): if (empty($rq['is_aktif_mpr'])) continue; ?>
+									<option value="<?= (int) $rq['id_req'] ?>" <?= ((int)($f['id_req'] ?? 0)) === (int)$rq['id_req'] ? 'selected' : '' ?>>
+										<?= html_escape($rq['no_mpr'] ?: '#' . $rq['id_req']) ?> &bull; <?= html_escape($rq['nama_posisi']) ?> [Aktif]
+									</option>
+								<?php endforeach; ?>
+							</optgroup>
+							<optgroup label="MPR Selesai / Ditutup">
+								<?php foreach ($requisitions as $rq): if (!empty($rq['is_aktif_mpr'])) continue; ?>
+									<option value="<?= (int) $rq['id_req'] ?>" <?= ((int)($f['id_req'] ?? 0)) === (int)$rq['id_req'] ? 'selected' : '' ?>>
+										<?= html_escape($rq['no_mpr'] ?: '#' . $rq['id_req']) ?> &bull; <?= html_escape($rq['nama_posisi']) ?> [Tutup]
+									</option>
+								<?php endforeach; ?>
+							</optgroup>
+						<?php endif; ?>
+					</select>
+				</div>
 				<?php if (current_user_dept() === NULL): ?>
 				<div>
 					<label for="f-dept" style="font-size:11.5px; font-weight:600; margin:0 0 4px; display:block" class="eyebrow">Departemen</label>
@@ -132,7 +154,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 	</div>
 
 	<!-- Tabel Data Kandidat (Di Bawah Filter) -->
-	<div class="card" style="padding:0; overflow:hidden">
+	<div class="card" style="padding:0; overflow:visible">
 		<div style="padding:14px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:var(--surface-2); flex-wrap:wrap; gap:10px">
 			<div style="display:flex; align-items:center; gap:10px">
 				<div style="width:8px; height:8px; border-radius:50%; background:var(--accent)"></div>
@@ -189,7 +211,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 									</div>
 									<div class="muted" style="font-size:12px; margin-top:2px">
 										<?= html_escape($r['nama_departemen'] ?: '-') ?> &middot;
-										<span class="mono"><?= html_escape($r['no_mpr'] ?: '#' . $r['id_req']) ?></span> <?php if (in_array($r['status_req'] ?? '', array('Sourcing', 'Approved', 'Sourcing_Ulang'))): ?><span class="tag on" style="font-size:9.5px; padding:1px 5px; font-weight:700" title="Status: <?= html_escape($r['status_req'] ?? '') ?>">Jalan</span><?php else: ?><span class="tag off" style="font-size:9.5px; padding:1px 5px; font-weight:700" title="Status: <?= html_escape($r['status_req'] ?? 'Closed') ?>">Closed</span><?php endif; ?>
+										<span class="mono"><?= html_escape($r['no_mpr'] ?: '#' . $r['id_req']) ?></span> <?php if (in_array($r['status_req'] ?? '', array('Sourcing', 'Approved', 'Sourcing_Ulang'))): ?><span class="tag on" style="font-size:9.5px; padding:1px 5px; font-weight:700" title="Status: <?= html_escape($r['status_req'] ?? '') ?>">Aktif</span><?php else: ?><span class="tag off" style="font-size:9.5px; padding:1px 5px; font-weight:700" title="Status: <?= html_escape($r['status_req'] ?? 'Closed') ?>">Tidak Aktif</span><?php endif; ?>
 									</div>
 									<div style="margin-top:4px">
 										<span class="tag" style="font-size:10px; padding:1px 6px">

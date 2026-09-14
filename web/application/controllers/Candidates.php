@@ -33,6 +33,7 @@ class Candidates extends Secured_Controller
 			'q'          => $this->input->get('q') ?: NULL,
 			'status'     => $this->input->get('status') ?: NULL,
 			'posisi'     => $this->input->get('posisi') ?: NULL,
+			'id_req'     => $this->input->get('id_req') ?: NULL,
 			'dept'       => $this->input->get('dept') ?: NULL,
 			'status_mpr' => $this->input->get('status_mpr') ?: NULL,
 			'dari'       => $this->input->get('dari') ?: NULL,
@@ -53,10 +54,11 @@ class Candidates extends Secured_Controller
 			'per'         => $per,
 			'pages'       => max(1, (int) ceil($total / $per)),
 			'total'       => $total,
-			'stats'       => $this->candidate_model->stats_summary($f),
-			'f'           => $f,
-			'positions'   => $this->candidate_model->get_positions(),
-			'departments' => $this->candidate_model->get_departments(),
+			'stats'        => $this->candidate_model->stats_summary($f),
+			'f'            => $f,
+			'positions'    => $this->candidate_model->get_positions(),
+			'requisitions' => $this->candidate_model->get_requisitions(),
+			'departments'  => $this->candidate_model->get_departments(),
 		));
 	}
 
@@ -168,15 +170,60 @@ class Candidates extends Secured_Controller
 	 */
 	public function generate_onboarding_link($id_lamaran = NULL)
 	{
-		$this->require_permission('KELOLA_REKRUTMEN');
+		$is_ajax = ($this->input->is_ajax_request() || $this->input->get('format') === 'json');
+
+		if ( ! has_permission('KELOLA_REKRUTMEN')) {
+			if ($is_ajax) {
+				return $this->output
+					->set_content_type('application/json')
+					->set_status_header(403)
+					->set_output(json_encode(array(
+						'success' => FALSE,
+						'message' => 'Akses ditolak: Anda tidak memiliki izin kelola rekrutmen.'
+					)));
+			}
+			require_permission('KELOLA_REKRUTMEN');
+		}
 
 		if ( ! $id_lamaran) {
+			if ($is_ajax) {
+				return $this->output
+					->set_content_type('application/json')
+					->set_status_header(400)
+					->set_output(json_encode(array(
+						'success' => FALSE,
+						'message' => 'ID Lamaran tidak valid.'
+					)));
+			}
 			show_404();
 		}
 
 		$detail = $this->candidate_model->get_detail($id_lamaran);
 		if ( ! $detail) {
+			if ($is_ajax) {
+				return $this->output
+					->set_content_type('application/json')
+					->set_status_header(404)
+					->set_output(json_encode(array(
+						'success' => FALSE,
+						'message' => 'Data pelamar #' . (int) $id_lamaran . ' tidak ditemukan.'
+					)));
+			}
 			show_404();
+		}
+
+		$dept = current_user_dept();
+		if ($dept !== NULL && (int) $detail['id_departemen'] !== (int) $dept) {
+			if ($is_ajax) {
+				return $this->output
+					->set_content_type('application/json')
+					->set_status_header(403)
+					->set_output(json_encode(array(
+						'success' => FALSE,
+						'message' => 'Akses ditolak: Pelamar bukan dari departemen Anda.'
+					)));
+			}
+			show_error('Akses ditolak: Pelamar bukan dari lowongan departemen Anda.', 403, '403 Forbidden');
 		}
 
 		$au = $this->session->userdata('auth_user');
@@ -203,7 +250,7 @@ class Candidates extends Secured_Controller
 				$kadaluarsa_text = date('d M Y', time() + 14 * 86400);
 				$msg = 'Tautan formulir pelamar baru berhasil dibuat (masa aktif 14 hari).';
 			} catch (Exception $e) {
-				if ($this->input->is_ajax_request() || $this->input->get('format') === 'json') {
+				if ($is_ajax) {
 					return $this->output
 						->set_content_type('application/json')
 						->set_status_header(500)
@@ -214,6 +261,7 @@ class Candidates extends Secured_Controller
 				}
 				$this->session->set_flashdata('error', 'Gagal membuat tautan formulir: ' . $e->getMessage());
 				redirect('candidates/detail/' . (int) $id_lamaran);
+				return;
 			}
 		}
 
@@ -224,7 +272,7 @@ class Candidates extends Secured_Controller
 		$wa_msg = "Halo " . ($detail['nama_lengkap'] ?? 'Kandidat') . ", terima kasih telah melamar di Ratu Pertiwi Group! Mohon untuk melengkapi formulir data pelamar Anda melalui tautan resmi berikut: " . $onboarding_url . " . Terima kasih.";
 		$wa_link = $no_wa ? 'https://wa.me/' . $no_wa . '?text=' . rawurlencode($wa_msg) : '';
 
-		if ($this->input->is_ajax_request() || $this->input->get('format') === 'json') {
+		if ($is_ajax) {
 			return $this->output
 				->set_content_type('application/json')
 				->set_output(json_encode(array(
@@ -328,6 +376,44 @@ class Candidates extends Secured_Controller
 		$dept = current_user_dept();
 		if ($dept !== NULL && (int) $detail['id_departemen'] !== (int) $dept) {
 			show_error('Akses ditolak: Kandidat bukan dari lowongan departemen Anda.', 403, '403 Forbidden');
+		}
+
+		// Stage-gating: Formulir hanya sah dicetak jika pelamar sudah mengisi form atau telah mencapai tahap FORM / setelahnya
+		$token_onboard = $this->candidate_model->get_onboarding_token((int) $id_lamaran);
+		$has_form_done = ! empty($token_onboard['dipakai_pada']);
+
+		if ( ! $has_form_done) {
+			$stages = $this->candidate_model->get_stages((int) $id_lamaran);
+			$form_urutan = NULL;
+			$kini_urutan = NULL;
+			$is_form_or_after = FALSE;
+
+			foreach ($stages as $stg) {
+				$t_tipe = strtoupper(trim($stg['tipe_tahap'] ?? ''));
+				$t_kode = strtoupper(trim($stg['kode_stage'] ?? ''));
+				$t_nama = strtoupper(trim($stg['nama_tahap'] ?? ''));
+
+				if ($form_urutan === NULL && ($t_tipe === 'FORM' || $t_kode === 'FORM_PELAMAR' || stripos($t_nama, 'form') !== FALSE)) {
+					$form_urutan = (int) $stg['urutan'];
+				}
+				if ((int) $stg['id_stage'] === (int) $detail['id_stage_sekarang']) {
+					$kini_urutan = (int) $stg['urutan'];
+					if ($t_tipe === 'FORM' || $t_kode === 'FORM_PELAMAR' || stripos($t_nama, 'form') !== FALSE) {
+						$is_form_or_after = TRUE;
+					}
+				}
+			}
+
+			if ($form_urutan !== NULL && $kini_urutan !== NULL && $kini_urutan >= $form_urutan) {
+				$is_form_or_after = TRUE;
+			}
+
+			// Jika bukan di tahap form atau setelahnya, cegah URL tampering
+			if ( ! $is_form_or_after) {
+				$this->session->set_flashdata('error', 'Formulir pelamar belum tersedia untuk dicetak karena kandidat ' . html_escape($detail['nama_lengkap']) . ' masih berada di tahap awal seleksi dan belum menyelesaikan pengisian formulir.');
+				redirect('candidates/detail/' . (int) $id_lamaran);
+				return;
+			}
 		}
 
 		$profile       = $this->candidate_model->get_profile($id_lamaran);
