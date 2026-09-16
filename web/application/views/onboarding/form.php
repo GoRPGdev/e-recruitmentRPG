@@ -160,6 +160,13 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 .fam-card:hover, .exp-card:hover, .trn-card:hover, .ref-card:hover {
 	border-color: var(--accent-soft);
 }
+@keyframes erecSpin { 100% { transform: rotate(360deg); } }
+.btn-submitting {
+	opacity: 0.8 !important;
+	cursor: wait !important;
+	pointer-events: none !important;
+	box-shadow: none !important;
+}
 </style>
 
 <!-- ================= FORMULIR UTAMA ONBOARDING (MULTI-STEP) ================= -->
@@ -969,8 +976,8 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 			<button type="button" class="btn btn-secondary" onclick="prevStep(8)">
 					&larr; Sebelumnya
 				</button>
-			<button type="submit" onclick="document.getElementById('action_mode').value='final'" class="btn btn-primary" style="padding:12px 32px; font-size:14px; font-weight:700">
-				Kirim Kelengkapan Berkas Formulir &rarr;
+			<button type="submit" id="btn-submit-onboarding" onclick="document.getElementById('action_mode').value='final'" class="btn btn-primary" style="padding:12px 32px; font-size:14px; font-weight:700; display:inline-flex; align-items:center; gap:8px; transition:all .2s ease">
+				<span>Kirim Kelengkapan Berkas Formulir &rarr;</span>
 			</button>
 		</div>
 	</div>
@@ -1082,6 +1089,21 @@ document.addEventListener('DOMContentLoaded', function() {
 			if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA')) {
 				clearTimeout(_autoSaveTimer);
 				triggerAutoSave();
+			}
+		});
+
+		// Proteksi double click submit final & loading visual
+		f.addEventListener('submit', function(e) {
+			var mode = document.getElementById('action_mode') ? document.getElementById('action_mode').value : '';
+			if (mode === 'final') {
+				if (f.checkValidity && !f.checkValidity()) {
+					return;
+				}
+				var btnFinal = document.getElementById('btn-submit-onboarding');
+				if (btnFinal) {
+					btnFinal.classList.add('btn-submitting');
+					btnFinal.innerHTML = '<svg style="width:16px; height:16px; animation:erecSpin 0.9s linear infinite; flex:none" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="32" stroke-linecap="round"></circle></svg> <span>Sedang Mengirim &amp; Menyimpan...</span>';
+				}
 			}
 		});
 	}

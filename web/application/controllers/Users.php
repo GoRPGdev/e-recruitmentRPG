@@ -16,6 +16,12 @@ class Users extends Secured_Controller
 	public function __construct()
 	{
 		parent::__construct();
+
+		$role = isset($this->auth_user['kode_role']) ? $this->auth_user['kode_role'] : '';
+		if ($role !== 'SUPER_ADMIN' && $role !== 'IT_ADMIN' && ! has_permission('KELOLA_REKRUTMEN')) {
+			show_error('Akses ditolak: Anda tidak memiliki wewenang untuk mengelola akun pengguna sistem.', 403, '403 Forbidden');
+		}
+
 		$this->load->model('user_model');
 		$this->load->helper(array('form', 'url', 'html'));
 	}

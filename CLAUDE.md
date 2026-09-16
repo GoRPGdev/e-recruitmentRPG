@@ -78,3 +78,16 @@ php tools/test-koneksi.php     # validasi driver & koneksi (gerbang Fase 0)
 php tools/migrate.php status   # lihat migrasi mana yang sudah jalan
 php tools/migrate.php up       # jalankan migrasi yang belum
 ```
+
+## Graphify Knowledge Graph & Memory Workflow
+
+Proyek ini memiliki knowledge graph di `graphify-out/` yang memetakan seluruh arsitektur, modul, controller, model, stored procedure, dan migrasi database.
+
+**Aturan Wajib:**
+1. Untuk pertanyaan atau penelusuran arsitektur dan relasi kode, selalu dahului dengan perintah graphify:
+   - `graphify query "<pertanyaan>"`: penelusuran scoped context (BFS/DFS).
+   - `graphify explain "<simbol/komponen>"`: penjelasan menyeluruh terkait suatu controller/model/fungsi.
+   - `graphify path "<A>" "<B>" --undirected`: melacak rantai ketergantungan antar komponen.
+2. Hindari membaca puluhan file secara acak atau grep luas jika konteks sudah tersedia di graphify.
+3. Setelah menyelesaikan penambahan atau perubahan kode, jalankan `graphify update .` agar knowledge graph dan `graph.html` selalu sinkron (ekstraksi AST lokal, tanpa biaya token).
+

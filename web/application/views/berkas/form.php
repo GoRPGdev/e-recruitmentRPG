@@ -16,7 +16,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 		lamaran posisi <strong><?= html_escape($t['nama_posisi']) ?></strong>.
 	</p>
 
-	<?= form_open_multipart(site_url('berkas/' . $this->uri->segment(2))) ?>
+	<?= form_open_multipart(site_url('berkas/' . $this->uri->segment(2)), array('id' => 'form-berkas')) ?>
 
 	<p>Unggah dokumen yang diminta. Pilih jenis untuk tiap file.</p>
 
@@ -33,8 +33,36 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 		</div>
 	<?php endfor; ?>
 
-	<button type="submit">Kirim berkas</button>
+	<div style="margin-top:16px">
+		<button type="submit" id="btn-submit-berkas" class="btn btn-primary" style="display:inline-flex; align-items:center; gap:8px; padding:10px 24px; font-weight:700">
+			<span>Kirim berkas &rarr;</span>
+		</button>
+	</div>
 	<?= form_close() ?>
 
-	<p class="muted">Tautan ini hanya bisa dipakai sekali. Simpan bukti setelah berhasil.</p>
+	<p class="muted" style="margin-top:16px">Tautan ini hanya bisa dipakai sekali. Simpan bukti setelah berhasil.</p>
+</main>
+
+<style>
+@keyframes erecSpin { 100% { transform: rotate(360deg); } }
+.btn-submitting {
+	opacity: 0.8 !important;
+	cursor: wait !important;
+	pointer-events: none !important;
+	box-shadow: none !important;
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+	var f = document.getElementById('form-berkas');
+	var b = document.getElementById('btn-submit-berkas');
+	if (f && b) {
+		f.addEventListener('submit', function() {
+			if (f.checkValidity && !f.checkValidity()) return;
+			b.classList.add('btn-submitting');
+			b.innerHTML = '<svg style="width:16px; height:16px; animation:erecSpin 0.9s linear infinite; flex:none" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="32" stroke-linecap="round"></circle></svg> <span>Sedang Mengunggah...</span>';
+		});
+	}
+});
+</script>
 </main>

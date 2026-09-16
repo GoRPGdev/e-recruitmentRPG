@@ -119,7 +119,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 	<?= validation_errors('<div class="flash err" style="margin-bottom:14px">', '</div>') ?>
 
-	<?= form_open_multipart(site_url('lamar/' . $posting['url_slug']), array('style' => 'display:flex; flex-direction:column; gap:20px')) ?>
+	<?= form_open_multipart(site_url('lamar/' . $posting['url_slug']), array('id' => 'formLamar', 'style' => 'display:flex; flex-direction:column; gap:20px')) ?>
 
 	<!-- Section 1: Data Diri Utama -->
 	<fieldset style="border:none; padding:0; margin:0">
@@ -308,10 +308,35 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 	<!-- Tombol Submit Lamaran -->
 	<div style="display:flex; justify-content:flex-end; gap:12px; margin-top:10px; padding-top:16px; border-top:1px solid var(--border)">
-		<button type="submit" class="btn btn-primary" style="padding:12px 32px; font-size:14px; font-weight:700">
-			Kirim Lamaran Sekarang &rarr;
+		<button type="submit" id="btnSubmitLamar" class="btn btn-primary" style="padding:12px 32px; font-size:14px; font-weight:700; display:inline-flex; align-items:center; gap:8px; transition:all .2s ease">
+			<span>Kirim Lamaran Sekarang &rarr;</span>
 		</button>
 	</div>
 
 	<?= form_close() ?>
 </div>
+
+<style>
+@keyframes erecSpin { 100% { transform: rotate(360deg); } }
+.btn-submitting {
+	opacity: 0.8 !important;
+	cursor: wait !important;
+	pointer-events: none !important;
+	box-shadow: none !important;
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+	var form = document.getElementById('formLamar');
+	var btn = document.getElementById('btnSubmitLamar');
+	if (form && btn) {
+		form.addEventListener('submit', function(e) {
+			if (form.checkValidity && !form.checkValidity()) {
+				return;
+			}
+			btn.classList.add('btn-submitting');
+			btn.innerHTML = '<svg style="width:16px; height:16px; animation:erecSpin 0.9s linear infinite; flex:none" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="32" stroke-linecap="round"></circle></svg> <span>Sedang Mengirim &amp; Mengunggah Berkas...</span>';
+		});
+	}
+});
+</script>

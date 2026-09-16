@@ -249,13 +249,6 @@ class Candidate_model extends CI_Model
 	 */
 	public function create_onboarding_token($id_lamaran, $id_user, $masa_hari = 14)
 	{
-		// Defensif: pastikan constraint CK_FT_tujuan mengizinkan 'FORM_ONBOARDING'
-		$chk_tujuan = $this->db->query("SELECT definition FROM sys.check_constraints WHERE name = 'CK_FT_tujuan'")->row_array();
-		if ( ! empty($chk_tujuan['definition']) && stripos($chk_tujuan['definition'], 'FORM_ONBOARDING') === FALSE) {
-			$this->db->query("ALTER TABLE dbo.FORM_TOKENS DROP CONSTRAINT CK_FT_tujuan");
-			$this->db->query("ALTER TABLE dbo.FORM_TOKENS ADD CONSTRAINT CK_FT_tujuan CHECK (tujuan IN ('FORM2', 'UPLOAD_DOKUMEN', 'FORM_ONBOARDING'))");
-		}
-
 		// Cabut token lama yang belum dipakai
 		$this->db->query(
 			"UPDATE dbo.FORM_TOKENS SET is_revoked = 1
