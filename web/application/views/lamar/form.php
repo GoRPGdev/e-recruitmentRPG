@@ -14,11 +14,11 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 <!-- Header Publik / Identitas Karir RPG -->
 <div style="text-align:center; margin-bottom:24px">
 	<div style="display:inline-flex; align-items:center; gap:10px; margin-bottom:8px">
-		<div style="width:36px; height:36px; border-radius:9px; background:var(--accent); color:var(--accent-contrast); display:grid; place-items:center; font-family:'Archivo',sans-serif; font-weight:700; font-size:15px">
+		<div style="width:36px; height:36px; border-radius:9px; background:var(--accent); color:var(--accent-contrast); display:grid; place-items:center; font-family:'Source Sans Pro','Helvetica Neue',Helvetica,Arial,sans-serif; font-weight:700; font-size:15px">
 			RPG
 		</div>
 		<div style="text-align:left">
-			<div style="font-family:'Archivo',sans-serif; font-weight:700; font-size:16px; color:var(--text); line-height:1.2">Ratu Pertiwi Group</div>
+			<div style="font-family:'Source Sans Pro','Helvetica Neue',Helvetica,Arial,sans-serif; font-weight:700; font-size:16px; color:var(--text); line-height:1.2">Ratu Pertiwi Group</div>
 			<div style="font-size:11.5px; color:var(--text-faint)">Portal Karir &amp; Rekrutmen Resmi</div>
 		</div>
 	</div>

@@ -19,25 +19,33 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 <link rel="stylesheet" href="<?= base_url('assets/fonts/fonts.css') ?>">
 <style>
 :root {
-  --bg: #f5f7f4; --surface: #ffffff; --surface-2: #ecefe9; --surface-3: #e3e7dd;
-  --border: #d6dbcf; --border-strong: #c3cabb;
-  --text: #1b211c; --text-muted: #59635b; --text-faint: #8a938a;
-  --accent: #1f6f5c; --accent-ink: #124034; --accent-soft: #e3f0ea; --accent-contrast: #ffffff;
-  --good: #2f7d4f; --good-soft: #e2f0e5;
-  --warn: #8f6410; --warn-soft: #f6ecd6;
-  --crit: #b23b3b; --crit-soft: #f6e1df;
-  --info: #3a6ea5; --info-soft: #e2ecf5;
+  /* Palet diselaraskan dengan shell aplikasi Payroll RPG (AdminLTE skin-purple) */
+  --bg: #eef0f5; --surface: #ffffff; --surface-2: #eef0f5; --surface-3: #e3e6ee;
+  --border: #dde1e9; --border-strong: #c7cdd9;
+  --text: #333333; --text-muted: #6b7280; --text-faint: #99a2b0;
+  --accent: #605ca8; --accent-ink: #47437d; --accent-soft: #ebe9f6; --accent-contrast: #ffffff;
+  --good: #1f8a4c; --good-soft: #e1f4e8;
+  --warn: #b9770e; --warn-soft: #fbedd6;
+  --crit: #c0392b; --crit-soft: #fae2df;
+  --info: #1f8fae; --info-soft: #e0f5fa;
   --hold: #7c6316; --hold-soft: #f3ecd3;
-  --shadow-sm: 0 1px 2px rgba(20,30,25,.06);
-  --shadow: 0 1px 2px rgba(20,30,25,.06), 0 10px 26px rgba(20,30,25,.07);
-  --radius: 10px;
+  --shadow-sm: 0 1px 2px rgba(20,23,31,.06);
+  --shadow: 0 1px 2px rgba(20,23,31,.05), 0 4px 12px rgba(20,23,31,.07);
+  --radius: 6px;
+
+  /* Shell (sidebar gelap + topbar ungu) -- konstan, tidak ikut mode terang/gelap */
+  --brand-purple: #605ca8;
+  --topbar-border: #524d92;
+  --sidebar-bg: #222d32; --sidebar-hover: #1e282c; --sidebar-avatar-bg: #2c3b41;
+  --sidebar-border: #1a2226;
+  --sidebar-text: #b8c7ce; --sidebar-text-strong: #ffffff; --sidebar-text-faint: #8aa4af;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #111512; --surface: #191d18; --surface-2: #20251f; --surface-3: #2a3028;
     --border: #333a32; --border-strong: #414a3f;
     --text: #e7ebe4; --text-muted: #9ba79c; --text-faint: #717d72;
-    --accent: #4bb89d; --accent-ink: #bfeadd; --accent-soft: #183129; --accent-contrast: #07130f;
+    --accent: #a89ee0; --accent-ink: #d8d2f2; --accent-soft: #241f3d; --accent-contrast: #14101f;
     --good: #5bb47e; --good-soft: #16301f;
     --warn: #d0a04e; --warn-soft: #332a16;
     --crit: #e08585; --crit-soft: #3a201f;
@@ -51,7 +59,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
   --bg: #111512; --surface: #191d18; --surface-2: #20251f; --surface-3: #2a3028;
   --border: #333a32; --border-strong: #414a3f;
   --text: #e7ebe4; --text-muted: #9ba79c; --text-faint: #717d72;
-  --accent: #4bb89d; --accent-ink: #bfeadd; --accent-soft: #183129; --accent-contrast: #07130f;
+  --accent: #a89ee0; --accent-ink: #d8d2f2; --accent-soft: #241f3d; --accent-contrast: #14101f;
   --good: #5bb47e; --good-soft: #16301f;
   --warn: #d0a04e; --warn-soft: #332a16;
   --crit: #e08585; --crit-soft: #3a201f;
@@ -65,13 +73,13 @@ html, body { margin: 0; padding: 0; }
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
 h1, h2, h3, h4 {
-  font-family: "Archivo", system-ui, sans-serif;
+  font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
   color: var(--text);
   margin: 0 0 8px;
   line-height: 1.25;
@@ -84,7 +92,7 @@ a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 .mono { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
 .eyebrow {
-  font-family: "Archivo", sans-serif;
+  font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: .08em;
@@ -150,7 +158,7 @@ button:active, .btn:active { transform: scale(0.99); }
 .btn-ghost:hover, .btn--ghost:hover { background: var(--surface-2); border-color: var(--border-strong); }
 .btn-primary, .btn--primary { background: var(--accent); color: var(--accent-contrast); }
 .btn-danger, .btn--danger { background: var(--crit); color: #fff; }
-.btn-danger:hover, .btn--danger:hover { background: #8e2828; }
+.btn-danger:hover, .btn--danger:hover { background: #9c3325; }
 .btn[disabled], button[disabled] { opacity: .5; cursor: not-allowed; }
 
 /* Card & Surface */
@@ -169,7 +177,7 @@ button:active, .btn:active { transform: scale(0.99); }
   gap: 4px;
   padding: 2px 8px;
   border-radius: 999px;
-  font-family: "Archivo", sans-serif;
+  font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 11px;
   font-weight: 600;
   line-height: 1.35;
@@ -272,7 +280,7 @@ th, td {
   overflow-wrap: break-word;
 }
 th {
-  font-family: "Archivo", sans-serif;
+  font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
   color: var(--text-muted);
   font-weight: 700;
   text-transform: uppercase;
@@ -444,6 +452,16 @@ dialog::backdrop {
   overflow: hidden;
 }
 .sidebar {
+  /* Rail gelap disamakan dengan sidebar aplikasi Payroll RPG (AdminLTE) */
+  --surface: var(--sidebar-bg);
+  --surface-2: var(--sidebar-hover);
+  --surface-3: var(--sidebar-avatar-bg);
+  --border: var(--sidebar-border);
+  --text: var(--sidebar-text-strong);
+  --text-muted: var(--sidebar-text);
+  --text-faint: var(--sidebar-text-faint);
+  --accent-soft: color-mix(in srgb, var(--brand-purple) 42%, transparent);
+  --accent-ink: #ffffff;
   background: var(--surface);
   border-right: 1px solid var(--border);
   height: 100vh;
@@ -472,14 +490,14 @@ dialog::backdrop {
   color: var(--accent-contrast);
   display: grid;
   place-items: center;
-  font-family: "Archivo", sans-serif;
+  font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 700;
   font-size: 14px;
   letter-spacing: .02em;
   flex: none;
 }
 .brand-name {
-  font-family: "Archivo", sans-serif;
+  font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 700;
   font-size: 14px;
   color: var(--text);
@@ -641,7 +659,7 @@ dialog::backdrop {
 .user-role {
   font-size: 10.5px;
   color: var(--text-faint);
-  font-family: "Archivo", sans-serif;
+  font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
   text-transform: uppercase;
 }
 
@@ -656,20 +674,25 @@ dialog::backdrop {
   min-width: 0;
 }
 .topbar {
+  /* Bar ungu solid disamakan dengan navbar interior aplikasi Payroll RPG */
+  --surface: transparent;
+  --surface-2: color-mix(in srgb, white 18%, transparent);
+  --surface-3: color-mix(in srgb, white 26%, transparent);
+  --text: #ffffff;
+  --text-muted: color-mix(in srgb, white 80%, transparent);
+  --border: color-mix(in srgb, white 30%, transparent);
   position: sticky;
   top: 0;
   z-index: 30;
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--border);
+  background: var(--brand-purple);
+  border-bottom: 1px solid var(--topbar-border);
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 10px 24px;
 }
 .topbar-title {
-  font-family: "Archivo", sans-serif;
+  font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 14px;
   font-weight: 700;
   color: var(--text);

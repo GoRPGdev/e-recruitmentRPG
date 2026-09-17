@@ -14,11 +14,11 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 <!-- Header Identitas Karir RPG -->
 <div style="text-align:center; margin-bottom:20px">
 	<div style="display:inline-flex; align-items:center; gap:10px; margin-bottom:6px">
-		<div style="width:38px; height:38px; border-radius:10px; background:var(--accent); color:var(--accent-contrast); display:grid; place-items:center; font-family:'Archivo',sans-serif; font-weight:700; font-size:16px">
+		<div style="width:38px; height:38px; border-radius:10px; background:var(--accent); color:var(--accent-contrast); display:grid; place-items:center; font-family:'Source Sans Pro','Helvetica Neue',Helvetica,Arial,sans-serif; font-weight:700; font-size:16px">
 			RPG
 		</div>
 		<div style="text-align:left">
-			<div style="font-family:'Archivo',sans-serif; font-weight:700; font-size:16.5px; color:var(--text); line-height:1.2">Ratu Pertiwi Group</div>
+			<div style="font-family:'Source Sans Pro','Helvetica Neue',Helvetica,Arial,sans-serif; font-weight:700; font-size:16.5px; color:var(--text); line-height:1.2">Ratu Pertiwi Group</div>
 			<div style="font-size:11.5px; color:var(--text-faint)">Formulir Kelengkapan Data Pelamar &amp; Onboarding</div>
 		</div>
 	</div>
@@ -99,7 +99,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 .step-chip.completed {
 	border-color: var(--good);
 	color: var(--good);
-	background: rgba(34, 197, 94, 0.08);
+	background: var(--good-soft);
 }
 .wizard-step {
 	display: none;
@@ -175,7 +175,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 		<div class="flash err" style="margin-bottom:16px"><?= html_escape($this->session->flashdata('error')) ?></div>
 	<?php endif; ?>
 	<?php if ($this->session->flashdata('success')): ?>
-		<div class="flash ok" style="margin-bottom:16px; background:rgba(34, 197, 94, 0.12); color:#15803d; border:1px solid rgba(34, 197, 94, 0.3); padding:12px 16px; border-radius:6px; font-size:13px; display:flex; align-items:center; gap:8px">
+		<div class="flash ok" style="margin-bottom:16px">
 			<span style="font-size:16px">✓</span>
 			<span><?= html_escape($this->session->flashdata('success')) ?></span>
 		</div>
