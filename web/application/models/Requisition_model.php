@@ -46,10 +46,12 @@ class Requisition_model extends CI_Model
 		if ( ! empty($f['dari']))    { $w[] = 'r.created_at >= ?';   $b[] = $f['dari']; }
 		if ( ! empty($f['sampai']))  { $w[] = 'r.created_at < DATEADD(DAY,1,?)'; $b[] = $f['sampai']; }
 
-		$dept = current_user_dept();
-		if ($dept !== NULL) {
-			$w[] = 'p.id_departemen = ?';
-			$b[] = (int) $dept;
+		// Scoping USER_DEPT (dept) / Regional Manager-Area Leader (region).
+		// Query pemanggil WAJIB LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
+		list($scope_sql, $scope_bind) = scope_dept_region_sql('p.id_departemen', 'o.region');
+		if ($scope_sql !== NULL) {
+			$w[] = $scope_sql;
+			$b = array_merge($b, $scope_bind);
 		}
 
 		return $w ? 'WHERE ' . implode(' AND ', $w) : '';
@@ -59,13 +61,15 @@ class Requisition_model extends CI_Model
 	{
 		$b = array();
 		$where = $this->_list_where((array) $f, $b);
-		$sql = "SELECT 
+		$sql = "SELECT
 		            COUNT(*) AS total,
 		            SUM(CASE WHEN r.status_req IN ('Sourcing', 'Approved', 'Sourcing_Ulang') THEN 1 ELSE 0 END) AS n_aktif,
 		            SUM(CASE WHEN r.status_req IN ('Review_HR', 'Revisi_HR', 'Review_BOD', 'Revisi_BOD', 'Draft') THEN 1 ELSE 0 END) AS n_review,
 		            SUM(CASE WHEN r.status_req IN ('Terpenuhi', 'Terpenuhi_Sebagian') THEN 1 ELSE 0 END) AS n_terpenuhi
 		        FROM dbo.REQUISITIONS r
-		        JOIN dbo.M_POSISI p ON p.id_posisi = r.id_posisi $where";
+		        JOIN dbo.M_POSISI p ON p.id_posisi = r.id_posisi
+		        LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
+		        $where";
 		$q = $this->db->query($sql, $b);
 		$row = $q->row_array();
 		$q->free_result();
@@ -77,7 +81,10 @@ class Requisition_model extends CI_Model
 		$b = array();
 		$where = $this->_list_where((array) $f, $b);
 		return (int) $this->db->query(
-			"SELECT COUNT(*) AS n FROM dbo.REQUISITIONS r JOIN dbo.M_POSISI p ON p.id_posisi = r.id_posisi $where", $b
+			"SELECT COUNT(*) AS n FROM dbo.REQUISITIONS r
+			 JOIN dbo.M_POSISI p ON p.id_posisi = r.id_posisi
+			 LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
+			 $where", $b
 		)->row()->n;
 	}
 
@@ -90,7 +97,7 @@ class Requisition_model extends CI_Model
 		$sql = "WITH q AS (
 		            SELECT r.id_req, r.no_mpr, r.status_req, r.tipe_penempatan, r.jumlah_dibutuhkan,
 		                   r.jumlah_disetujui, r.jumlah_terpenuhi, r.tanggal_pengajuan, {$col_catatan_hr},
-		                   p.nama_posisi, p.id_departemen, o.nama_outlet, u.nama_snapshot AS pemohon,
+		                   p.nama_posisi, p.id_departemen, o.nama_outlet, o.region, u.nama_snapshot AS pemohon,
 		                   ISNULL(r.catatan_bod, bod_rej.catatan_bod) AS catatan_bod, bod_rej.disetujui_oleh AS penolak_bod,
 		                   ROW_NUMBER() OVER (ORDER BY r.id_req DESC) AS rn
 		            FROM dbo.REQUISITIONS r
@@ -115,7 +122,7 @@ class Requisition_model extends CI_Model
 	{
 		$col_catatan_hr = $this->_has_catatan_hr() ? '' : ', NULL AS catatan_hr';
 		$q = $this->db->query(
-			"SELECT r.*{$col_catatan_hr}, p.nama_posisi, p.id_departemen, o.nama_outlet, d.nama AS departemen, u.nama_snapshot AS pemohon,
+			"SELECT r.*{$col_catatan_hr}, p.nama_posisi, p.id_departemen, o.nama_outlet, o.region, d.nama AS departemen, u.nama_snapshot AS pemohon,
 			        f.kode_flow, f.nama_flow,
 			        ISNULL(r.catatan_bod, bod_rej.catatan_bod) AS catatan_bod, bod_rej.disetujui_oleh AS penolak_bod
 			 FROM dbo.REQUISITIONS r
@@ -155,17 +162,31 @@ class Requisition_model extends CI_Model
 		return $row ? $row : NULL;
 	}
 
-	public function positions($id_dept = NULL)
+	public function positions($id_dept = NULL, $region = NULL)
 	{
-		$where = 'WHERE is_aktif = 1';
-		$params = array();
+		$cols = "id_posisi, nama_posisi, level_posisi, default_flow, id_departemen,
+		         job_desc, kualifikasi, pendidikan_minimal, pengalaman_minimal_tahun";
 		if ($id_dept !== NULL) {
-			$where .= ' AND id_departemen = ?';
-			$params[] = (int) $id_dept;
+			$q = $this->db->query(
+				"SELECT $cols FROM dbo.M_POSISI WHERE is_aktif = 1 AND id_departemen = ? ORDER BY nama_posisi",
+				array((int) $id_dept)
+			);
+		} elseif ($region !== NULL) {
+			// M_POSISI tidak punya kolom outlet/region -- posisi ikut region
+			// lewat requisition yang pernah dibuat di outlet wilayah ini.
+			$q = $this->db->query(
+				"SELECT DISTINCT p.id_posisi, p.nama_posisi, p.level_posisi, p.default_flow, p.id_departemen,
+				        p.job_desc, p.kualifikasi, p.pendidikan_minimal, p.pengalaman_minimal_tahun
+				 FROM dbo.M_POSISI p
+				 JOIN dbo.REQUISITIONS r ON r.id_posisi = p.id_posisi
+				 JOIN dbo.M_OUTLET o     ON o.id_outlet = r.id_outlet
+				 WHERE p.is_aktif = 1 AND o.region = ?
+				 ORDER BY p.nama_posisi",
+				array((string) $region)
+			);
+		} else {
+			$q = $this->db->query("SELECT $cols FROM dbo.M_POSISI WHERE is_aktif = 1 ORDER BY nama_posisi");
 		}
-		$q = $this->db->query("SELECT id_posisi, nama_posisi, level_posisi, default_flow, id_departemen,
-		                              job_desc, kualifikasi, pendidikan_minimal, pengalaman_minimal_tahun
-		                       FROM dbo.M_POSISI $where ORDER BY nama_posisi", $params);
 		$r = $q->result_array(); $q->free_result(); return $r;
 	}
 

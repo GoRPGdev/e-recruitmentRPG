@@ -42,6 +42,7 @@ class Users extends Secured_Controller
 			'filter'   => $filter,
 			'roles'    => $this->user_model->get_roles(TRUE),
 			'departemen' => $this->user_model->get_departemen(),
+			'regions'    => $this->user_model->get_regions(),
 			'users'    => $this->user_model->list_users(0, 50, $filter),
 		);
 
@@ -57,6 +58,7 @@ class Users extends Secured_Controller
 			'wide'     => TRUE,
 			'roles'    => $this->user_model->get_roles(TRUE),
 			'departemen' => $this->user_model->get_departemen(),
+			'regions'    => $this->user_model->get_regions(),
 			'user'     => array(),
 		);
 
@@ -74,6 +76,7 @@ class Users extends Secured_Controller
 		$this->form_validation->set_rules('nama_snapshot', 'Nama Lengkap', 'required|trim');
 		$this->form_validation->set_rules('id_role', 'Role', 'required|numeric');
 		$this->form_validation->set_rules('id_departemen', 'Departemen', 'numeric');
+		$this->form_validation->set_rules('region', 'Wilayah', 'trim');
 
 		if ($this->form_validation->run()) {
 			try {
@@ -85,6 +88,7 @@ class Users extends Secured_Controller
 					'departemen_snapshot' => $this->input->post('departemen_snapshot'),
 					'id_role'         => (int) $this->input->post('id_role'),
 					'id_departemen'   => $this->input->post('id_departemen') !== '' ? (int) $this->input->post('id_departemen') : null,
+					'region'          => $this->input->post('region') !== '' ? $this->input->post('region') : null,
 					'is_aktif'        => $this->input->post('is_aktif') ? 1 : 0,
 				), $this->auth_user['id_user'] ?? null);
 
@@ -111,6 +115,7 @@ class Users extends Secured_Controller
 			'wide'     => TRUE,
 			'roles'    => $this->user_model->get_roles(TRUE),
 			'departemen' => $this->user_model->get_departemen(),
+			'regions'    => $this->user_model->get_regions(),
 			'user'     => $user,
 		);
 
@@ -127,6 +132,7 @@ class Users extends Secured_Controller
 		$this->form_validation->set_rules('nama_snapshot', 'Nama Lengkap', 'required|trim');
 		$this->form_validation->set_rules('id_role', 'Role', 'required|numeric');
 		$this->form_validation->set_rules('id_departemen', 'Departemen', 'numeric');
+		$this->form_validation->set_rules('region', 'Wilayah', 'trim');
 
 		if ($this->form_validation->run()) {
 			try {
@@ -137,6 +143,7 @@ class Users extends Secured_Controller
 					'departemen_snapshot' => $this->input->post('departemen_snapshot'),
 					'id_role'         => (int) $this->input->post('id_role'),
 					'id_departemen'   => $this->input->post('id_departemen') !== '' ? (int) $this->input->post('id_departemen') : null,
+					'region'          => $this->input->post('region') !== '' ? $this->input->post('region') : null,
 					'is_aktif'        => $this->input->post('is_aktif') ? 1 : 0,
 				), $this->auth_user['id_user'] ?? null);
 

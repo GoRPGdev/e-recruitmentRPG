@@ -53,7 +53,7 @@ class User_model extends CI_Model
 
 		$sql = "WITH q AS (
 		            SELECT u.id_user, u.username, u.nik_karyawan, u.nama_snapshot,
-		                   u.departemen_snapshot, u.id_role, u.id_departemen, u.is_aktif,
+		                   u.departemen_snapshot, u.id_role, u.id_departemen, u.region, u.is_aktif,
 		                   r.kode_role, r.nama_role, d.nama AS nama_dept,
 		                   ROW_NUMBER() OVER (ORDER BY u.is_aktif DESC, u.id_user DESC) AS rn
 		            FROM dbo.M_USERS u
@@ -106,7 +106,7 @@ class User_model extends CI_Model
 	public function get_user($id_user)
 	{
 		$sql = "SELECT u.id_user, u.username, u.nik_karyawan, u.nama_snapshot,
-		               u.departemen_snapshot, u.id_role, u.id_departemen, u.is_aktif,
+		               u.departemen_snapshot, u.id_role, u.id_departemen, u.region, u.is_aktif,
 		               r.kode_role, r.nama_role, d.nama AS nama_dept
 		        FROM dbo.M_USERS u
 		        JOIN dbo.M_ROLES r ON r.id_role = u.id_role
@@ -137,6 +137,25 @@ class User_model extends CI_Model
 		return $rows;
 	}
 
+	/**
+	 * Daftar wilayah (M_OUTLET.region) yang bisa dipilih untuk Regional
+	 * Manager / Area Leader -- bukan tabel master sendiri, cuma nilai unik
+	 * yang sedang dipakai outlet aktif.
+	 *
+	 * @return string[]
+	 */
+	public function get_regions()
+	{
+		$sql = "SELECT DISTINCT region FROM dbo.M_OUTLET
+		        WHERE is_aktif = 1 AND region IS NOT NULL AND LTRIM(RTRIM(region)) <> ''
+		        ORDER BY region ASC";
+		$res = $this->db->query($sql);
+		$rows = array();
+		foreach ($res->result_array() as $r) { $rows[] = $r['region']; }
+		$res->free_result();
+		return $rows;
+	}
+
 	public function create_user(array $data, $oleh_user = NULL)
 	{
 		$pwdHash = password_hash($data['password'], PASSWORD_DEFAULT);
@@ -150,12 +169,13 @@ class User_model extends CI_Model
 			!empty($data['departemen_snapshot']) ? (string) $data['departemen_snapshot'] : null,
 			(int) $data['id_role'],
 			!empty($data['id_departemen']) ? (int) $data['id_departemen'] : null,
+			!empty($data['region']) ? (string) $data['region'] : null,
 			isset($data['is_aktif']) ? (int) $data['is_aktif'] : 1,
 			$oleh_user ? (int) $oleh_user : null,
 			array(&$id_out, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT)
 		);
 
-		$this->_sp('{CALL dbo.sp_SaveUser(?,?,?,?,?,?,?,?,?,?,?)}', $params);
+		$this->_sp('{CALL dbo.sp_SaveUser(?,?,?,?,?,?,?,?,?,?,?,?)}', $params);
 		return (int) $id_out;
 	}
 
@@ -172,12 +192,13 @@ class User_model extends CI_Model
 			!empty($data['departemen_snapshot']) ? (string) $data['departemen_snapshot'] : null,
 			(int) $data['id_role'],
 			!empty($data['id_departemen']) ? (int) $data['id_departemen'] : null,
+			!empty($data['region']) ? (string) $data['region'] : null,
 			isset($data['is_aktif']) ? (int) $data['is_aktif'] : 1,
 			$oleh_user ? (int) $oleh_user : null,
 			array(&$id_out, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT)
 		);
 
-		$this->_sp('{CALL dbo.sp_SaveUser(?,?,?,?,?,?,?,?,?,?,?)}', $params);
+		$this->_sp('{CALL dbo.sp_SaveUser(?,?,?,?,?,?,?,?,?,?,?,?)}', $params);
 		return (int) $id_out;
 	}
 
@@ -198,12 +219,13 @@ class User_model extends CI_Model
 			!empty($user['departemen_snapshot']) ? (string) $user['departemen_snapshot'] : null,
 			(int) $user['id_role'],
 			!empty($user['id_departemen']) ? (int) $user['id_departemen'] : null,
+			!empty($user['region']) ? (string) $user['region'] : null,
 			(int) $is_aktif,
 			$oleh_user ? (int) $oleh_user : null,
 			array(&$id_out, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT)
 		);
 
-		$this->_sp('{CALL dbo.sp_SaveUser(?,?,?,?,?,?,?,?,?,?,?)}', $params);
+		$this->_sp('{CALL dbo.sp_SaveUser(?,?,?,?,?,?,?,?,?,?,?,?)}', $params);
 		return true;
 	}
 

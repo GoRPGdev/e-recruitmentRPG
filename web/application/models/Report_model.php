@@ -17,11 +17,13 @@ class Report_model extends CI_Model
 	private function _apply_filter_where($f, &$params, $table_alias = 'a')
 	{
 		$where = 'WHERE 1=1';
-		$dept = current_user_dept();
 
-		if ($dept !== NULL) {
-			$where .= ' AND p.id_departemen = ?';
-			$params[] = (int) $dept;
+		// Scoping USER_DEPT (dept) / Regional Manager-Area Leader (region).
+		// Query pemanggil WAJIB LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
+		list($scope_sql, $scope_bind) = scope_dept_region_sql('p.id_departemen', 'o.region');
+		if ($scope_sql !== NULL) {
+			$where .= " AND $scope_sql";
+			$params = array_merge($params, $scope_bind);
 		} elseif (!empty($f['dept'])) {
 			$where .= ' AND p.id_departemen = ?';
 			$params[] = (int) $f['dept'];
@@ -78,6 +80,7 @@ class Report_model extends CI_Model
 				FROM dbo.APPLICATIONS a
 				JOIN dbo.REQUISITIONS r ON r.id_req = a.id_req
 				JOIN dbo.M_POSISI p     ON p.id_posisi = r.id_posisi
+			LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
 				$where";
 
 		$q = $this->db->query($sql, $params);
@@ -87,10 +90,10 @@ class Report_model extends CI_Model
 		// Agregat Formasi MPR
 		$mpr_params = array();
 		$mpr_where = 'WHERE 1=1';
-		$dept = current_user_dept();
-		if ($dept !== NULL) {
-			$mpr_where .= ' AND p.id_departemen = ?';
-			$mpr_params[] = (int) $dept;
+		list($mpr_scope_sql, $mpr_scope_bind) = scope_dept_region_sql('p.id_departemen', 'o.region');
+		if ($mpr_scope_sql !== NULL) {
+			$mpr_where .= " AND $mpr_scope_sql";
+			$mpr_params = array_merge($mpr_params, $mpr_scope_bind);
 		} elseif (!empty($f['dept'])) {
 			$mpr_where .= ' AND p.id_departemen = ?';
 			$mpr_params[] = (int) $f['dept'];
@@ -121,6 +124,7 @@ class Report_model extends CI_Model
 						SUM(CASE WHEN r.status_req = 'Terpenuhi' THEN 1 ELSE 0 END) AS mpr_selesai
 					FROM dbo.REQUISITIONS r
 					JOIN dbo.M_POSISI p ON p.id_posisi = r.id_posisi
+					LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
 					$mpr_where";
 
 		$q_mpr = $this->db->query($sql_mpr, $mpr_params);
@@ -147,6 +151,7 @@ class Report_model extends CI_Model
 				FROM dbo.APPLICATIONS a
 				JOIN dbo.REQUISITIONS r ON r.id_req = a.id_req
 				JOIN dbo.M_POSISI p     ON p.id_posisi = r.id_posisi
+			LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
 				LEFT JOIN dbo.M_STAGE st ON st.id_stage = a.id_stage_sekarang
 				$where
 				GROUP BY st.tipe_tahap";
@@ -190,6 +195,7 @@ class Report_model extends CI_Model
 				FROM dbo.APPLICATIONS a
 				JOIN dbo.REQUISITIONS r ON r.id_req = a.id_req
 				JOIN dbo.M_POSISI p     ON p.id_posisi = r.id_posisi
+			LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
 				LEFT JOIN dbo.M_DEPARTEMEN d ON d.id_departemen = p.id_departemen
 				$where
 				GROUP BY p.id_posisi, p.nama_posisi, d.nama
@@ -215,6 +221,7 @@ class Report_model extends CI_Model
 				FROM dbo.APPLICATIONS a
 				JOIN dbo.REQUISITIONS r ON r.id_req = a.id_req
 				JOIN dbo.M_POSISI p     ON p.id_posisi = r.id_posisi
+			LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
 				$where
 				GROUP BY a.status_global
 				ORDER BY jumlah DESC";
@@ -240,6 +247,7 @@ class Report_model extends CI_Model
 				FROM dbo.APPLICATIONS a
 				JOIN dbo.REQUISITIONS r ON r.id_req = a.id_req
 				JOIN dbo.M_POSISI p     ON p.id_posisi = r.id_posisi
+			LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
 				$where
 				GROUP BY CONVERT(VARCHAR(7), a.tanggal_lamar, 120)
 				ORDER BY periode_bulan ASC";
@@ -257,11 +265,11 @@ class Report_model extends CI_Model
 	{
 		$params = array();
 		$where = 'WHERE 1=1';
-		$dept = current_user_dept();
 
-		if ($dept !== NULL) {
-			$where .= ' AND p.id_departemen = ?';
-			$params[] = (int) $dept;
+		list($scope_sql, $scope_bind) = scope_dept_region_sql('p.id_departemen', 'o.region');
+		if ($scope_sql !== NULL) {
+			$where .= " AND $scope_sql";
+			$params = array_merge($params, $scope_bind);
 		} elseif (!empty($f['dept'])) {
 			$where .= ' AND p.id_departemen = ?';
 			$params[] = (int) $f['dept'];
@@ -339,6 +347,13 @@ class Report_model extends CI_Model
 	 */
 	public function get_department_summary($f = array())
 	{
+		// Laporan ini berbentuk per-departemen (rooted di M_DEPARTEMEN) --
+		// tidak punya padanan wilayah yang bermakna (outlet lintas departemen).
+		// Regional Manager/Area Leader: kembalikan kosong, bukan bocorkan semua dept.
+		if (current_user_region() !== NULL) {
+			return array();
+		}
+
 		$params = array();
 		$where = 'WHERE 1=1';
 		$dept = current_user_dept();

@@ -62,7 +62,6 @@ class Manual extends Secured_Controller
 
 	private function _get_open_requisitions()
 	{
-		$dept = current_user_dept();
 		$sql = "SELECT r.id_req, r.no_mpr, r.tipe_penempatan, r.status_req,
 		               p.nama_posisi, d.nama AS departemen, o.nama_outlet
 		        FROM dbo.REQUISITIONS r
@@ -71,9 +70,10 @@ class Manual extends Secured_Controller
 		        LEFT JOIN dbo.M_OUTLET o     ON o.id_outlet = r.id_outlet
 		        WHERE r.status_req IN ('Approved', 'Sourcing', 'Sourcing_Ulang', 'Terpenuhi_Sebagian')";
 		$bind = array();
-		if ($dept !== NULL) {
-			$sql .= " AND p.id_departemen = ?";
-			$bind[] = (int) $dept;
+		list($scope_sql, $scope_bind) = scope_dept_region_sql('p.id_departemen', 'o.region');
+		if ($scope_sql !== NULL) {
+			$sql .= " AND $scope_sql";
+			$bind = array_merge($bind, $scope_bind);
 		}
 		$sql .= " ORDER BY r.id_req DESC";
 		$q = $this->db->query($sql, $bind);
@@ -89,9 +89,8 @@ class Manual extends Secured_Controller
 			show_404();
 		}
 
-		$dept = current_user_dept();
-		if ($dept !== NULL && (int) $req['id_departemen'] !== (int) $dept) {
-			show_error('Akses ditolak: Anda hanya dapat mengakses pipeline kandidat dari departemen Anda.', 403, '403 Forbidden');
+		if ( ! user_can_access_scope($req['id_departemen'] ?? NULL, $req['region'] ?? NULL)) {
+			show_error('Akses ditolak: Anda hanya dapat mengakses pipeline kandidat dari departemen/wilayah Anda.', 403, '403 Forbidden');
 		}
 
 		return $req;

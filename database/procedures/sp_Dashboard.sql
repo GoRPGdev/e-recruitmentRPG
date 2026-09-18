@@ -24,7 +24,8 @@ CREATE PROCEDURE dbo.sp_Dashboard
     @status_global VARCHAR(20) = NULL,
     @id_channel    INT         = NULL,   -- dipertahankan opsional untuk kompatibilitas
     @role_pic      VARCHAR(20) = NULL,
-    @id_req        INT         = NULL
+    @id_req        INT         = NULL,
+    @region        NVARCHAR(60) = NULL   -- scoping Regional Manager/Area Leader (M_OUTLET.region)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -44,12 +45,14 @@ BEGIN
     FROM dbo.APPLICATIONS a
     JOIN dbo.REQUISITIONS r        ON r.id_req = a.id_req
     JOIN dbo.M_POSISI p            ON p.id_posisi = r.id_posisi
+    LEFT JOIN dbo.M_OUTLET o       ON o.id_outlet = r.id_outlet
     LEFT JOIN dbo.APPLICATION_STAGES aps ON aps.id_lamaran = a.id_lamaran AND aps.id_stage = a.id_stage_sekarang
     LEFT JOIN dbo.M_STAGE s        ON s.id_stage = a.id_stage_sekarang
     LEFT JOIN dbo.M_FLOW_STAGE fs  ON fs.id_flow = a.id_flow AND fs.id_stage = a.id_stage_sekarang
     WHERE (@dari          IS NULL OR a.tanggal_lamar >= @dari)
       AND (@sampai        IS NULL OR a.tanggal_lamar <= @sampai)
       AND (@id_departemen IS NULL OR p.id_departemen = @id_departemen)
+      AND (@region        IS NULL OR o.region = @region)
       AND (@id_posisi     IS NULL OR r.id_posisi = @id_posisi)
       AND (@id_outlet     IS NULL OR r.id_outlet = @id_outlet)
       AND (@id_flow       IS NULL OR a.id_flow = @id_flow)

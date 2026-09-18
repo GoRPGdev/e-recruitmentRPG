@@ -53,7 +53,7 @@ $action_url = $is_edit ? site_url('users/update/' . (int) $user['id_user']) : si
 
 		<div id="dept-group">
 			<label for="id_departemen">Departemen Scoping</label>
-			<select id="id_departemen" name="id_departemen">
+			<select id="id_departemen" name="id_departemen" onchange="checkScopeExclusive('dept')">
 				<option value="">-- Lintas Departemen / Tanpa Batasan (SUPER_ADMIN) --</option>
 				<?php foreach ($departemen as $d): ?>
 					<option value="<?= (int) $d['id_departemen'] ?>" <?= (isset($user['id_departemen']) && (int) $user['id_departemen'] === (int) $d['id_departemen']) ? 'selected' : '' ?>>
@@ -62,7 +62,22 @@ $action_url = $is_edit ? site_url('users/update/' . (int) $user['id_user']) : si
 				<?php endforeach; ?>
 			</select>
 			<div class="muted" style="font-size:12px; margin-top:3px">
-				Wajib diisi untuk <code>USER_DEPT</code> agar pelamar dan formasi terisolasi ke divisi yang bersangkutan.
+				Untuk Manager Departemen (HQ) -- satu departemen saja. Isi ini <b>atau</b> Wilayah di bawah, tidak dua-duanya.
+			</div>
+		</div>
+
+		<div id="region-group" style="margin-top:14px">
+			<label for="region">Wilayah Scoping (Regional Manager / Area Leader)</label>
+			<select id="region" name="region" onchange="checkScopeExclusive('region')">
+				<option value="">-- Tidak dibatasi wilayah --</option>
+				<?php foreach ($regions as $rgn): ?>
+					<option value="<?= html_escape($rgn) ?>" <?= (isset($user['region']) && (string) $user['region'] === (string) $rgn) ? 'selected' : '' ?>>
+						<?= html_escape($rgn) ?>
+					</option>
+				<?php endforeach; ?>
+			</select>
+			<div class="muted" style="font-size:12px; margin-top:3px">
+				Untuk yang mengawasi banyak outlet sekaligus di satu wilayah (setara "Area Leader" di Payroll) -- dicocokkan ke wilayah outlet, lintas departemen.
 			</div>
 		</div>
 
@@ -85,9 +100,18 @@ function checkDeptVisibility(roleId) {
 	var sel = document.getElementById('id_role');
 	var opt = sel.options[sel.selectedIndex];
 	var kode = opt ? opt.getAttribute('data-kode') : '';
-	var deptSel = document.getElementById('id_departemen');
 	if (kode === 'SUPER_ADMIN') {
-		deptSel.value = '';
+		document.getElementById('id_departemen').value = '';
+		document.getElementById('region').value = '';
+	}
+}
+// Departemen dan Wilayah saling eksklusif (lihat CK_MUSERS_scope di database)
+function checkScopeExclusive(justChanged) {
+	if (justChanged === 'dept' && document.getElementById('id_departemen').value !== '') {
+		document.getElementById('region').value = '';
+	}
+	if (justChanged === 'region' && document.getElementById('region').value !== '') {
+		document.getElementById('id_departemen').value = '';
 	}
 }
 </script>

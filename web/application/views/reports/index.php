@@ -205,7 +205,7 @@ foreach ($trends as $tr) {
 					<input type="date" id="f-sampai" name="sampai" value="<?= html_escape($f['sampai'] ?? '') ?>" style="margin:0; width:100%; padding:6px 9px; font-size:12.5px">
 				</div>
 
-				<?php if (current_user_dept() === NULL): ?>
+				<?php if (current_user_dept() === NULL && current_user_region() === NULL): ?>
 				<div>
 					<label for="f-dept" style="font-size:11.5px; font-weight:600; margin:0 0 4px; display:block" class="muted">Departemen</label>
 					<select id="f-dept" name="dept" style="margin:0; width:100%; padding:6px 9px; font-size:12.5px">

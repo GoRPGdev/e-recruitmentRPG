@@ -6,6 +6,11 @@
    Password di-hash di PHP sebelum dikirim ke SP (@password_hash).
    Jika update dan @password_hash NULL, password lama dipertahankan.
 
+   @id_departemen dan @region: hanya salah satu boleh diisi (lihat
+   CK_MUSERS_scope). @id_departemen -> Manager Departemen (satu dept).
+   @region -> Regional Manager / Area Leader (lintas outlet satu wilayah,
+   dicocokkan ke M_OUTLET.region).
+
    Deploy: php tools/migrate.php proc
    ========================================================================= */
 IF OBJECT_ID('dbo.sp_SaveUser') IS NOT NULL DROP PROCEDURE dbo.sp_SaveUser;
@@ -20,6 +25,7 @@ CREATE PROCEDURE dbo.sp_SaveUser
     @departemen_snapshot NVARCHAR(100) = NULL,
     @id_role             INT,
     @id_departemen       INT           = NULL,
+    @region              NVARCHAR(60)  = NULL,
     @is_aktif            BIT           = 1,
     @oleh_user           INT           = NULL,
     @id_user_out         INT OUTPUT
@@ -31,6 +37,9 @@ BEGIN
     BEGIN TRY
         IF @outer = 0 BEGIN TRANSACTION; ELSE SAVE TRANSACTION SaveUsr;
 
+        -- Normalisasi string kosong -> NULL (form HTML kirim '' bukan NULL)
+        IF @region IS NOT NULL AND LTRIM(RTRIM(@region)) = '' SET @region = NULL;
+
         -- Validasi input dasar
         IF @username IS NULL OR LTRIM(RTRIM(@username)) = ''
             RAISERROR('Username wajib diisi.', 16, 1);
@@ -40,6 +49,10 @@ BEGIN
             RAISERROR('Role tidak valid atau nonaktif.', 16, 1);
         IF @id_departemen IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.M_DEPARTEMEN WHERE id_departemen = @id_departemen)
             RAISERROR('Departemen tidak valid.', 16, 1);
+        IF @id_departemen IS NOT NULL AND @region IS NOT NULL
+            RAISERROR('Pilih salah satu saja: Departemen ATAU Wilayah (Regional Manager), tidak dua-duanya.', 16, 1);
+        IF @region IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.M_OUTLET WHERE region = @region AND is_aktif = 1)
+            RAISERROR('Wilayah tidak dikenali -- harus cocok persis dengan region outlet yang aktif.', 16, 1);
 
         -- Validasi keunikan username
         IF EXISTS (SELECT 1 FROM dbo.M_USERS WHERE username = @username AND (@id_user IS NULL OR id_user <> @id_user))
@@ -59,10 +72,10 @@ BEGIN
 
             INSERT INTO dbo.M_USERS (
                 username, password_hash, nama_snapshot, nik_karyawan,
-                departemen_snapshot, id_role, id_departemen, is_aktif
+                departemen_snapshot, id_role, id_departemen, region, is_aktif
             ) VALUES (
                 @username, @password_hash, @nama_snapshot, @nik_karyawan,
-                @departemen_snapshot, @id_role, @id_departemen, @is_aktif
+                @departemen_snapshot, @id_role, @id_departemen, @region, @is_aktif
             );
             SET @id_user_out = SCOPE_IDENTITY();
         END
@@ -78,6 +91,7 @@ BEGIN
                     departemen_snapshot = @departemen_snapshot,
                     id_role = @id_role,
                     id_departemen = @id_departemen,
+                    region = @region,
                     is_aktif = @is_aktif
                 WHERE id_user = @id_user;
             END
@@ -90,6 +104,7 @@ BEGIN
                     departemen_snapshot = @departemen_snapshot,
                     id_role = @id_role,
                     id_departemen = @id_departemen,
+                    region = @region,
                     is_aktif = @is_aktif
                 WHERE id_user = @id_user;
             END
@@ -100,6 +115,7 @@ BEGIN
             + ' | nama=' + @nama_snapshot
             + ' | role=' + CONVERT(VARCHAR(12), @id_role)
             + ' | dept=' + ISNULL(CONVERT(VARCHAR(12), @id_departemen), '-')
+            + ' | region=' + ISNULL(@region, '-')
             + ' | aktif=' + CONVERT(VARCHAR(2), @is_aktif);
 
         EXEC dbo.sp_AuditLog @nama_tabel = 'M_USERS', @id_baris = @id_user_out,

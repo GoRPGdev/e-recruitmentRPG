@@ -4,7 +4,29 @@
 ERD §10, RENCANA §1.1. Dokumen ini = satu sumber kebenaran untuk RBAC + apa yang
 wajib dicatat ke `ACCESS_LOG_SENSITIF`.
 
-Diperbarui: 2026-09-14 (Standardisasi SUPER_ADMIN & USER_DEPT, Alur MPR 2-Putaran HR & BOD).
+Diperbarui: 2026-09-18 (Scoping wilayah untuk Regional Manager / Area Leader, SSO Payroll).
+
+---
+
+## 0. Scoping USER_DEPT — dua bentuk, saling eksklusif
+
+`USER_DEPT` sekarang punya **dua** cara dibatasi, tidak cuma satu. Satu user cuma
+boleh salah satu (`CK_MUSERS_scope` di database menegakkan ini):
+
+| Kolom `M_USERS` | Untuk siapa | Dibatasi ke |
+|---|---|---|
+| `id_departemen` | Manager Departemen (HQ) | Satu departemen — lewat `M_POSISI.id_departemen` |
+| `region` | Regional Manager / Area Leader (setara "Area Leader" di Payroll) | Semua outlet di satu wilayah — lewat `M_OUTLET.region`, lintas departemen |
+
+Helper: `current_user_dept()` / `current_user_region()` (`rbac_helper.php`).
+SQL: `scope_dept_region_sql($dept_col, $region_col)` — pasangan dept/region, query
+pemanggil wajib `LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet` supaya
+`o.region` bisa dipakai. PHP (baris yang sudah di-fetch): `user_can_access_scope($row_dept, $row_region)`.
+
+**Batasan yang diketahui:** `Report_model::get_department_summary()` (laporan
+rekap per-departemen) tidak punya padanan wilayah yang bermakna — Regional
+Manager akan melihat laporan ini kosong, bukan bocor semua departemen. Laporan
+setara untuk wilayah belum dibangun (belum diminta).
 
 ---
 

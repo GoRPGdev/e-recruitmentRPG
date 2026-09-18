@@ -155,7 +155,7 @@
 							<?php endforeach; ?>
 						</select>
 					</div>
-					<?php if (current_user_dept() === NULL): ?>
+					<?php if (current_user_dept() === NULL && current_user_region() === NULL): ?>
 					<div>
 						<label style="margin:0 0 4px; font-size:11.5px; font-weight:600" class="eyebrow">Departemen</label>
 						<select name="dept" style="width:auto; min-width:150px; padding:6px 10px; font-size:13px; background:var(--surface)">
@@ -253,7 +253,7 @@
 								</td>
 								<td class="mpr-actions-cell" style="padding:12px 14px; text-align:right; position:relative; overflow:visible">
 										<?php
-										$can_view_pipeline = (current_user_dept() === NULL || (isset($r['id_departemen']) && (int) $r['id_departemen'] === (int) current_user_dept()));
+										$can_view_pipeline = user_can_access_scope($r['id_departemen'] ?? NULL, $r['region'] ?? NULL);
 										$show_pipeline = $can_view_pipeline && in_array($r['status_req'], array('Approved','Sourcing','Sourcing_Ulang','Terpenuhi_Sebagian','Terpenuhi'));
 										if ($show_pipeline): ?>
 											<div style="position:relative; display:inline-block">

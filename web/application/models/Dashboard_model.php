@@ -16,6 +16,9 @@ class Dashboard_model extends CI_Model
 	 */
 	public function dashboard(array $f)
 	{
+		// Scoping USER_DEPT (dept, dari filter atau current_user_dept() di
+		// controller) / Regional Manager-Area Leader (region) -- dua-duanya
+		// dikirim, sp_Dashboard yang memfilter (salah satu NULL).
 		$params = array(
 			$f['dari'] ?: NULL, $f['sampai'] ?: NULL,
 			! empty($f['dept']) ? (int) $f['dept'] : NULL,
@@ -26,16 +29,10 @@ class Dashboard_model extends CI_Model
 			$f['status'] ?: NULL,
 			NULL, // id_channel dilepas
 			$f['pic'] ?: NULL,
+			! empty($f['id_req']) ? (int) $f['id_req'] : NULL,
+			current_user_region(), // NULL kecuali user Regional Manager/Area Leader
 		);
-		$stmt = FALSE;
-		$id_req = ! empty($f['id_req']) ? (int) $f['id_req'] : NULL;
-		if ($id_req !== NULL) {
-			$params11 = array_merge($params, array($id_req));
-			$stmt = @sqlsrv_query($this->db->conn_id, '{CALL dbo.sp_Dashboard(?,?,?,?,?,?,?,?,?,?,?)}', $params11);
-		}
-		if ($stmt === FALSE) {
-			$stmt = sqlsrv_query($this->db->conn_id, '{CALL dbo.sp_Dashboard(?,?,?,?,?,?,?,?,?,?)}', $params);
-		}
+		$stmt = sqlsrv_query($this->db->conn_id, '{CALL dbo.sp_Dashboard(?,?,?,?,?,?,?,?,?,?,?,?)}', $params);
 		if ($stmt === FALSE) {
 			$e = sqlsrv_errors(); $last = $e ? end($e) : NULL;
 			throw new RuntimeException($last ? trim($last['message']) : 'sp_Dashboard gagal.');
@@ -59,13 +56,16 @@ class Dashboard_model extends CI_Model
 		);
 	}
 
-	public function funnel_trend($days = 14, $id_dept = NULL, $id_req = NULL)
+	public function funnel_trend($days = 14, $id_dept = NULL, $id_req = NULL, $region = NULL)
 	{
 		$where = 'WHERE f.tanggal >= DATEADD(DAY, ?, CAST(GETDATE() AS DATE))';
 		$params = array(-1 * (int) $days);
 		if ($id_dept !== NULL) {
 			$where .= ' AND pos.id_departemen = ?';
 			$params[] = (int) $id_dept;
+		} elseif ($region !== NULL) {
+			$where .= ' AND o.region = ?';
+			$params[] = (string) $region;
 		}
 		if ($id_req !== NULL) {
 			$where .= ' AND r.id_req = ?';
@@ -76,6 +76,7 @@ class Dashboard_model extends CI_Model
 			 FROM dbo.RPT_FUNNEL_HARIAN f
 			 JOIN dbo.REQUISITIONS r ON r.id_req = f.id_req
 			 JOIN dbo.M_POSISI pos   ON pos.id_posisi = r.id_posisi
+			 LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
 			 $where
 			 GROUP BY f.tanggal, f.tipe_tahap ORDER BY f.tanggal, f.tipe_tahap",
 			$params);
@@ -87,29 +88,44 @@ class Dashboard_model extends CI_Model
 	/* ---- opsi filter ---- */
 	public function opt($sql) { return $this->db->query($sql)->result_array(); }
 	public function departments() { return $this->opt("SELECT id_departemen, nama FROM dbo.M_DEPARTEMEN WHERE is_aktif=1 ORDER BY nama"); }
-	public function positions($id_dept = NULL)
+	public function positions($id_dept = NULL, $region = NULL)
 	{
-		$where = 'WHERE is_aktif=1';
-		$params = array();
 		if ($id_dept !== NULL) {
-			$where .= ' AND id_departemen = ?';
-			$params[] = (int) $id_dept;
+			return $this->db->query(
+				'SELECT id_posisi, nama_posisi FROM dbo.M_POSISI WHERE is_aktif=1 AND id_departemen = ? ORDER BY nama_posisi',
+				array((int) $id_dept)
+			)->result_array();
 		}
-		return $this->db->query("SELECT id_posisi, nama_posisi FROM dbo.M_POSISI $where ORDER BY nama_posisi", $params)->result_array();
+		if ($region !== NULL) {
+			return $this->db->query(
+				'SELECT DISTINCT p.id_posisi, p.nama_posisi
+				 FROM dbo.M_POSISI p
+				 JOIN dbo.REQUISITIONS r ON r.id_posisi = p.id_posisi
+				 JOIN dbo.M_OUTLET o     ON o.id_outlet = r.id_outlet
+				 WHERE p.is_aktif = 1 AND o.region = ?
+				 ORDER BY p.nama_posisi',
+				array((string) $region)
+			)->result_array();
+		}
+		return $this->db->query('SELECT id_posisi, nama_posisi FROM dbo.M_POSISI WHERE is_aktif=1 ORDER BY nama_posisi')->result_array();
 	}
 	public function outlets()     { return $this->opt("SELECT id_outlet, nama_outlet FROM dbo.M_OUTLET WHERE is_aktif=1 ORDER BY nama_outlet"); }
-	public function requisitions($id_dept = NULL)
+	public function requisitions($id_dept = NULL, $region = NULL)
 	{
 		$where = 'WHERE 1=1';
 		$params = array();
 		if ($id_dept !== NULL) {
 			$where .= ' AND p.id_departemen = ?';
 			$params[] = (int) $id_dept;
+		} elseif ($region !== NULL) {
+			$where .= ' AND o.region = ?';
+			$params[] = (string) $region;
 		}
 		$sql = "SELECT r.id_req, r.no_mpr, r.status_req, p.nama_posisi,
 		               CASE WHEN r.status_req IN ('Sourcing', 'Approved', 'Sourcing_Ulang') THEN 1 ELSE 0 END AS is_aktif_mpr
 		        FROM dbo.REQUISITIONS r
 		        JOIN dbo.M_POSISI p ON p.id_posisi = r.id_posisi
+		        LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
 		        $where
 		        ORDER BY is_aktif_mpr DESC, r.id_req DESC";
 		$q = $this->db->query($sql, $params);

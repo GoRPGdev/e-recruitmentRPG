@@ -113,6 +113,8 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 					<td>
 						<?php if (!empty($u['nama_dept'])): ?>
 							<span class="tag tag--info"><?= html_escape($u['nama_dept']) ?></span>
+						<?php elseif (!empty($u['region'])): ?>
+							<span class="tag tag--accent">Wilayah: <?= html_escape($u['region']) ?></span>
 						<?php elseif ($u['id_departemen'] === null): ?>
 							<span class="muted" style="font-size:12px">&mdash; Lintas Departemen (Global) &mdash;</span>
 						<?php else: ?>
@@ -244,7 +246,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 			<div>
 				<label for="u_id_departemen" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Departemen Scoping</label>
-				<select id="u_id_departemen" name="id_departemen" style="width:100%">
+				<select id="u_id_departemen" name="id_departemen" style="width:100%" onchange="if(this.value!=='')document.getElementById('u_region').value=''">
 					<option value="">-- Lintas Departemen / Tanpa Batasan (SUPER_ADMIN / HR) --</option>
 					<?php foreach ($departemen as $d): ?>
 						<option value="<?= (int) $d['id_departemen'] ?>">
@@ -253,7 +255,20 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 					<?php endforeach; ?>
 				</select>
 				<div class="muted" style="font-size:11.5px; margin-top:3px">
-					Wajib untuk <code>USER_DEPT</code> agar pelamar dan formasi terisolasi ke divisi yang bersangkutan.
+					Untuk Manager Departemen (HQ). Isi ini <b>atau</b> Wilayah di bawah, tidak dua-duanya.
+				</div>
+			</div>
+
+			<div style="margin-top:10px">
+				<label for="u_region" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Wilayah Scoping (Regional Manager / Area Leader)</label>
+				<select id="u_region" name="region" style="width:100%" onchange="if(this.value!=='')document.getElementById('u_id_departemen').value=''">
+					<option value="">-- Tidak dibatasi wilayah --</option>
+					<?php foreach ($regions as $rgn): ?>
+						<option value="<?= html_escape($rgn) ?>"><?= html_escape($rgn) ?></option>
+					<?php endforeach; ?>
+				</select>
+				<div class="muted" style="font-size:11.5px; margin-top:3px">
+					Untuk yang mengawasi banyak outlet di satu wilayah (setara "Area Leader" Payroll), lintas departemen.
 				</div>
 			</div>
 

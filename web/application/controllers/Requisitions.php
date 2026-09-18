@@ -46,7 +46,7 @@ class Requisitions extends Secured_Controller
 			'f'        => $f,
 			'total'    => $total,
 			'stats'    => $this->rm->stats_summary($f),
-			'positions'=> $this->rm->positions($dept),
+			'positions'=> $this->rm->positions($dept, current_user_region()),
 			'depts'    => $this->rm->departments(),
 		));
 	}
@@ -57,8 +57,9 @@ class Requisitions extends Secured_Controller
 
 		$role = $this->auth_user['kode_role'] ?? '';
 		$dept = current_user_dept();
-		if ($role === 'USER_DEPT' && $dept === NULL) {
-			$this->session->set_flashdata('error', 'Akun Anda belum dikaitkan dengan departemen. Hubungi Administrator.');
+		$region = current_user_region();
+		if ($role === 'USER_DEPT' && $dept === NULL && $region === NULL) {
+			$this->session->set_flashdata('error', 'Akun Anda belum dikaitkan dengan departemen atau wilayah. Hubungi Administrator.');
 			redirect('requisitions');
 			return;
 		}
@@ -70,11 +71,11 @@ class Requisitions extends Secured_Controller
 
 			if ($this->form_validation->run()) {
 				$id_posisi = (int) $this->input->post('id_posisi');
-				if ($dept !== NULL) {
-					$pos_list = $this->rm->positions($dept);
+				if ($dept !== NULL || $region !== NULL) {
+					$pos_list = $this->rm->positions($dept, $region);
 					$valid_ids = array_map(function($p) { return (int)$p['id_posisi']; }, $pos_list);
 					if ( ! in_array($id_posisi, $valid_ids, TRUE)) {
-						$this->session->set_flashdata('error', 'Posisi yang dipilih tidak sesuai dengan departemen Anda.');
+						$this->session->set_flashdata('error', 'Posisi yang dipilih tidak sesuai dengan departemen/wilayah Anda.');
 						redirect('requisitions/create');
 						return;
 					}
@@ -112,7 +113,7 @@ class Requisitions extends Secured_Controller
 		$this->load->view('layouts/main', array(
 			'title'     => 'Buat MPR',
 			'_content'  => 'requisitions/create',
-			'positions' => $this->rm->positions($dept),
+			'positions' => $this->rm->positions($dept, $region),
 			'outlets'   => $this->rm->outlets(),
 		));
 	}
@@ -133,10 +134,9 @@ class Requisitions extends Secured_Controller
 			return;
 		}
 
-		// Scoping departemen
-		$dept = current_user_dept();
-		if ($dept !== NULL && (int) $req['id_departemen'] !== (int) $dept) {
-			show_error('Akses ditolak: Anda hanya dapat mengedit MPR dari departemen Anda.', 403, '403 Forbidden');
+		// Scoping departemen / wilayah
+		if ( ! user_can_access_scope($req['id_departemen'] ?? NULL, $req['region'] ?? NULL)) {
+			show_error('Akses ditolak: Anda hanya dapat mengedit MPR dari departemen/wilayah Anda.', 403, '403 Forbidden');
 		}
 
 		if ($this->input->method() === 'post') {
@@ -196,10 +196,9 @@ class Requisitions extends Secured_Controller
 			show_404();
 		}
 
-		// Scoping departemen untuk USER_DEPT
-		$dept = current_user_dept();
-		if ($dept !== NULL && (int) $req['id_departemen'] !== (int) $dept) {
-			show_error('Akses ditolak: Anda hanya dapat melihat MPR dari departemen Anda.', 403, '403 Forbidden');
+		// Scoping departemen / wilayah untuk USER_DEPT
+		if ( ! user_can_access_scope($req['id_departemen'] ?? NULL, $req['region'] ?? NULL)) {
+			show_error('Akses ditolak: Anda hanya dapat melihat MPR dari departemen/wilayah Anda.', 403, '403 Forbidden');
 		}
 
 		// Catat log jika user berhak melihat data sensitif gaji dan range gaji terisi
@@ -234,9 +233,8 @@ class Requisitions extends Secured_Controller
 			show_404();
 		}
 
-		$dept = current_user_dept();
-		if ($dept !== NULL && (int) $req['id_departemen'] !== (int) $dept) {
-			show_error('Akses ditolak: Anda hanya dapat mengajukan MPR dari departemen Anda.', 403, '403 Forbidden');
+		if ( ! user_can_access_scope($req['id_departemen'] ?? NULL, $req['region'] ?? NULL)) {
+			show_error('Akses ditolak: Anda hanya dapat mengajukan MPR dari departemen/wilayah Anda.', 403, '403 Forbidden');
 		}
 
 		try {
@@ -261,9 +259,8 @@ class Requisitions extends Secured_Controller
 			show_404();
 		}
 
-		$dept = current_user_dept();
-		if ($dept !== NULL && (int) $req['id_departemen'] !== (int) $dept) {
-			show_error('Akses ditolak: Anda hanya dapat mengajukan MPR dari departemen Anda.', 403, '403 Forbidden');
+		if ( ! user_can_access_scope($req['id_departemen'] ?? NULL, $req['region'] ?? NULL)) {
+			show_error('Akses ditolak: Anda hanya dapat mengajukan MPR dari departemen/wilayah Anda.', 403, '403 Forbidden');
 		}
 
 		try {

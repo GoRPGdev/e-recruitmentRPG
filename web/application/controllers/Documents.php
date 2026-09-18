@@ -27,6 +27,7 @@ class Documents extends Secured_Controller
 			'kategori'   => $this->input->get('kategori') ?: NULL,
 			'id_lamaran' => $this->input->get('id_lamaran') ?: NULL,
 			'dept'       => current_user_dept(),
+			'region'     => current_user_region(),
 		);
 		$this->load->view('layouts/main', array(
 			'title'    => 'Verifikasi Berkas',
@@ -46,9 +47,8 @@ class Documents extends Secured_Controller
 		if ( ! $doc) {
 			show_404();
 		}
-		$dept = current_user_dept();
-		if ($dept !== NULL && (int) $doc['id_departemen'] !== (int) $dept) {
-			show_error('Akses ditolak: Dokumen bukan milik kandidat departemen Anda.', 403, '403 Forbidden');
+		if ( ! user_can_access_scope($doc['id_departemen'] ?? NULL, $doc['region'] ?? NULL)) {
+			show_error('Akses ditolak: Dokumen bukan milik kandidat departemen/wilayah Anda.', 403, '403 Forbidden');
 		}
 		try {
 			$this->document_model->verify(
@@ -71,10 +71,16 @@ class Documents extends Secured_Controller
 			show_404();
 		}
 		$dept = current_user_dept();
+		$region = current_user_region();
 		if ($dept !== NULL) {
 			$lamaran_dept = $this->document_model->get_lamaran_dept($id_lamaran);
 			if ($lamaran_dept === NULL || (int) $lamaran_dept !== (int) $dept) {
 				show_error('Akses ditolak: Lamaran bukan dari departemen Anda.', 403, '403 Forbidden');
+			}
+		} elseif ($region !== NULL) {
+			$lamaran_region = $this->document_model->get_lamaran_region($id_lamaran);
+			if ($lamaran_region === NULL || (string) $lamaran_region !== (string) $region) {
+				show_error('Akses ditolak: Lamaran bukan dari wilayah Anda.', 403, '403 Forbidden');
 			}
 		}
 		$this->load->view('layouts/main', array(
@@ -96,9 +102,8 @@ class Documents extends Secured_Controller
 			show_404();
 		}
 
-		$dept = current_user_dept();
-		if ($dept !== NULL && (int) $doc['id_departemen'] !== (int) $dept) {
-			show_error('Akses ditolak: Dokumen bukan milik kandidat departemen Anda.', 403, '403 Forbidden');
+		if ( ! user_can_access_scope($doc['id_departemen'] ?? NULL, $doc['region'] ?? NULL)) {
+			show_error('Akses ditolak: Dokumen bukan milik kandidat departemen/wilayah Anda.', 403, '403 Forbidden');
 		}
 
 		// RBAC dokumen sensitif -- cek permission + catat ke ACCESS_LOG_SENSITIF

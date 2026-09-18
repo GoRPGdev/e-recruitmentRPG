@@ -178,7 +178,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 						<?php endif; ?>
 					</select>
 				</div>
-				<?php if (current_user_dept() === NULL): ?>
+				<?php if (current_user_dept() === NULL && current_user_region() === NULL): ?>
 				<div>
 					<label for="f-dept" style="font-size:11.5px; font-weight:600; margin:0 0 4px; display:block" class="eyebrow">Departemen</label>
 					<select id="f-dept" name="dept" style="margin:0; width:100%; padding:6px 10px; font-size:13px; background:var(--surface)">

@@ -40,7 +40,7 @@ class Candidate_model extends CI_Model
 		               r.no_mpr, r.tipe_penempatan, r.status_req,
 		               p.id_posisi, p.nama_posisi, p.id_departemen,
 		               d.nama AS nama_departemen,
-		               o.nama_outlet,
+		               o.nama_outlet, o.region,
 		               f.nama_flow, f.kode_flow,
 		               st.nama_tahap AS nama_tahap_kini, st.tipe_tahap AS tipe_tahap_kini,
 		               NULL AS nama_channel
@@ -423,11 +423,12 @@ class Candidate_model extends CI_Model
 			$b[] = $keyword;
 		}
 
-		// Scoping departemen bagi USER_DEPT
-		$dept = current_user_dept();
-		if ($dept !== NULL) {
-			$w[] = 'p.id_departemen = ?';
-			$b[] = (int) $dept;
+		// Scoping USER_DEPT (dept) / Regional Manager-Area Leader (region).
+		// Query pemanggil WAJIB LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
+		list($scope_sql, $scope_bind) = scope_dept_region_sql('p.id_departemen', 'o.region');
+		if ($scope_sql !== NULL) {
+			$w[] = $scope_sql;
+			$b = array_merge($b, $scope_bind);
 		}
 
 		return $w ? 'WHERE ' . implode(' AND ', $w) : '';
@@ -445,7 +446,9 @@ class Candidate_model extends CI_Model
 		        FROM dbo.APPLICATIONS a
 		        JOIN dbo.CANDIDATES c   ON c.id_kandidat = a.id_kandidat
 		        JOIN dbo.REQUISITIONS r ON r.id_req = a.id_req
-		        JOIN dbo.M_POSISI p     ON p.id_posisi = r.id_posisi $where";
+		        JOIN dbo.M_POSISI p     ON p.id_posisi = r.id_posisi
+		        LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
+		        $where";
 		$q = $this->db->query($sql, $b);
 		$row = $q->row_array();
 		$q->free_result();
@@ -461,6 +464,7 @@ class Candidate_model extends CI_Model
 		        JOIN dbo.CANDIDATES c   ON c.id_kandidat = a.id_kandidat
 		        JOIN dbo.REQUISITIONS r ON r.id_req = a.id_req
 		        JOIN dbo.M_POSISI p     ON p.id_posisi = r.id_posisi
+		        LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
 		        $where";
 		$q = $this->db->query($sql, $b);
 		$res = (int) $q->row()->n;
@@ -482,7 +486,7 @@ class Candidate_model extends CI_Model
 		                   r.no_mpr, r.tipe_penempatan, r.status_req,
 		                   p.id_posisi, p.nama_posisi, p.id_departemen,
 		                   d.nama AS nama_departemen,
-		                   o.nama_outlet,
+		                   o.nama_outlet, o.region,
 		                   st.nama_tahap AS nama_tahap_kini, st.tipe_tahap AS tipe_tahap_kini,
 		                   ft.dipakai_pada AS form_dipakai_pada,
 		                   CASE WHEN ft.id_token IS NOT NULL THEN 1 ELSE 0 END AS form_token_ada,
@@ -514,13 +518,27 @@ class Candidate_model extends CI_Model
 	public function get_positions()
 	{
 		$dept = current_user_dept();
-		$w = 'WHERE is_aktif = 1';
-		$p = array();
+		$region = current_user_region();
 		if ($dept !== NULL) {
-			$w .= ' AND id_departemen = ?';
-			$p[] = (int) $dept;
+			$q = $this->db->query(
+				'SELECT id_posisi, nama_posisi FROM dbo.M_POSISI WHERE is_aktif = 1 AND id_departemen = ? ORDER BY nama_posisi',
+				array((int) $dept)
+			);
+		} elseif ($region !== NULL) {
+			// M_POSISI tidak punya kolom outlet/region sendiri -- posisi cuma
+			// "ikut region" lewat requisition yang pernah dibuat di outlet wilayah ini.
+			$q = $this->db->query(
+				'SELECT DISTINCT p.id_posisi, p.nama_posisi
+				 FROM dbo.M_POSISI p
+				 JOIN dbo.REQUISITIONS r ON r.id_posisi = p.id_posisi
+				 JOIN dbo.M_OUTLET o     ON o.id_outlet = r.id_outlet
+				 WHERE p.is_aktif = 1 AND o.region = ?
+				 ORDER BY p.nama_posisi',
+				array((string) $region)
+			);
+		} else {
+			$q = $this->db->query('SELECT id_posisi, nama_posisi FROM dbo.M_POSISI WHERE is_aktif = 1 ORDER BY nama_posisi');
 		}
-		$q = $this->db->query("SELECT id_posisi, nama_posisi FROM dbo.M_POSISI $w ORDER BY nama_posisi", $p);
 		$rows = $q->result_array();
 		$q->free_result();
 		return $rows;
@@ -528,20 +546,16 @@ class Candidate_model extends CI_Model
 
 	public function get_requisitions()
 	{
-		$dept = current_user_dept();
-		$w = 'WHERE 1=1';
-		$p = array();
-		if ($dept !== NULL) {
-			$w .= ' AND p.id_departemen = ?';
-			$p[] = (int) $dept;
-		}
+		list($scope_sql, $scope_bind) = scope_dept_region_sql('p.id_departemen', 'o.region');
+		$w = $scope_sql !== NULL ? "WHERE $scope_sql" : 'WHERE 1=1';
 		$sql = "SELECT r.id_req, r.no_mpr, r.status_req, p.nama_posisi,
 		               CASE WHEN r.status_req IN ('Sourcing', 'Approved', 'Sourcing_Ulang') THEN 1 ELSE 0 END AS is_aktif_mpr
 		        FROM dbo.REQUISITIONS r
+		        LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
 		        JOIN dbo.M_POSISI p ON p.id_posisi = r.id_posisi
 		        $w
 		        ORDER BY is_aktif_mpr DESC, r.id_req DESC";
-		$q = $this->db->query($sql, $p);
+		$q = $this->db->query($sql, $scope_bind);
 		$rows = $q->result_array();
 		$q->free_result();
 		return $rows;

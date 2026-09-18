@@ -63,6 +63,8 @@ class Sso extends MY_Controller
 				'kode_role'     => $user['kode_role'],
 				'id_departemen' => isset($user['id_departemen']) && $user['id_departemen'] !== NULL
 					? (int) $user['id_departemen'] : NULL,
+				'region'        => isset($user['region']) && $user['region'] !== NULL && $user['region'] !== ''
+					? (string) $user['region'] : NULL,
 			),
 			'permissions' => $this->auth_model->get_permissions($user['id_user']),
 		));

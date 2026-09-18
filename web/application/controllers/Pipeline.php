@@ -27,9 +27,8 @@ class Pipeline extends Secured_Controller
 		if ( ! $req) {
 			show_404();
 		}
-		$dept = current_user_dept();
-		if ($dept !== NULL && (int) $req['id_departemen'] !== (int) $dept) {
-			show_error('Akses ditolak: Anda hanya dapat mengakses pipeline kandidat dari departemen Anda.', 403, '403 Forbidden');
+		if ( ! user_can_access_scope($req['id_departemen'] ?? NULL, $req['region'] ?? NULL)) {
+			show_error('Akses ditolak: Anda hanya dapat mengakses pipeline kandidat dari departemen/wilayah Anda.', 403, '403 Forbidden');
 		}
 		return $req;
 	}

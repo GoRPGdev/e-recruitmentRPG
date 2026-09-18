@@ -32,6 +32,73 @@ if ( ! function_exists('current_user_dept')) {
 	}
 }
 
+if ( ! function_exists('current_user_region')) {
+	/**
+	 * region user login (M_USERS.region), atau NULL kalau tidak dibatasi
+	 * wilayah. Dipakai Regional Manager / Area Leader USER_DEPT yang
+	 * mengawasi banyak outlet sekaligus dalam satu wilayah -- pasangan dari
+	 * current_user_dept() tapi lewat M_OUTLET.region, bukan id_departemen.
+	 * Satu user cuma punya salah satu (lihat CK_MUSERS_scope di migrasi).
+	 */
+	function current_user_region()
+	{
+		$au = current_user();
+		return isset($au['region']) && $au['region'] !== NULL && $au['region'] !== ''
+			? (string) $au['region'] : NULL;
+	}
+}
+
+if ( ! function_exists('scope_dept_region_sql')) {
+	/**
+	 * Fragmen WHERE + binding untuk scoping "dept ATAU region" -- dipakai
+	 * di WHERE-builder yang sudah JOIN ke kolom departemen & (LEFT JOIN)
+	 * M_OUTLET. Kembalikan array [string|NULL $sql, array $binds].
+	 * $sql NULL kalau user tidak dibatasi (SUPER_ADMIN) -- jangan ditambah
+	 * ke WHERE sama sekali.
+	 *
+	 * @param string $dept_col   mis. 'p.id_departemen'
+	 * @param string $region_col mis. 'o.region' -- kolom ini HARUS sudah
+	 *                           bisa diakses lewat LEFT JOIN dbo.M_OUTLET
+	 *                           di query pemanggil.
+	 */
+	function scope_dept_region_sql($dept_col, $region_col)
+	{
+		$dept = current_user_dept();
+		if ($dept !== NULL) {
+			return array("$dept_col = ?", array((int) $dept));
+		}
+		$region = current_user_region();
+		if ($region !== NULL) {
+			return array("$region_col = ?", array((string) $region));
+		}
+		return array(NULL, array());
+	}
+}
+
+if ( ! function_exists('user_can_access_scope')) {
+	/**
+	 * Versi PHP (bukan SQL) dari scope_dept_region_sql() -- untuk
+	 * controller yang sudah fetch satu baris (requisition/kandidat/dokumen)
+	 * lalu membandingkan id_departemen/region baris itu terhadap user login.
+	 *
+	 * @param int|null    $row_dept   id_departemen milik baris data
+	 * @param string|null $row_region region outlet milik baris data
+	 * @return bool  TRUE kalau boleh akses (termasuk SUPER_ADMIN/unscoped)
+	 */
+	function user_can_access_scope($row_dept, $row_region)
+	{
+		$dept = current_user_dept();
+		if ($dept !== NULL) {
+			return $row_dept !== NULL && (int) $row_dept === (int) $dept;
+		}
+		$region = current_user_region();
+		if ($region !== NULL) {
+			return $row_region !== NULL && (string) $row_region === (string) $region;
+		}
+		return TRUE; // tidak dibatasi dept maupun region
+	}
+}
+
 if ( ! function_exists('has_permission')) {
 	/**
 	 * @param string $kode  mis. 'LIHAT_CV', 'EDIT_FLOW_TEMPLATE'

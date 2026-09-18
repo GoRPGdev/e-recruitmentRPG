@@ -79,10 +79,9 @@ class Candidates extends Secured_Controller
 			show_404();
 		}
 
-		// Scoping USER_DEPT (G4b)
-		$dept = current_user_dept();
-		if ($dept !== NULL && (int) $detail['id_departemen'] !== (int) $dept) {
-			show_error('Akses ditolak: Kandidat bukan dari lowongan departemen Anda.', 403, '403 Forbidden');
+		// Scoping USER_DEPT / Regional Manager-Area Leader (G4b)
+		if ( ! user_can_access_scope($detail['id_departemen'] ?? NULL, $detail['region'] ?? NULL)) {
+			show_error('Akses ditolak: Kandidat bukan dari lowongan departemen/wilayah Anda.', 403, '403 Forbidden');
 		}
 
 		// Evaluasi izin akses data sensitif & pencatatan log
@@ -228,18 +227,17 @@ class Candidates extends Secured_Controller
 			show_404();
 		}
 
-		$dept = current_user_dept();
-		if ($dept !== NULL && (int) $detail['id_departemen'] !== (int) $dept) {
+		if ( ! user_can_access_scope($detail['id_departemen'] ?? NULL, $detail['region'] ?? NULL)) {
 			if ($is_ajax) {
 				return $this->output
 					->set_content_type('application/json')
 					->set_status_header(403)
 					->set_output(json_encode(array(
 						'success' => FALSE,
-						'message' => 'Akses ditolak: Pelamar bukan dari departemen Anda.'
+						'message' => 'Akses ditolak: Pelamar bukan dari departemen/wilayah Anda.'
 					)));
 			}
-			show_error('Akses ditolak: Pelamar bukan dari lowongan departemen Anda.', 403, '403 Forbidden');
+			show_error('Akses ditolak: Pelamar bukan dari lowongan departemen/wilayah Anda.', 403, '403 Forbidden');
 		}
 
 		$au = $this->session->userdata('auth_user');
@@ -323,9 +321,8 @@ class Candidates extends Secured_Controller
 		if ( ! $detail || empty($detail['foto_path']) || ! is_file($detail['foto_path'])) {
 			show_404();
 		}
-		$dept = current_user_dept();
-		if ($dept !== NULL && (int) $detail['id_departemen'] !== (int) $dept) {
-			show_error('Akses ditolak: Kandidat bukan dari lowongan departemen Anda.', 403, '403 Forbidden');
+		if ( ! user_can_access_scope($detail['id_departemen'] ?? NULL, $detail['region'] ?? NULL)) {
+			show_error('Akses ditolak: Kandidat bukan dari lowongan departemen/wilayah Anda.', 403, '403 Forbidden');
 		}
 
 		$mime = 'image/jpeg';
@@ -353,8 +350,7 @@ class Candidates extends Secured_Controller
 		if ( ! $detail) {
 			show_404();
 		}
-		$dept = current_user_dept();
-		if ($dept !== NULL && (int) $detail['id_departemen'] !== (int) $dept) {
+		if ( ! user_can_access_scope($detail['id_departemen'] ?? NULL, $detail['region'] ?? NULL)) {
 			show_error('Akses ditolak.', 403, '403 Forbidden');
 		}
 		$docs = $this->candidate_model->get_documents($id_lamaran);
@@ -389,9 +385,8 @@ class Candidates extends Secured_Controller
 		}
 
 		// Scoping USER_DEPT
-		$dept = current_user_dept();
-		if ($dept !== NULL && (int) $detail['id_departemen'] !== (int) $dept) {
-			show_error('Akses ditolak: Kandidat bukan dari lowongan departemen Anda.', 403, '403 Forbidden');
+		if ( ! user_can_access_scope($detail['id_departemen'] ?? NULL, $detail['region'] ?? NULL)) {
+			show_error('Akses ditolak: Kandidat bukan dari lowongan departemen/wilayah Anda.', 403, '403 Forbidden');
 		}
 
 		// Stage-gating: Formulir hanya sah dicetak jika pelamar sudah mengisi form atau telah mencapai tahap FORM / setelahnya

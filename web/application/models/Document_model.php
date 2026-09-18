@@ -17,13 +17,14 @@ class Document_model extends CI_Model
 		               cd.mime_type, cd.ukuran_byte, cd.hash_sha256, cd.diunggah_pada,
 		               cd.catatan_verifikasi, cd.diverifikasi_pada,
 		               dk.nama_dokumen, dk.kategori, dk.tingkat_sensitif,
-		               c.nama_lengkap, pos.nama_posisi, pos.id_departemen, r.no_mpr
+		               c.nama_lengkap, pos.nama_posisi, pos.id_departemen, o.region, r.no_mpr
 		        FROM dbo.CANDIDATE_DOCUMENTS cd
 		        JOIN dbo.M_DOKUMEN dk    ON dk.id_dokumen = cd.id_dokumen
 		        JOIN dbo.APPLICATIONS a  ON a.id_lamaran = cd.id_lamaran
 		        JOIN dbo.CANDIDATES c    ON c.id_kandidat = a.id_kandidat
 		        JOIN dbo.REQUISITIONS r  ON r.id_req = a.id_req
 		        JOIN dbo.M_POSISI pos    ON pos.id_posisi = r.id_posisi
+		        LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
 		        WHERE 1=1";
 		$b = array();
 		$st = isset($f['status']) ? $f['status'] : 'Proses';
@@ -31,6 +32,7 @@ class Document_model extends CI_Model
 		if ( ! empty($f['id_lamaran'])) { $sql .= ' AND cd.id_lamaran = ?'; $b[] = (int) $f['id_lamaran']; }
 		if ( ! empty($f['kategori']))   { $sql .= ' AND dk.kategori = ?'; $b[] = $f['kategori']; }
 		if ( ! empty($f['dept']))       { $sql .= ' AND pos.id_departemen = ?'; $b[] = (int) $f['dept']; }
+		if ( ! empty($f['region']))     { $sql .= ' AND o.region = ?'; $b[] = (string) $f['region']; }
 		$sql .= ' ORDER BY cd.diunggah_pada DESC';
 		$q = $this->db->query($sql, $b);
 		$rows = $q->result_array(); $q->free_result();
@@ -40,12 +42,13 @@ class Document_model extends CI_Model
 	public function get_doc($id_cand_doc)
 	{
 		$q = $this->db->query(
-			'SELECT cd.*, dk.nama_dokumen, dk.kategori, dk.tingkat_sensitif, a.id_kandidat, pos.id_departemen
+			'SELECT cd.*, dk.nama_dokumen, dk.kategori, dk.tingkat_sensitif, a.id_kandidat, pos.id_departemen, o.region
 			 FROM dbo.CANDIDATE_DOCUMENTS cd
 			 JOIN dbo.M_DOKUMEN dk    ON dk.id_dokumen = cd.id_dokumen
 			 JOIN dbo.APPLICATIONS a  ON a.id_lamaran = cd.id_lamaran
 			 JOIN dbo.REQUISITIONS r  ON r.id_req = a.id_req
 			 JOIN dbo.M_POSISI pos    ON pos.id_posisi = r.id_posisi
+			 LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
 			 WHERE cd.id_cand_doc = ?', array((int) $id_cand_doc));
 		$row = $q->row_array(); $q->free_result();
 		return $row ? $row : NULL;
@@ -61,6 +64,18 @@ class Document_model extends CI_Model
 			 WHERE a.id_lamaran = ?', array((int) $id_lamaran));
 		$row = $q->row_array(); $q->free_result();
 		return $row ? (int) $row['id_departemen'] : NULL;
+	}
+
+	public function get_lamaran_region($id_lamaran)
+	{
+		$q = $this->db->query(
+			'SELECT o.region
+			 FROM dbo.APPLICATIONS a
+			 JOIN dbo.REQUISITIONS r  ON r.id_req = a.id_req
+			 LEFT JOIN dbo.M_OUTLET o ON o.id_outlet = r.id_outlet
+			 WHERE a.id_lamaran = ?', array((int) $id_lamaran));
+		$row = $q->row_array(); $q->free_result();
+		return $row && $row['region'] !== NULL ? (string) $row['region'] : NULL;
 	}
 
 	public function verify($id_cand_doc, $status, $catatan, $id_user)
