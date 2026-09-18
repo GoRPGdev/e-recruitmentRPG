@@ -23,6 +23,20 @@ class Auth_model extends CI_Model
 	}
 
 	/**
+	 * Dipakai jalur SSO dari Payroll -- tanpa password_hash, tanpa verifikasi
+	 * password (kepercayaan datang dari tanda tangan token, dicek sebelum ini).
+	 *
+	 * @return array|null  baris user aktif atau null
+	 */
+	public function get_user_by_nik($nik_karyawan)
+	{
+		$q = $this->db->query('EXEC dbo.sp_GetUserByNik ?', array((string) $nik_karyawan));
+		$row = $q->row_array();
+		$q->free_result();
+		return $row ? $row : NULL;
+	}
+
+	/**
 	 * @return string[]  daftar kode permission efektif untuk user
 	 */
 	public function get_permissions($id_user)

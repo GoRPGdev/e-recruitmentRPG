@@ -54,6 +54,7 @@ $route['manual/(:num)'] = 'manual/index/$1';
 $route['lamar/(:any)'] = 'lamar/index/$1';
 $route['berkas/(:any)'] = 'berkas/index/$1';
 $route['onboarding/(:any)'] = 'onboarding/index/$1';
+$route['sso'] = 'sso/masuk';
 $route['dashboard'] = 'dashboard/index';
 $route['reports'] = 'reports/index';
 $route['reports/export_mpr'] = 'reports/export_mpr';

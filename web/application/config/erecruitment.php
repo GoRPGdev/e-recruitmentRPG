@@ -27,3 +27,11 @@ $config['erec_rate_max']        = 3;
 
 // Versi teks consent yang sedang berlaku (disimpan ke CANDIDATES.consent_versi)
 $config['erec_consent_versi'] = 'v1-2026';
+
+// SSO dari aplikasi Payroll RPG (lihat controllers/Sso.php).
+// WAJIB diisi via environment variable di server produksi (Apache SetEnv /
+// IIS web.config) -- JANGAN PERNAH taruh nilai asli di file ini / commit ke Git.
+// Kalau kosong, semua percobaan SSO ditolak (fail closed, bukan fail open).
+// Nilai ini HARUS identik dengan secret yang dipasang di sisi Payroll.
+$config['erec_sso_secret']  = getenv('EREC_SSO_SECRET') ?: '';
+$config['erec_sso_max_age'] = 90; // detik -- toleransi delay jaringan + selisih jam server
