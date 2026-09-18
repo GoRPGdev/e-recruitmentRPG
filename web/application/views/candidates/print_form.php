@@ -16,6 +16,9 @@ defined('BASEPATH') OR exit('No direct script access allowed');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Formulir Aplikasi Calon Karyawan — <?= html_escape($c['nama_lengkap']) ?></title>
+    <link rel="icon" type="image/png" sizes="32x32" href="<?= base_url('assets/img/favicon-32x32.png') ?>">
+    <link rel="icon" type="image/png" sizes="64x64" href="<?= base_url('assets/img/favicon.png') ?>">
+    <link rel="shortcut icon" href="<?= base_url('assets/img/favicon.ico') ?>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -141,10 +144,15 @@ defined('BASEPATH') OR exit('No direct script access allowed');
         <!-- Header Dokumen / Kop -->
         <div class="border-b-2 border-slate-800 pb-4 mb-6 avoid-break">
             <div class="flex justify-between items-start">
-                <div>
-                    <h1 class="text-2xl font-bold tracking-tight text-slate-900">RATU PERTIWI GROUP</h1>
-                    <p class="text-sm font-medium text-slate-600">Dokumen Pribadi &amp; Rahasia &mdash; e-Recruitment Human Resource Department</p>
-                    <h2 class="text-lg font-bold mt-2">FORMULIR APLIKASI CALON KARYAWAN</h2>
+                <div class="flex items-center gap-4">
+                    <div style="width:64px; height:64px; border-radius:12px; overflow:hidden; background:#000000; box-shadow:0 2px 6px rgba(0,0,0,0.25); flex:none; display:flex; align-items:center; justify-content:center">
+                        <img src="<?= base_url('assets/img/logo.png') ?>" alt="Logo RPG" style="width:100%; height:100%; object-fit:contain; display:block">
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight text-slate-900">RATU PERTIWI GROUP</h1>
+                        <p class="text-sm font-medium text-slate-600">Dokumen Pribadi &amp; Rahasia &mdash; e-Recruitment Human Resource Department</p>
+                        <h2 class="text-lg font-bold mt-1">FORMULIR APLIKASI CALON KARYAWAN</h2>
+                    </div>
                 </div>
                 <div class="text-right border border-slate-300 p-3 bg-slate-50 rounded">
                     <p class="text-xs text-slate-500 font-semibold mb-1 uppercase">Posisi Dilamar:</p>
@@ -264,7 +272,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
             if (!empty($families)) {
                 foreach ($families as $f) {
                     $hub = strtolower(trim((string)$f['hubungan']));
-                    if (in_array($hub, $rel_sendiri, TRUE)) {
+                    if (in_array($hub, $rel_sendiri, TRUE) || stripos($hub, 'anak') !== FALSE) {
                         $fam_sendiri[] = $f;
                     } else {
                         $fam_ortu[] = $f;
@@ -318,7 +326,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
             <!-- B.2 Susunan Keluarga Orang Tua -->
             <div>
-                <div class="text-xs font-bold text-slate-700 mb-1">2. Susunan Keluarga Orang Tua (Ayah, Ibu &amp; Saudara Kandung / Diri Sendiri) :</div>
+                <div class="text-xs font-bold text-slate-700 mb-1">2. Susunan Keluarga Orang Tua / Wali (Ayah, Ibu &amp; Wali) :</div>
                 <table>
                     <thead>
                         <tr>

@@ -347,6 +347,22 @@ details.stage-section:not([open]) .stage-chevron-icon {
 	box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
 	overflow: hidden;
 }
+@keyframes pulseGlow {
+	0% { background-color: rgba(31, 138, 76, 0.28) !important; box-shadow: 0 0 0 3px rgba(31, 138, 76, 0.45); }
+	50% { background-color: rgba(31, 138, 76, 0.16) !important; box-shadow: 0 0 0 2px rgba(31, 138, 76, 0.25); }
+	100% { background-color: transparent !important; box-shadow: none; }
+}
+.candidate-row-highlighted {
+	animation: pulseGlow 2.5s ease-out forwards;
+	position: relative;
+	z-index: 2;
+}
+.btn-submitting {
+	opacity: 0.75 !important;
+	cursor: wait !important;
+	pointer-events: none !important;
+}
+@keyframes erecSpin { 100% { transform: rotate(360deg); } }
 .rpg-modal[open] {
 	display: flex !important;
 	flex-direction: column !important;
@@ -720,7 +736,7 @@ dialog#dlg-notes-history, .rpg-modal#dlg-notes-history {
 									$has_catatan = ! empty($c['catatan']);
 									$has_remark  = ! empty($c['label_remark']);
 								?>
-								<tr class="candidate-row" data-overdue="<?= $hari > 7 ? '1' : '0' ?>"
+								<tr class="candidate-row" id="cand-row-<?= $id_lamaran ?>" data-lamaran="<?= $id_lamaran ?>" data-app-stage="<?= $id_app_stage ?>" data-overdue="<?= $hari > 7 ? '1' : '0' ?>"
 									data-search="<?= strtolower(html_escape($c['nama_lengkap'] . ' ' . $c['no_wa_normal'] . ' ' . $c['status_global'] . ' ' . ($c['catatan'] ?? '') . ' ' . ($c['label_remark'] ?? '') . ' ' . ($latest_iv['hasil'] ?? '') . ' ' . ($latest_psi['hasil'] ?? ''))) ?>">
 
 									<td style="padding:12px 6px; text-align:center" class="muted mono"><?= $no++ ?></td>
@@ -895,7 +911,7 @@ dialog#dlg-notes-history, .rpg-modal#dlg-notes-history {
 												<div class="candidate-row-actions" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap">
 													<!-- Tombol Proses Tunggal -->
 													<button type="button" class="btn-advance-action <?= ($has_remark || $has_catatan) ? 'has-decision' : '' ?>"
-														onclick='openAdvanceModal(<?= (int) $id_app_stage ?>, <?= (int) $id_stage ?>, <?= json_encode($c["nama_lengkap"]) ?>, <?= (int) ($c["id_remark"] ?? 0) ?>, <?= json_encode($c["catatan"] ?? "") ?>)'>
+														onclick='openAdvanceModal(<?= (int) $id_app_stage ?>, <?= (int) $id_stage ?>, <?= json_encode($c["nama_lengkap"]) ?>, <?= (int) ($c["id_remark"] ?? 0) ?>, <?= json_encode($c["catatan"] ?? "") ?>, <?= (int) $id_lamaran ?>)'>
 														<svg style="width:12px; height:12px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
 														<span><?= ($has_remark || $has_catatan) ? 'Ubah Proses' : 'Proses &rarr;' ?></span>
 													</button>
@@ -1085,7 +1101,8 @@ dialog#dlg-notes-history, .rpg-modal#dlg-notes-history {
 		</div>
 		<button type="button" class="rpg-modal-close" onclick="document.getElementById('dlg-advance').close()">&times;</button>
 	</div>
-	<?= form_open(site_url('pipeline/advance/' . (int) $req['id_req']), array('style' => 'margin:0; display:flex; flex-direction:column; flex:1; min-height:0')) ?>
+	<?= form_open(site_url('pipeline/advance/' . (int) $req['id_req']), array('onsubmit' => 'prepareFormSubmitState(this, document.getElementById("adv-id-lamaran").value)', 'style' => 'margin:0; display:flex; flex-direction:column; flex:1; min-height:0')) ?>
+		<input type="hidden" id="adv-id-lamaran">
 		<input type="hidden" name="id_app_stage" id="adv-id-app-stage">
 		<div class="rpg-modal-body">
 			<div style="margin-bottom:16px">
@@ -1128,7 +1145,7 @@ dialog#dlg-notes-history, .rpg-modal#dlg-notes-history {
 		</div>
 		<button type="button" class="rpg-modal-close" onclick="document.getElementById('dlg-adhoc').close()">&times;</button>
 	</div>
-	<?= form_open(site_url('pipeline/insert_stage/' . (int) $req['id_req']), array('style' => 'margin:0; display:flex; flex-direction:column; flex:1; min-height:0')) ?>
+	<?= form_open(site_url('pipeline/insert_stage/' . (int) $req['id_req']), array('onsubmit' => 'prepareFormSubmitState(this, document.getElementById("adhoc-id-lamaran").value)', 'style' => 'margin:0; display:flex; flex-direction:column; flex:1; min-height:0')) ?>
 		<input type="hidden" name="id_lamaran" id="adhoc-id-lamaran">
 		<div class="rpg-modal-body">
 			<!-- Info Tahap Saat Ini -->
@@ -1218,7 +1235,7 @@ dialog#dlg-notes-history, .rpg-modal#dlg-notes-history {
 		</h3>
 		<button type="button" class="rpg-modal-close" onclick="document.getElementById('dlg-interview').close()">&times;</button>
 	</div>
-	<?= form_open(site_url('pipeline/save_interview/' . (int) $req['id_req']), array('style' => 'margin:0; display:flex; flex-direction:column; flex:1; min-height:0')) ?>
+	<?= form_open(site_url('pipeline/save_interview/' . (int) $req['id_req']), array('onsubmit' => 'prepareFormSubmitState(this, document.getElementById("iv-id-app-stage").value)', 'style' => 'margin:0; display:flex; flex-direction:column; flex:1; min-height:0')) ?>
 		<input type="hidden" name="id_interview" id="iv-id-interview">
 		<input type="hidden" name="id_app_stage" id="iv-id-app-stage">
 
@@ -1301,7 +1318,7 @@ dialog#dlg-notes-history, .rpg-modal#dlg-notes-history {
 		</h3>
 		<button type="button" class="rpg-modal-close" onclick="document.getElementById('dlg-offer').close()">&times;</button>
 	</div>
-	<?= form_open(site_url('pipeline/save_offer/' . (int) $req['id_req']), array('style' => 'margin:0; display:flex; flex-direction:column; flex:1; min-height:0')) ?>
+	<?= form_open(site_url('pipeline/save_offer/' . (int) $req['id_req']), array('onsubmit' => 'prepareFormSubmitState(this, document.getElementById("off-id-lamaran").value)', 'style' => 'margin:0; display:flex; flex-direction:column; flex:1; min-height:0')) ?>
 		<input type="hidden" name="id_offer" id="off-id-offer">
 		<input type="hidden" name="id_lamaran" id="off-id-lamaran">
 
@@ -1443,6 +1460,101 @@ var allAvailableStages = <?= json_encode($all_stages) ?>;
 var candidateExistingStagesMap = <?= json_encode($candidate_existing_stages ?? array()) ?>;
 // Riwayat lengkap seluruh catatan & evaluasi tahapan pelamar
 var candidateStageHistoryMap = <?= json_encode($candidate_stage_history ?? array()) ?>;
+var pipelineReqId = <?= (int) $req['id_req'] ?>;
+
+// 1. Simpan dan Pulihkan Status Terbuka/Tertutup Tahap (Auto-Preserve Stage Collapse State)
+function saveStageStates() {
+	try {
+		var state = {};
+		document.querySelectorAll('details.stage-section').forEach(function(d) {
+			if (d.id) {
+				state[d.id] = d.open;
+			}
+		});
+		var term = document.querySelector('#sec-final-candidates details');
+		if (term) {
+			state['sec-final-candidates-details'] = term.open;
+		}
+		localStorage.setItem('rpg_pipeline_stages_' + pipelineReqId, JSON.stringify(state));
+	} catch (e) {}
+}
+
+function restoreStageStates() {
+	try {
+		var raw = localStorage.getItem('rpg_pipeline_stages_' + pipelineReqId);
+		if (!raw) return;
+		var state = JSON.parse(raw);
+		var anyOpen = false;
+		document.querySelectorAll('details.stage-section').forEach(function(d) {
+			if (d.id && state.hasOwnProperty(d.id)) {
+				d.open = Boolean(state[d.id]);
+			}
+			if (d.open) anyOpen = true;
+		});
+
+		var term = document.querySelector('#sec-final-candidates details');
+		if (term && state.hasOwnProperty('sec-final-candidates-details')) {
+			term.open = Boolean(state['sec-final-candidates-details']);
+		}
+
+		var btnLabel = document.getElementById('btn-toggle-all-label');
+		if (btnLabel) {
+			btnLabel.textContent = anyOpen ? 'Lipat Semua Tahap' : 'Buka Semua Tahap';
+		}
+	} catch (e) {}
+}
+
+// 2. Simpan Koordinat Scroll & Target Kandidat Sebelum Form Submit
+function prepareFormSubmitState(form, targetCandidateId) {
+	try {
+		sessionStorage.setItem('rpg_pipeline_scroll_' + pipelineReqId, window.scrollY);
+		if (targetCandidateId) {
+			sessionStorage.setItem('rpg_pipeline_highlight_cand_' + pipelineReqId, targetCandidateId);
+		}
+	} catch (e) {}
+
+	var btn = form ? form.querySelector('button[type="submit"]') : null;
+	if (btn) {
+		btn.classList.add('btn-submitting');
+		btn.dataset.originalText = btn.innerHTML;
+		btn.innerHTML = '<span style="display:inline-block; animation:erecSpin .7s linear infinite; margin-right:6px">↻</span> Menyimpan &amp; Memproses...';
+	}
+}
+
+// 3. Pulihkan Posisi Layar & Berikan Efek Sorot (Glow) pada Kandidat yang Baru Diproses
+function restoreScrollAndHighlight() {
+	try {
+		var savedScroll = sessionStorage.getItem('rpg_pipeline_scroll_' + pipelineReqId);
+		var targetCand = sessionStorage.getItem('rpg_pipeline_highlight_cand_' + pipelineReqId);
+
+		if (savedScroll !== null) {
+			sessionStorage.removeItem('rpg_pipeline_scroll_' + pipelineReqId);
+			window.scrollTo({
+				top: parseInt(savedScroll, 10),
+				behavior: 'instant'
+			});
+		}
+
+		if (targetCand) {
+			sessionStorage.removeItem('rpg_pipeline_highlight_cand_' + pipelineReqId);
+			var row = document.getElementById('cand-row-' + targetCand);
+			if (!row) {
+				row = document.querySelector('[data-lamaran="' + targetCand + '"]') || document.querySelector('[data-app-stage="' + targetCand + '"]');
+			}
+			if (row) {
+				var parentDetails = row.closest('details');
+				if (parentDetails && !parentDetails.open) {
+					parentDetails.open = true;
+					saveStageStates();
+				}
+				row.classList.add('candidate-row-highlighted');
+				setTimeout(function() {
+					row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+				}, 100);
+			}
+		}
+	} catch (e) {}
+}
 
 function toggleAllStages() {
 	var details = document.querySelectorAll('details.stage-section');
@@ -1459,6 +1571,7 @@ function toggleAllStages() {
 	if (btnLabel) {
 		btnLabel.textContent = anyOpen ? 'Buka Semua Tahap' : 'Lipat Semua Tahap';
 	}
+	saveStageStates();
 }
 
 function filterPipelineRows() {
@@ -1490,10 +1603,13 @@ function filterPipelineRows() {
 	});
 }
 
-function openAdvanceModal(idAppStage, idStage, namaKandidat, currentRemarkId, currentCatatan) {
+function openAdvanceModal(idAppStage, idStage, namaKandidat, currentRemarkId, currentCatatan, idLamaran) {
 	var dlg = document.getElementById('dlg-advance');
 	document.getElementById('dlg-adv-subtitle').textContent = 'Kandidat: ' + namaKandidat;
 	document.getElementById('adv-id-app-stage').value = idAppStage;
+	if (document.getElementById('adv-id-lamaran')) {
+		document.getElementById('adv-id-lamaran').value = idLamaran || '';
+	}
 	document.getElementById('adv-catatan').value = currentCatatan || '';
 
 	var sel = document.getElementById('adv-id-remark');
@@ -2033,4 +2149,25 @@ function openNotesHistoryModal(idLamaran, namaKandidat) {
 
 window.addEventListener('scroll', closeCandidateMenu, true);
 window.addEventListener('resize', closeCandidateMenu);
+
+// Inisialisasi otomatis pemulihan posisi scroll & status lipatan tahap
+document.addEventListener('DOMContentLoaded', function() {
+	restoreStageStates();
+	restoreScrollAndHighlight();
+
+	// Dengarkan event toggle pada semua section tahap
+	document.querySelectorAll('details.stage-section, #sec-final-candidates details').forEach(function(d) {
+		d.addEventListener('toggle', function() {
+			saveStageStates();
+		});
+	});
+});
+
+// Fallback jika DOMContentLoaded sudah lewat
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+	setTimeout(function() {
+		restoreStageStates();
+		restoreScrollAndHighlight();
+	}, 10);
+}
 </script>

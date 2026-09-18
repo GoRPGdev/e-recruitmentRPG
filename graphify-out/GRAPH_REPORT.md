@@ -1,7 +1,7 @@
-# Graph Report - e-rekruitmenRPG  (2026-09-16)
+# Graph Report - e-rekruitmenRPG  (2026-09-17)
 
 ## Corpus Check
-- 396 files · ~408,294 words
+- 396 files · ~409,018 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 28 file(s) not represented in the graph (top: .woff2 19, (none) 6, .css 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `26f2a5e8`
+- Built from commit: `7476eaee`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 

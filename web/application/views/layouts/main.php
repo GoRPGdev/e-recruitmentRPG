@@ -16,6 +16,10 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title><?= isset($title) ? html_escape($title) . ' — ' : '' ?>e-Recruitment RPG</title>
+<link rel="icon" type="image/png" sizes="32x32" href="<?= base_url('assets/img/favicon-32x32.png') ?>">
+<link rel="icon" type="image/png" sizes="64x64" href="<?= base_url('assets/img/favicon.png') ?>">
+<link rel="shortcut icon" href="<?= base_url('assets/img/favicon.ico') ?>">
+<link rel="apple-touch-icon" href="<?= base_url('assets/img/logo.png') ?>">
 <link rel="stylesheet" href="<?= base_url('assets/fonts/fonts.css') ?>">
 <style>
 :root {
@@ -483,18 +487,23 @@ dialog::backdrop {
   text-decoration: none !important;
 }
 .brand-mark {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: var(--accent);
-  color: var(--accent-contrast);
-  display: grid;
-  place-items: center;
-  font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-weight: 700;
-  font-size: 14px;
-  letter-spacing: .02em;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex: none;
+  background: #000000;
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 .brand-name {
   font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -925,7 +934,9 @@ dialog::backdrop {
   <aside class="sidebar" id="appSidebar">
     <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding:2px 4px 14px; margin-bottom:4px">
       <a href="<?= $brand_href ?>" class="brand" style="border:none; padding:0; flex:1">
-        <div class="brand-mark">RPG</div>
+        <div class="brand-mark">
+          <img src="<?= base_url('assets/img/logo-sm.png') ?>" alt="Logo RPG" width="44" height="44">
+        </div>
         <div>
           <div class="brand-name">e-Recruitment</div>
           <div class="brand-sub">Ratu Pertiwi Group</div>

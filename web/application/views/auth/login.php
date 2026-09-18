@@ -11,13 +11,13 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  */
 ?>
 <main class="card" style="box-shadow:var(--shadow); border-radius:12px; padding:28px 30px">
-	<div style="display:flex; align-items:center; gap:12px; margin-bottom:18px">
-		<div style="width:38px; height:38px; border-radius:10px; background:var(--accent); color:var(--accent-contrast); display:grid; place-items:center; font-family:'Archivo', sans-serif; font-weight:700; font-size:16px">
-			RPG
+	<div style="display:flex; align-items:center; gap:14px; margin-bottom:20px">
+		<div style="width:54px; height:54px; border-radius:12px; overflow:hidden; background:#000000; border:1px solid rgba(0,0,0,0.1); box-shadow:0 4px 14px rgba(0,0,0,0.18); flex:none; display:flex; align-items:center; justify-content:center">
+			<img src="<?= base_url('assets/img/logo-sm.png') ?>" alt="Logo RPG" style="width:100%; height:100%; object-fit:contain; display:block">
 		</div>
 		<div>
-			<h1 style="font-size:19px; margin:0 0 2px">e-Recruitment</h1>
-			<div class="muted" style="font-size:12px">Ratu Pertiwi Group &middot; Internal Portal</div>
+			<h1 style="font-size:20px; font-weight:700; margin:0 0 2px">e-Recruitment</h1>
+			<div class="muted" style="font-size:12.5px">Ratu Pertiwi Group &middot; Internal Portal</div>
 		</div>
 	</div>
 

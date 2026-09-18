@@ -13,13 +13,13 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 <!-- Header Identitas Karir RPG -->
 <div style="text-align:center; margin-bottom:20px">
-	<div style="display:inline-flex; align-items:center; gap:10px; margin-bottom:6px">
-		<div style="width:38px; height:38px; border-radius:10px; background:var(--accent); color:var(--accent-contrast); display:grid; place-items:center; font-family:'Source Sans Pro','Helvetica Neue',Helvetica,Arial,sans-serif; font-weight:700; font-size:16px">
-			RPG
+	<div style="display:inline-flex; align-items:center; gap:12px; margin-bottom:8px">
+		<div style="width:52px; height:52px; border-radius:12px; overflow:hidden; background:#000000; border:1px solid rgba(0,0,0,0.1); box-shadow:0 4px 14px rgba(0,0,0,0.18); flex:none; display:flex; align-items:center; justify-content:center">
+			<img src="<?= base_url('assets/img/logo-sm.png') ?>" alt="Logo RPG" style="width:100%; height:100%; object-fit:contain; display:block">
 		</div>
 		<div style="text-align:left">
-			<div style="font-family:'Source Sans Pro','Helvetica Neue',Helvetica,Arial,sans-serif; font-weight:700; font-size:16.5px; color:var(--text); line-height:1.2">Ratu Pertiwi Group</div>
-			<div style="font-size:11.5px; color:var(--text-faint)">Formulir Kelengkapan Data Pelamar &amp; Onboarding</div>
+			<div style="font-family:'Source Sans Pro','Helvetica Neue',Helvetica,Arial,sans-serif; font-weight:700; font-size:17.5px; color:var(--text); line-height:1.2">Ratu Pertiwi Group</div>
+			<div style="font-size:12px; color:var(--text-faint)">Formulir Kelengkapan Data Pelamar &amp; Onboarding</div>
 		</div>
 	</div>
 </div>
@@ -360,22 +360,29 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 						Lengkapi data anggota keluarga inti Anda sesuai ketentuan status pernikahan yang tercatat.
 					</p>
 				</div>
-				<button type="button" class="btn btn-sm btn-ghost" onclick="addFamilyRow()" style="font-size:12px; font-weight:600">
-					+ Tambah Anggota Keluarga
-				</button>
+				<div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap">
+					<button type="button" class="btn btn-sm btn-ghost" onclick="addFamilyRow()" style="font-size:12px; font-weight:600">
+						+ Tambah Anggota Keluarga
+					</button>
+					<button type="button" class="btn btn-sm btn-ghost" onclick="addFamilyRowPreset('Ibu', 'P')" style="font-size:11.5px; padding:6px 10px">
+						+ Ibu
+					</button>
+					<button type="button" class="btn btn-sm btn-ghost" onclick="addFamilyRowPreset('Anak', '')" style="font-size:11.5px; padding:6px 10px">
+						+ Anak
+					</button>
+				</div>
 			</div>
 
 			<?php
 			$status_nikah = $t['status_pernikahan'] ?? 'Belum_Menikah';
 			$is_belum_nikah = (stripos($status_nikah, 'belum') !== FALSE || $status_nikah === 'Belum_Menikah');
-			$min_fam_rows = $is_belum_nikah ? 2 : 1;
+			$min_fam_rows = 1;
 
 			if (!empty($families)) {
 				$fam_init = $families;
 			} elseif ($is_belum_nikah) {
 				$fam_init = array(
 					array('hubungan' => 'Ayah', 'nama_lengkap' => '', 'jenis_kelamin' => 'L', 'usia' => '', 'pendidikan' => '', 'pekerjaan' => '', 'no_telp' => ''),
-					array('hubungan' => 'Ibu',  'nama_lengkap' => '', 'jenis_kelamin' => 'P', 'usia' => '', 'pendidikan' => '', 'pekerjaan' => '', 'no_telp' => ''),
 				);
 			} else {
 				$pasangan_hub = ($t['jenis_kelamin'] === 'P') ? 'Suami' : 'Istri';
@@ -390,19 +397,43 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 			<div style="background:var(--surface-2); border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:8px; padding:12px 16px; margin-bottom:16px; display:flex; align-items:center; gap:12px">
 				<div style="width:28px; height:28px; border-radius:50%; background:var(--accent-soft); color:var(--accent); display:grid; place-items:center; flex:none; font-weight:700">ℹ</div>
 				<div style="font-size:12.5px; line-height:1.45; color:var(--text)">
-					<?php if ($is_belum_nikah): ?>
-						<strong>Status Pernikahan: Belum Menikah.</strong> Sesuai ketentuan, Anda <strong>wajib mengisi minimal 2 data keluarga orang tua (Ayah dan Ibu)</strong>. Seluruh kolom wajib diisi lengkap.
-					<?php else: ?>
-						<strong>Status Pernikahan: <?= html_escape($status_nikah) ?>.</strong> Sesuai ketentuan, Anda <strong>wajib mengisi minimal 1 data anggota keluarga inti (Pasangan / Anak)</strong>. Seluruh kolom wajib diisi lengkap.
-					<?php endif; ?>
+					Sesuai ketentuan, Anda <strong>wajib mengisi minimal 1 data anggota keluarga inti</strong> (Orang Tua / Pasangan / Anak). Seluruh kolom wajib diisi lengkap.
 				</div>
 			</div>
+
+			<!-- Datalist untuk rekomendasi cepat Pendidikan & Pekerjaan Keluarga -->
+			<datalist id="list-pendidikan-keluarga">
+				<option value="Belum / Tidak Sekolah">
+				<option value="SD">
+				<option value="SMP">
+				<option value="SMA / SMK">
+				<option value="Diploma (D3)">
+				<option value="Sarjana (S1)">
+				<option value="Magister (S2)">
+			</datalist>
+			<datalist id="list-pekerjaan-keluarga">
+				<option value="Karyawan Swasta">
+				<option value="PNS / BUMN">
+				<option value="Wirausaha / Pedagang">
+				<option value="Ibu Rumah Tangga (IRT)">
+				<option value="Pelajar / Mahasiswa">
+				<option value="Petani / Buruh">
+				<option value="Pensiunan">
+				<option value="Belum Bekerja">
+				<option value="Almarhum">
+			</datalist>
 
 			<div id="family-container" style="display:flex; flex-direction:column; gap:12px">
 				<?php foreach ($fam_init as $fidx => $f): ?>
 					<div class="fam-card" style="background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:14px; position:relative">
 						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
-							<strong style="font-size:12.5px; color:var(--text)" class="fam-num">Anggota Keluarga #<?= $fidx + 1 ?></strong>
+							<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+								<strong style="font-size:12.5px; color:var(--text)" class="fam-num">Anggota Keluarga #<?= $fidx + 1 ?></strong>
+								<label style="display:inline-flex; align-items:center; gap:5px; font-size:11.5px; color:var(--text-muted); cursor:pointer">
+									<input type="checkbox" class="fam-almarhum-chk" onchange="toggleAlmarhum(this)" <?= (stripos($f['pekerjaan'] ?? '', 'almarhum') !== FALSE) ? 'checked' : '' ?>>
+									<span>Almarhum / Meninggal</span>
+								</label>
+							</div>
 							<button type="button" class="btn-sm btn-ghost fam-del-btn" onclick="removeFamCard(this)" style="color:var(--crit); border:none; background:none; cursor:pointer; font-size:11.5px; display:<?= count($fam_init) <= $min_fam_rows ? 'none' : 'inline-block' ?>">
 								✕ Hapus Baris
 							</button>
@@ -411,8 +442,8 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 						<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px">
 							<div>
 								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Hubungan Keluarga <span style="color:var(--crit)">*</span></label>
-								<select name="fam[<?= $fidx ?>][hubungan]" required style="width:100%; font-size:12.5px">
-									<?php foreach (array('Ayah', 'Ibu', 'Suami', 'Istri', 'Anak', 'Kakak', 'Adik') as $hub): ?>
+								<select name="fam[<?= $fidx ?>][hubungan]" onchange="onHubunganKeluargaChange(this)" required style="width:100%; font-size:12.5px">
+									<?php foreach (array('Ayah', 'Ibu', 'Suami', 'Istri', 'Anak', 'Anak ke-1', 'Anak ke-2', 'Anak ke-3', 'Anak ke-4', 'Wali') as $hub): ?>
 										<option value="<?= $hub ?>" <?= ($f['hubungan'] ?? '') === $hub ? 'selected' : '' ?>><?= $hub ?></option>
 									<?php endforeach; ?>
 								</select>
@@ -434,15 +465,20 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 							</div>
 							<div>
 								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Pendidikan Terakhir <span style="color:var(--crit)">*</span></label>
-								<input type="text" name="fam[<?= $fidx ?>][pendidikan]" value="<?= html_escape($f['pendidikan'] ?? '') ?>" placeholder="Misal: SMA / S1 / SMP" required style="width:100%; font-size:12.5px">
+								<input type="text" name="fam[<?= $fidx ?>][pendidikan]" list="list-pendidikan-keluarga" value="<?= html_escape($f['pendidikan'] ?? '') ?>" placeholder="Pilih / ketik: SMA / S1 / SMP" required style="width:100%; font-size:12.5px">
 							</div>
 							<div>
 								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Pekerjaan / Usaha <span style="color:var(--crit)">*</span></label>
-								<input type="text" name="fam[<?= $fidx ?>][pekerjaan]" value="<?= html_escape($f['pekerjaan'] ?? '') ?>" placeholder="Misal: Karyawan / Wirausaha / IRT" required style="width:100%; font-size:12.5px">
+								<input type="text" name="fam[<?= $fidx ?>][pekerjaan]" list="list-pekerjaan-keluarga" value="<?= html_escape($f['pekerjaan'] ?? '') ?>" placeholder="Pilih / ketik: Karyawan / IRT / Almarhum" required style="width:100%; font-size:12.5px" class="fam-pekerjaan-inp">
 							</div>
 							<div>
-								<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nomor Telepon / WA <span style="color:var(--crit)">*</span></label>
-								<input type="text" name="fam[<?= $fidx ?>][no_telp]" value="<?= html_escape($f['no_telp'] ?? '') ?>" placeholder="08xxxxxxxxxx (atau tulis '-')" required style="width:100%; font-size:12.5px">
+								<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px">
+									<label style="font-size:11.5px; font-weight:600; margin:0">Nomor Telepon / WA <span style="color:var(--crit)">*</span></label>
+									<button type="button" onclick="setNoHpStrip(this)" style="background:none; border:none; color:var(--accent); font-size:11px; cursor:pointer; padding:0; text-decoration:underline">
+										[-] Tidak Punya HP
+									</button>
+								</div>
+								<input type="text" name="fam[<?= $fidx ?>][no_telp]" value="<?= html_escape($f['no_telp'] ?? '') ?>" placeholder="08xxxxxxxxxx (atau tulis '-')" required style="width:100%; font-size:12.5px" class="fam-telp-inp">
 							</div>
 						</div>
 					</div>
@@ -1214,9 +1250,7 @@ function validateStep(step) {
 		var c = document.getElementById('family-container');
 		var currentRows = c ? c.children.length : 0;
 		if (currentRows < minFamilyRows) {
-			alert(isBelumNikah
-				? 'Karena status pernikahan Anda Belum Menikah, wajib mengisi minimal 2 data keluarga orang tua (Ayah dan Ibu).'
-				: 'Wajib mengisi minimal 1 data anggota keluarga inti.');
+			alert('Wajib mengisi minimal 1 data anggota keluarga inti.');
 			return false;
 		}
 	}
@@ -1356,15 +1390,83 @@ function previewPasFoto(input) {
 	}
 }
 
-function addFamilyRow() {
+function onHubunganKeluargaChange(sel) {
+	var card = sel.closest('.fam-card');
+	if (!card) return;
+	var jkSel = card.querySelector('select[name*="[jenis_kelamin]"]');
+	if (!jkSel) return;
+	var val = sel.value;
+	if (val === 'Ayah' || val === 'Suami') {
+		jkSel.value = 'L';
+	} else if (val === 'Ibu' || val === 'Istri') {
+		jkSel.value = 'P';
+	}
+}
+
+function setNoHpStrip(btn) {
+	var card = btn.closest('.fam-card');
+	if (!card) return;
+	var inp = card.querySelector('.fam-telp-inp');
+	if (inp) {
+		inp.value = '-';
+		inp.focus();
+	}
+}
+
+function toggleAlmarhum(chk) {
+	var card = chk.closest('.fam-card');
+	if (!card) return;
+	var pekInp = card.querySelector('.fam-pekerjaan-inp');
+	var telpInp = card.querySelector('.fam-telp-inp');
+	var jkSel = card.querySelector('select[name*="[jenis_kelamin]"]');
+	var isP = (jkSel && jkSel.value === 'P');
+
+	if (chk.checked) {
+		if (pekInp) {
+			pekInp.dataset.prevVal = pekInp.value;
+			pekInp.value = isP ? 'Almarhumah' : 'Almarhum';
+		}
+		if (telpInp) {
+			telpInp.dataset.prevVal = telpInp.value;
+			telpInp.value = '-';
+		}
+	} else {
+		if (pekInp && (pekInp.value === 'Almarhum' || pekInp.value === 'Almarhumah')) {
+			pekInp.value = pekInp.dataset.prevVal || '';
+		}
+		if (telpInp && telpInp.value === '-') {
+			telpInp.value = telpInp.dataset.prevVal || '';
+		}
+	}
+}
+
+function addFamilyRowPreset(hub, jk) {
+	addFamilyRow(hub, jk);
+}
+
+function addFamilyRow(presetHub, presetJk) {
 	var c = document.getElementById('family-container');
 	var idx = famCount++;
+	var defaultHub = presetHub || 'Anak';
+	var defaultJk = presetJk || '';
+	if (!defaultJk) {
+		if (defaultHub === 'Ayah' || defaultHub === 'Suami') defaultJk = 'L';
+		else if (defaultHub === 'Ibu' || defaultHub === 'Istri') defaultJk = 'P';
+		else defaultJk = 'L';
+	}
+
 	var div = document.createElement('div');
 	div.className = 'fam-card';
 	div.style = 'background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:14px; position:relative';
 	div.innerHTML = `
-		<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
-			<strong style="font-size:12.5px; color:var(--text)" class="fam-num">Anggota Keluarga #${c.children.length + 1}</strong>
+		<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px">
+			<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+				<strong style="font-size:12.5px; color:var(--text)" class="fam-num">Anggota Keluarga #${c.children.length + 1}</strong>
+				<label style="display:inline-flex; align-items:center; gap:5px; font-size:11.5px; color:var(--text-muted); cursor:pointer">
+					<input type="checkbox" class="fam-almarhum-chk" onchange="toggleAlmarhum(this)">
+					<span>Almarhum / Meninggal</span>
+				</label>
+			</div>
 			<button type="button" class="btn-sm btn-ghost fam-del-btn" onclick="removeFamCard(this)" style="color:var(--crit); border:none; background:none; cursor:pointer; font-size:11.5px">
 				✕ Hapus Baris
 			</button>
@@ -1372,10 +1474,17 @@ function addFamilyRow() {
 		<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px">
 			<div>
 				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Hubungan Keluarga <span style="color:var(--crit)">*</span></label>
-				<select name="fam[${idx}][hubungan]" required style="width:100%; font-size:12.5px">
-					<option value="Ayah">Ayah</option><option value="Ibu">Ibu</option>
-					<option value="Suami">Suami</option><option value="Istri">Istri</option>
-					<option value="Anak">Anak</option><option value="Kakak">Kakak</option><option value="Adik">Adik</option>
+				<select name="fam[${idx}][hubungan]" onchange="onHubunganKeluargaChange(this)" required style="width:100%; font-size:12.5px">
+					<option value="Ayah" ${defaultHub === 'Ayah' ? 'selected' : ''}>Ayah</option>
+					<option value="Ibu" ${defaultHub === 'Ibu' ? 'selected' : ''}>Ibu</option>
+					<option value="Suami" ${defaultHub === 'Suami' ? 'selected' : ''}>Suami</option>
+					<option value="Istri" ${defaultHub === 'Istri' ? 'selected' : ''}>Istri</option>
+					<option value="Anak" ${defaultHub === 'Anak' ? 'selected' : ''}>Anak</option>
+					<option value="Anak ke-1" ${defaultHub === 'Anak ke-1' ? 'selected' : ''}>Anak ke-1</option>
+					<option value="Anak ke-2" ${defaultHub === 'Anak ke-2' ? 'selected' : ''}>Anak ke-2</option>
+					<option value="Anak ke-3" ${defaultHub === 'Anak ke-3' ? 'selected' : ''}>Anak ke-3</option>
+					<option value="Anak ke-4" ${defaultHub === 'Anak ke-4' ? 'selected' : ''}>Anak ke-4</option>
+					<option value="Wali" ${defaultHub === 'Wali' ? 'selected' : ''}>Wali</option>
 				</select>
 			</div>
 			<div>
@@ -1385,7 +1494,8 @@ function addFamilyRow() {
 			<div>
 				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Jenis Kelamin <span style="color:var(--crit)">*</span></label>
 				<select name="fam[${idx}][jenis_kelamin]" required style="width:100%; font-size:12.5px">
-					<option value="L">Laki-laki (L)</option><option value="P">Perempuan (P)</option>
+					<option value="L" ${defaultJk === 'L' ? 'selected' : ''}>Laki-laki (L)</option>
+					<option value="P" ${defaultJk === 'P' ? 'selected' : ''}>Perempuan (P)</option>
 				</select>
 			</div>
 			<div>
@@ -1394,15 +1504,20 @@ function addFamilyRow() {
 			</div>
 			<div>
 				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Pendidikan Terakhir <span style="color:var(--crit)">*</span></label>
-				<input type="text" name="fam[${idx}][pendidikan]" placeholder="Misal: SMA / S1" style="width:100%; font-size:12.5px" required>
+				<input type="text" name="fam[${idx}][pendidikan]" list="list-pendidikan-keluarga" placeholder="Pilih / ketik: SMA / S1 / SMP" style="width:100%; font-size:12.5px" required>
 			</div>
 			<div>
 				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Pekerjaan / Usaha <span style="color:var(--crit)">*</span></label>
-				<input type="text" name="fam[${idx}][pekerjaan]" placeholder="Misal: Wirausaha / Pensiunan / IRT" style="width:100%; font-size:12.5px" required>
+				<input type="text" name="fam[${idx}][pekerjaan]" list="list-pekerjaan-keluarga" placeholder="Pilih / ketik: Karyawan / IRT / Almarhum" class="fam-pekerjaan-inp" style="width:100%; font-size:12.5px" required>
 			</div>
 			<div>
-				<label style="display:block; font-size:11.5px; font-weight:600; margin-bottom:3px">Nomor Telepon / WA <span style="color:var(--crit)">*</span></label>
-				<input type="text" name="fam[${idx}][no_telp]" placeholder="08xxxxxxxxxx (atau tulis '-')" style="width:100%; font-size:12.5px" required>
+				<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px">
+					<label style="font-size:11.5px; font-weight:600; margin:0">Nomor Telepon / WA <span style="color:var(--crit)">*</span></label>
+					<button type="button" onclick="setNoHpStrip(this)" style="background:none; border:none; color:var(--accent); font-size:11px; cursor:pointer; padding:0; text-decoration:underline">
+						[-] Tidak Punya HP
+					</button>
+				</div>
+				<input type="text" name="fam[${idx}][no_telp]" placeholder="08xxxxxxxxxx (atau tulis '-')" class="fam-telp-inp" style="width:100%; font-size:12.5px" required>
 			</div>
 		</div>
 	`;
@@ -1414,9 +1529,7 @@ function removeFamCard(btn) {
 	var c = document.getElementById('family-container');
 	if (!c) return;
 	if (c.children.length <= minFamilyRows) {
-		alert(isBelumNikah
-			? 'Karena status pernikahan Anda Belum Menikah, wajib mengisi minimal 2 data keluarga orang tua (Ayah dan Ibu).'
-			: 'Wajib mengisi minimal 1 data anggota keluarga.');
+		alert('Wajib mengisi minimal 1 data anggota keluarga.');
 		return;
 	}
 	btn.closest('.fam-card').remove();

@@ -1,6 +1,18 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
 
-<div class="card" style="padding:36px 32px; text-align:center; max-width:580px; margin:40px auto; border-top:4px solid var(--good)">
+<div style="text-align:center; margin-bottom:20px">
+	<div style="display:inline-flex; align-items:center; gap:12px">
+		<div style="width:48px; height:48px; border-radius:10px; overflow:hidden; background:#000000; box-shadow:0 3px 10px rgba(0,0,0,0.15); flex:none; display:flex; align-items:center; justify-content:center">
+			<img src="<?= base_url('assets/img/logo-sm.png') ?>" alt="Logo RPG" style="width:100%; height:100%; object-fit:contain; display:block">
+		</div>
+		<div style="text-align:left">
+			<div style="font-family:'Source Sans Pro','Helvetica Neue',Helvetica,Arial,sans-serif; font-weight:700; font-size:17px; color:var(--text); line-height:1.2">Ratu Pertiwi Group</div>
+			<div style="font-size:11.5px; color:var(--text-faint)">Formulir Kelengkapan Data Pelamar &amp; Onboarding</div>
+		</div>
+	</div>
+</div>
+
+<div class="card" style="padding:36px 32px; text-align:center; max-width:580px; margin:20px auto 40px; border-top:4px solid var(--good)">
 	<div style="width:58px; height:58px; border-radius:50%; background:var(--good-soft); color:var(--good); display:grid; place-items:center; margin:0 auto 16px; font-size:28px">
 		✓
 	</div>

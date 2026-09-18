@@ -187,15 +187,10 @@ class Onboarding extends MY_Controller
 
 		// Validasi kelengkapan saat pengiriman final
 		if ($is_final) {
-			$status_nikah = $t['status_pernikahan'] ?? 'Belum_Menikah';
-			$is_belum_nikah = (stripos($status_nikah, 'belum') !== FALSE || $status_nikah === 'Belum_Menikah');
-			$min_fam = $is_belum_nikah ? 2 : 1;
+			$min_fam = 1;
 
 			if (count($family) < $min_fam) {
-				$msg = $is_belum_nikah
-					? 'Karena status pernikahan Anda Belum Menikah, wajib mengisi minimal 2 data keluarga orang tua (Ayah dan Ibu).'
-					: 'Wajib mengisi minimal 1 data anggota keluarga inti.';
-				$this->session->set_flashdata('error', $msg);
+				$this->session->set_flashdata('error', 'Wajib mengisi minimal 1 data anggota keluarga inti.');
 				redirect('onboarding/' . $token . '?step=2');
 				return;
 			}

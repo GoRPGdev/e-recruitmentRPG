@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>404 — Halaman Tidak Ditemukan | e-Recruitment RPG</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/img/favicon-32x32.png">
+<link rel="shortcut icon" href="/assets/img/favicon.ico">
 <style>
 :root {
   --bg: #f5f7f4; --surface: #ffffff; --border: #d6dbcf;
