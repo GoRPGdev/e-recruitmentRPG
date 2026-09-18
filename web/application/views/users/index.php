@@ -83,10 +83,10 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 		<table style="margin:0">
 			<thead>
 				<tr>
-					<th>Pengguna</th>
+					<th>Nama Pengguna</th>
+					<th>NIK Karyawan</th>
 					<th>Peran (Role)</th>
-					<th>Departemen</th>
-					<th>NIK</th>
+					<th>Departemen / Wilayah</th>
 					<th>Status</th>
 					<th style="text-align:right">Aksi</th>
 				</tr>
@@ -103,7 +103,11 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 				<tr style="<?= empty($u['is_aktif']) ? 'opacity:0.55' : '' ?>">
 					<td>
 						<strong style="color:var(--text); font-size:13.5px"><?= html_escape($u['nama_snapshot']) ?></strong>
-						<div class="mono faint" style="font-size:12px">@<?= html_escape($u['username']) ?></div>
+					</td>
+					<td class="mono">
+						<span class="tag" style="background:var(--surface-2); font-size:12px; font-weight:700">
+							<?= html_escape($u['nik_karyawan']) ?>
+						</span>
 					</td>
 					<td>
 						<span class="tag <?= $u['kode_role'] === 'SUPER_ADMIN' ? 'on' : '' ?>" style="font-weight:600">
@@ -115,13 +119,10 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 							<span class="tag tag--info"><?= html_escape($u['nama_dept']) ?></span>
 						<?php elseif (!empty($u['region'])): ?>
 							<span class="tag tag--accent">Wilayah: <?= html_escape($u['region']) ?></span>
-						<?php elseif ($u['id_departemen'] === null): ?>
-							<span class="muted" style="font-size:12px">&mdash; Lintas Departemen (Global) &mdash;</span>
 						<?php else: ?>
-							<span class="muted"><?= html_escape($u['departemen_snapshot'] ?: '-') ?></span>
+							<span class="muted" style="font-size:12px">&mdash; Lintas Departemen (Global) &mdash;</span>
 						<?php endif; ?>
 					</td>
-					<td class="mono"><?= html_escape($u['nik_karyawan'] ?: '-') ?></td>
 					<td>
 						<span class="tag <?= $u['is_aktif'] ? 'on' : 'off' ?>">
 							<?= $u['is_aktif'] ? 'Aktif' : 'Non-Aktif' ?>

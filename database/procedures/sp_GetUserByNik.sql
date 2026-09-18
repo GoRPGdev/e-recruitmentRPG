@@ -22,9 +22,8 @@ BEGIN
 
     SELECT
         u.id_user,
-        u.username,
+        u.nik_karyawan,
         u.nama_snapshot,
-        u.departemen_snapshot,
         u.id_departemen,
         u.region,
         u.id_role,

@@ -34,19 +34,21 @@ class Auth extends MY_Controller
 		}
 
 		if ($this->input->method() === 'post') {
-			$this->form_validation->set_rules('username', 'Username', 'required|trim');
+			$this->form_validation->set_rules('nik', 'NIK Karyawan', 'required|trim');
 			$this->form_validation->set_rules('password', 'Password', 'required');
 
 			if ($this->form_validation->run()) {
-				$user = $this->auth_model->get_user_by_username($this->input->post('username', TRUE));
+				$nik = trim((string) $this->input->post('nik', TRUE));
+				$user = $this->auth_model->get_user_by_nik($nik);
 
 				if ($user && password_verify((string) $this->input->post('password'), $user['password_hash'])) {
 					$this->session->sess_regenerate(TRUE);
 					$this->session->set_userdata(array(
 						'logged_in'   => TRUE,
+						'login_time'  => time(),
 						'auth_user'   => array(
 							'id_user'       => (int) $user['id_user'],
-							'username'      => $user['username'],
+							'nik_karyawan'  => $user['nik_karyawan'] ?? $nik,
 							'nama'          => $user['nama_snapshot'],
 							'kode_role'     => $user['kode_role'],
 							'id_departemen' => isset($user['id_departemen']) && $user['id_departemen'] !== NULL
@@ -63,7 +65,7 @@ class Auth extends MY_Controller
 					}
 				}
 
-				$this->session->set_flashdata('error', 'Username atau password salah.');
+				$this->session->set_flashdata('error', 'NIK Karyawan atau password salah.');
 				redirect('auth/login');
 			}
 		}

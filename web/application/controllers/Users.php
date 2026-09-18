@@ -71,7 +71,7 @@ class Users extends Secured_Controller
 			show_404();
 		}
 
-		$this->form_validation->set_rules('username', 'Username', 'required|trim|is_unique[M_USERS.username]');
+		$this->form_validation->set_rules('nik_karyawan', 'NIK Karyawan', 'required|trim|is_unique[M_USERS.nik_karyawan]');
 		$this->form_validation->set_rules('password', 'Password', 'required|min_length[6]|max_length[72]');
 		$this->form_validation->set_rules('nama_snapshot', 'Nama Lengkap', 'required|trim');
 		$this->form_validation->set_rules('id_role', 'Role', 'required|numeric');
@@ -81,11 +81,9 @@ class Users extends Secured_Controller
 		if ($this->form_validation->run()) {
 			try {
 				$this->user_model->create_user(array(
-					'username'        => $this->input->post('username'),
+					'nik_karyawan'    => $this->input->post('nik_karyawan'),
 					'password'        => $this->input->post('password'),
 					'nama_snapshot'   => $this->input->post('nama_snapshot'),
-					'nik_karyawan'    => $this->input->post('nik_karyawan'),
-					'departemen_snapshot' => $this->input->post('departemen_snapshot'),
 					'id_role'         => (int) $this->input->post('id_role'),
 					'id_departemen'   => $this->input->post('id_departemen') !== '' ? (int) $this->input->post('id_departemen') : null,
 					'region'          => $this->input->post('region') !== '' ? $this->input->post('region') : null,
@@ -110,7 +108,7 @@ class Users extends Secured_Controller
 		}
 
 		$data = array(
-			'title'    => 'Edit Pengguna: ' . html_escape($user['username']),
+			'title'    => 'Edit Pengguna: ' . html_escape($user['nama_snapshot']) . ' (' . html_escape($user['nik_karyawan']) . ')',
 			'_content' => 'users/form',
 			'wide'     => TRUE,
 			'roles'    => $this->user_model->get_roles(TRUE),
@@ -128,7 +126,7 @@ class Users extends Secured_Controller
 			show_404();
 		}
 
-		$this->form_validation->set_rules('username', 'Username', 'required|trim');
+		$this->form_validation->set_rules('nik_karyawan', 'NIK Karyawan', 'required|trim');
 		$this->form_validation->set_rules('nama_snapshot', 'Nama Lengkap', 'required|trim');
 		$this->form_validation->set_rules('id_role', 'Role', 'required|numeric');
 		$this->form_validation->set_rules('id_departemen', 'Departemen', 'numeric');
@@ -137,10 +135,9 @@ class Users extends Secured_Controller
 		if ($this->form_validation->run()) {
 			try {
 				$this->user_model->update_user((int) $id_user, array(
-					'username'        => $this->input->post('username'),
-					'nama_snapshot'   => $this->input->post('nama_snapshot'),
 					'nik_karyawan'    => $this->input->post('nik_karyawan'),
-					'departemen_snapshot' => $this->input->post('departemen_snapshot'),
+					'nama_snapshot'   => $this->input->post('nama_snapshot'),
+					'password'        => $this->input->post('password') ?: null,
 					'id_role'         => (int) $this->input->post('id_role'),
 					'id_departemen'   => $this->input->post('id_departemen') !== '' ? (int) $this->input->post('id_departemen') : null,
 					'region'          => $this->input->post('region') !== '' ? $this->input->post('region') : null,

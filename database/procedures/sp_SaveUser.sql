@@ -1,5 +1,5 @@
 /* =========================================================================
-   sp_SaveUser  --  Tambah atau update data pengguna (dbo.M_USERS)
+   sp_SaveUser  --  Tambah atau update data pengguna (dbo.M_USERS) via NIK
    E-Recruitment RPG -- Arsitektur Database-First
 
    @id_user NULL -> INSERT, selain itu UPDATE.
@@ -8,8 +8,7 @@
 
    @id_departemen dan @region: hanya salah satu boleh diisi (lihat
    CK_MUSERS_scope). @id_departemen -> Manager Departemen (satu dept).
-   @region -> Regional Manager / Area Leader (lintas outlet satu wilayah,
-   dicocokkan ke M_OUTLET.region).
+   @region -> Regional Manager / Area Leader (lintas outlet satu wilayah).
 
    Deploy: php tools/migrate.php proc
    ========================================================================= */
@@ -18,11 +17,9 @@ GO
 
 CREATE PROCEDURE dbo.sp_SaveUser
     @id_user             INT           = NULL,
-    @username            VARCHAR(50),
+    @nik_karyawan        VARCHAR(20),
     @password_hash       VARCHAR(255)  = NULL,
     @nama_snapshot       NVARCHAR(150),
-    @nik_karyawan        VARCHAR(20)   = NULL,
-    @departemen_snapshot NVARCHAR(100) = NULL,
     @id_role             INT,
     @id_departemen       INT           = NULL,
     @region              NVARCHAR(60)  = NULL,
@@ -41,27 +38,26 @@ BEGIN
         IF @region IS NOT NULL AND LTRIM(RTRIM(@region)) = '' SET @region = NULL;
 
         -- Validasi input dasar
-        IF @username IS NULL OR LTRIM(RTRIM(@username)) = ''
-            RAISERROR('Username wajib diisi.', 16, 1);
+        IF @nik_karyawan IS NULL OR LTRIM(RTRIM(@nik_karyawan)) = ''
+            RAISERROR('NIK Karyawan wajib diisi.', 16, 1);
         IF @nama_snapshot IS NULL OR LTRIM(RTRIM(@nama_snapshot)) = ''
             RAISERROR('Nama lengkap wajib diisi.', 16, 1);
         IF NOT EXISTS (SELECT 1 FROM dbo.M_ROLES WHERE id_role = @id_role AND is_aktif = 1)
             RAISERROR('Role tidak valid atau nonaktif.', 16, 1);
         IF @id_departemen IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.M_DEPARTEMEN WHERE id_departemen = @id_departemen)
             RAISERROR('Departemen tidak valid.', 16, 1);
-        IF @id_departemen IS NOT NULL AND @region IS NOT NULL
-            RAISERROR('Pilih salah satu saja: Departemen ATAU Wilayah (Regional Manager), tidak dua-duanya.', 16, 1);
-        IF @region IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.M_OUTLET WHERE region = @region AND is_aktif = 1)
-            RAISERROR('Wilayah tidak dikenali -- harus cocok persis dengan region outlet yang aktif.', 16, 1);
 
-        -- Validasi keunikan username
-        IF EXISTS (SELECT 1 FROM dbo.M_USERS WHERE username = @username AND (@id_user IS NULL OR id_user <> @id_user))
-            RAISERROR('Username sudah digunakan.', 16, 1);
-
-        -- Validasi keunikan NIK karyawan (kalau diisi) -- kunci pencocokan SSO dari Payroll
-        IF @nik_karyawan IS NOT NULL AND LTRIM(RTRIM(@nik_karyawan)) <> ''
-           AND EXISTS (SELECT 1 FROM dbo.M_USERS WHERE nik_karyawan = @nik_karyawan AND (@id_user IS NULL OR id_user <> @id_user))
-            RAISERROR('NIK karyawan ini sudah terhubung ke akun lain.', 16, 1);
+        -- Cek keunikan NIK Karyawan
+        IF @id_user IS NULL
+        BEGIN
+            IF EXISTS (SELECT 1 FROM dbo.M_USERS WHERE nik_karyawan = @nik_karyawan)
+                RAISERROR('NIK Karyawan sudah terdaftar.', 16, 1);
+        END
+        ELSE
+        BEGIN
+            IF EXISTS (SELECT 1 FROM dbo.M_USERS WHERE nik_karyawan = @nik_karyawan AND id_user <> @id_user)
+                RAISERROR('NIK Karyawan sudah digunakan oleh pengguna lain.', 16, 1);
+        END
 
         DECLARE @aksi VARCHAR(10) = CASE WHEN @id_user IS NULL THEN 'INSERT' ELSE 'UPDATE' END;
 
@@ -71,11 +67,11 @@ BEGIN
                 RAISERROR('Password wajib diisi untuk pengguna baru.', 16, 1);
 
             INSERT INTO dbo.M_USERS (
-                username, password_hash, nama_snapshot, nik_karyawan,
-                departemen_snapshot, id_role, id_departemen, region, is_aktif
+                nik_karyawan, password_hash, nama_snapshot,
+                id_role, id_departemen, region, is_aktif
             ) VALUES (
-                @username, @password_hash, @nama_snapshot, @nik_karyawan,
-                @departemen_snapshot, @id_role, @id_departemen, @region, @is_aktif
+                @nik_karyawan, @password_hash, @nama_snapshot,
+                @id_role, @id_departemen, @region, @is_aktif
             );
             SET @id_user_out = SCOPE_IDENTITY();
         END
@@ -84,11 +80,9 @@ BEGIN
             IF @password_hash IS NOT NULL AND LTRIM(RTRIM(@password_hash)) <> ''
             BEGIN
                 UPDATE dbo.M_USERS
-                SET username = @username,
+                SET nik_karyawan = @nik_karyawan,
                     password_hash = @password_hash,
                     nama_snapshot = @nama_snapshot,
-                    nik_karyawan = @nik_karyawan,
-                    departemen_snapshot = @departemen_snapshot,
                     id_role = @id_role,
                     id_departemen = @id_departemen,
                     region = @region,
@@ -98,10 +92,8 @@ BEGIN
             ELSE
             BEGIN
                 UPDATE dbo.M_USERS
-                SET username = @username,
+                SET nik_karyawan = @nik_karyawan,
                     nama_snapshot = @nama_snapshot,
-                    nik_karyawan = @nik_karyawan,
-                    departemen_snapshot = @departemen_snapshot,
                     id_role = @id_role,
                     id_departemen = @id_departemen,
                     region = @region,
@@ -111,13 +103,8 @@ BEGIN
             SET @id_user_out = @id_user;
         END
 
-        DECLARE @auditMsg VARCHAR(400) = 'username=' + @username
-            + ' | nama=' + @nama_snapshot
-            + ' | role=' + CONVERT(VARCHAR(12), @id_role)
-            + ' | dept=' + ISNULL(CONVERT(VARCHAR(12), @id_departemen), '-')
-            + ' | region=' + ISNULL(@region, '-')
-            + ' | aktif=' + CONVERT(VARCHAR(2), @is_aktif);
-
+        -- Audit Log
+        DECLARE @auditMsg VARCHAR(200) = @aksi + ' user: nik=' + @nik_karyawan + ' | nama=' + @nama_snapshot;
         EXEC dbo.sp_AuditLog @nama_tabel = 'M_USERS', @id_baris = @id_user_out,
              @aksi = @aksi, @nilai_baru = @auditMsg, @oleh_user = @oleh_user;
 

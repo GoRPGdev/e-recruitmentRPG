@@ -22,22 +22,27 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 	</div>
 
 	<p class="muted" style="font-size:13px; margin-bottom:16px">
-		Masuk menggunakan akun pengguna terdaftar Anda.
+		Masuk menggunakan NIK (Nomor Induk Karyawan) dan password akun Anda.
 	</p>
 
 	<?= validation_errors('<div class="flash err" style="margin-bottom:14px">', '</div>') ?>
 
 	<?= form_open(site_url('auth/login'), array('id' => 'loginForm')) ?>
 		<div style="margin-bottom:14px">
-			<label for="username" style="margin:0 0 4px">Username</label>
-			<input type="text" id="username" name="username" value="<?= set_value('username') ?>" autocomplete="username" placeholder="Masukkan username" autofocus required>
+			<label for="nik" style="margin:0 0 4px; font-weight:600">NIK Karyawan</label>
+			<input type="text" id="nik" name="nik" value="<?= set_value('nik', set_value('username')) ?>" autocomplete="username" placeholder="Masukkan NIK Karyawan (contoh: EMP-001)" autofocus required>
 		</div>
 
 		<div style="margin-bottom:18px">
-			<label for="password" style="margin:0 0 4px">Password</label>
+			<label for="password" style="margin:0 0 4px; font-weight:600">Password</label>
 			<input type="password" id="password" name="password" autocomplete="current-password" placeholder="Masukkan password" required>
 		</div>
 
-		<button type="submit" style="width:100%; padding:10px; font-size:14px">Masuk ke Sistem</button>
+		<button type="submit" style="width:100%; padding:10px; font-size:14px; font-weight:600">Masuk ke Sistem</button>
+
+		<div class="faint" style="font-size:11.5px; text-align:center; margin-top:14px; line-height:1.4">
+			Sesi login aktif berlaku selama <strong>6 jam</strong>.<br>
+			Akun demo: Super Admin <code>EMP-001</code> &bull; User Dept <code>EMP-010</code>
+		</div>
 	<?= form_close() ?>
 </main>

@@ -52,10 +52,10 @@ BEGIN
         WHERE id_user = @id_user;
 
         -- Audit Log
-        DECLARE @username VARCHAR(50);
-        SELECT @username = username FROM dbo.M_USERS WHERE id_user = @id_user;
+        DECLARE @nik VARCHAR(20);
+        SELECT @nik = nik_karyawan FROM dbo.M_USERS WHERE id_user = @id_user;
 
-        DECLARE @auditMsg VARCHAR(200) = 'Soft delete user: username=' + ISNULL(@username, '') + ' | is_aktif=0';
+        DECLARE @auditMsg VARCHAR(200) = 'Soft delete user: nik=' + ISNULL(@nik, '') + ' | is_aktif=0';
         EXEC dbo.sp_AuditLog @nama_tabel = 'M_USERS', @id_baris = @id_user,
              @aksi = 'DELETE', @nilai_baru = @auditMsg, @oleh_user = @oleh_user;
 

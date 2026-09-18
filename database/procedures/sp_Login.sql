@@ -1,10 +1,9 @@
 /* =========================================================================
-   sp_Login  --  ambil data user untuk verifikasi login
+   sp_Login  --  ambil data user untuk verifikasi login via NIK Karyawan
    E-Recruitment RPG
 
-   PHP yang memverifikasi password (password_verify terhadap password_hash) --
-   bcrypt/argon2 tidak ada di T-SQL. SP ini hanya mengembalikan baris user
-   yang aktif; kalau kosong -> username tidak ada / nonaktif.
+   PHP memverifikasi password (password_verify terhadap password_hash).
+   SP ini hanya mengembalikan baris user yang aktif; kalau kosong -> NIK tidak ada / nonaktif.
 
    Deploy:  php tools/migrate.php proc
    ========================================================================= */
@@ -13,17 +12,16 @@ IF OBJECT_ID('dbo.sp_Login') IS NOT NULL
 GO
 
 CREATE PROCEDURE dbo.sp_Login
-    @username VARCHAR(50)
+    @nik_karyawan VARCHAR(20)
 AS
 BEGIN
     SET NOCOUNT ON;
 
     SELECT
         u.id_user,
-        u.username,
+        u.nik_karyawan,
         u.password_hash,
         u.nama_snapshot,
-        u.departemen_snapshot,
         u.id_departemen,
         u.region,
         u.id_role,
@@ -31,7 +29,7 @@ BEGIN
         r.nama_role
     FROM dbo.M_USERS u
     INNER JOIN dbo.M_ROLES r ON r.id_role = u.id_role
-    WHERE u.username = @username
+    WHERE u.nik_karyawan = @nik_karyawan
       AND u.is_aktif = 1
       AND r.is_aktif = 1;
 END

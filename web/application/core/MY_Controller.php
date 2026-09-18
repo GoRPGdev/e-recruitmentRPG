@@ -33,6 +33,15 @@ class Secured_Controller extends MY_Controller
 			redirect('auth/login');
 		}
 
+		// Enforce masa berlaku login 6 jam (21.600 detik)
+		$login_time = $this->session->userdata('login_time');
+		if ($login_time && (time() - (int) $login_time) > 21600) {
+			$this->session->sess_destroy();
+			$this->session->set_flashdata('error', 'Sesi login Anda telah berakhir (melebihi 6 jam). Silakan masuk kembali.');
+			redirect('auth/login');
+			return;
+		}
+
 		$this->auth_user   = (array) $this->session->userdata('auth_user');
 		$this->permissions = (array) $this->session->userdata('permissions');
 	}

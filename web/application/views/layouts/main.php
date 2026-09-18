@@ -922,7 +922,7 @@ dialog::backdrop {
   $is_public_route = in_array($seg1, array('lamar', 'auth', 'berkas', 'onboarding'));
   if ($this->session->userdata('logged_in') && ! $is_public_route):
     $au = (array) $this->session->userdata('auth_user');
-    $initials = strtoupper(substr($au['nama'] ?? ($au['username'] ?? 'U'), 0, 2));
+    $initials = strtoupper(substr($au['nama'] ?? ($au['nik_karyawan'] ?? 'U'), 0, 2));
     $is_user_dept = (($au['kode_role'] ?? '') === 'USER_DEPT');
     $brand_href = $is_user_dept ? site_url('requisitions') : site_url('dashboard');
 ?>
@@ -1049,7 +1049,7 @@ dialog::backdrop {
         <div class="user-avatar"><?= html_escape($initials) ?></div>
         <div class="user-info">
           <div class="user-name" title="<?= html_escape($au['nama'] ?? '') ?>"><?= html_escape($au['nama'] ?? '') ?></div>
-          <div class="user-role"><?= html_escape($au['kode_role'] ?? '') ?></div>
+          <div class="user-role"><?= html_escape($au['kode_role'] ?? '') ?><?= !empty($au['nik_karyawan']) ? ' &middot; <span class="mono">' . html_escape($au['nik_karyawan']) . '</span>' : '' ?></div>
         </div>
         <a href="<?= site_url('auth/logout') ?>" class="btn-ghost btn-sm" title="Keluar dari sesi" style="padding:4px 8px">
           <svg style="width:14px; height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>

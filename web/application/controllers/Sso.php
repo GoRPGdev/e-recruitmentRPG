@@ -45,7 +45,7 @@ class Sso extends MY_Controller
 			return;
 		}
 
-		$user = $this->auth_model->get_user_by_nik($nik);
+		$user = $this->auth_model->get_user_by_nik_sso($nik);
 
 		if (! $user) {
 			log_message('error', 'SSO ditolak: NIK belum terdaftar aktif di e-recruitment (nik=' . $nik . ')');
@@ -55,10 +55,11 @@ class Sso extends MY_Controller
 
 		$this->session->sess_regenerate(TRUE);
 		$this->session->set_userdata(array(
-			'logged_in' => TRUE,
-			'auth_user' => array(
+			'logged_in'  => TRUE,
+			'login_time' => time(),
+			'auth_user'  => array(
 				'id_user'       => (int) $user['id_user'],
-				'username'      => $user['username'],
+				'nik_karyawan'  => $user['nik_karyawan'] ?? $nik,
 				'nama'          => $user['nama_snapshot'],
 				'kode_role'     => $user['kode_role'],
 				'id_departemen' => isset($user['id_departemen']) && $user['id_departemen'] !== NULL
@@ -95,7 +96,7 @@ class Sso extends MY_Controller
 		}
 
 		$nik  = (string) $this->input->get('nik');
-		$user = $nik !== '' ? $this->auth_model->get_user_by_nik($nik) : NULL;
+		$user = $nik !== '' ? $this->auth_model->get_user_by_nik_sso($nik) : NULL;
 
 		echo json_encode(array('allowed' => $user !== NULL));
 	}

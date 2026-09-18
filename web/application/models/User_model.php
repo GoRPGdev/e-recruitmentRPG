@@ -31,9 +31,9 @@ class User_model extends CI_Model
 		$where = array('1=1');
 
 		if (!empty($filter['q'])) {
-			$where[] = "(u.username LIKE ? OR u.nama_snapshot LIKE ? OR u.nik_karyawan LIKE ?)";
+			$where[] = "(u.nik_karyawan LIKE ? OR u.nama_snapshot LIKE ?)";
 			$term = '%' . $filter['q'] . '%';
-			$b[] = $term; $b[] = $term; $b[] = $term;
+			$b[] = $term; $b[] = $term;
 		}
 
 		if (!empty($filter['role'])) {
@@ -52,8 +52,8 @@ class User_model extends CI_Model
 		$b[] = (int) $offset + (int) $per - 1;
 
 		$sql = "WITH q AS (
-		            SELECT u.id_user, u.username, u.nik_karyawan, u.nama_snapshot,
-		                   u.departemen_snapshot, u.id_role, u.id_departemen, u.region, u.is_aktif,
+		            SELECT u.id_user, u.nik_karyawan, u.nama_snapshot,
+		                   u.id_role, u.id_departemen, u.region, u.is_aktif,
 		                   r.kode_role, r.nama_role, d.nama AS nama_dept,
 		                   ROW_NUMBER() OVER (ORDER BY u.is_aktif DESC, u.id_user DESC) AS rn
 		            FROM dbo.M_USERS u
@@ -75,9 +75,9 @@ class User_model extends CI_Model
 		$where = array('1=1');
 
 		if (!empty($filter['q'])) {
-			$where[] = "(u.username LIKE ? OR u.nama_snapshot LIKE ? OR u.nik_karyawan LIKE ?)";
+			$where[] = "(u.nik_karyawan LIKE ? OR u.nama_snapshot LIKE ?)";
 			$term = '%' . $filter['q'] . '%';
-			$b[] = $term; $b[] = $term; $b[] = $term;
+			$b[] = $term; $b[] = $term;
 		}
 
 		if (!empty($filter['role'])) {
@@ -105,8 +105,8 @@ class User_model extends CI_Model
 
 	public function get_user($id_user)
 	{
-		$sql = "SELECT u.id_user, u.username, u.nik_karyawan, u.nama_snapshot,
-		               u.departemen_snapshot, u.id_role, u.id_departemen, u.region, u.is_aktif,
+		$sql = "SELECT u.id_user, u.nik_karyawan, u.nama_snapshot,
+		               u.id_role, u.id_departemen, u.region, u.is_aktif,
 		               r.kode_role, r.nama_role, d.nama AS nama_dept
 		        FROM dbo.M_USERS u
 		        JOIN dbo.M_ROLES r ON r.id_role = u.id_role
@@ -162,11 +162,9 @@ class User_model extends CI_Model
 		$id_out = 0;
 		$params = array(
 			NULL, // @id_user NULL -> INSERT
-			(string) $data['username'],
+			(string) $data['nik_karyawan'],
 			$pwdHash,
 			(string) $data['nama_snapshot'],
-			!empty($data['nik_karyawan']) ? (string) $data['nik_karyawan'] : null,
-			!empty($data['departemen_snapshot']) ? (string) $data['departemen_snapshot'] : null,
 			(int) $data['id_role'],
 			!empty($data['id_departemen']) ? (int) $data['id_departemen'] : null,
 			!empty($data['region']) ? (string) $data['region'] : null,
@@ -175,7 +173,7 @@ class User_model extends CI_Model
 			array(&$id_out, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT)
 		);
 
-		$this->_sp('{CALL dbo.sp_SaveUser(?,?,?,?,?,?,?,?,?,?,?,?)}', $params);
+		$this->_sp('{CALL dbo.sp_SaveUser(?,?,?,?,?,?,?,?,?,?)}', $params);
 		return (int) $id_out;
 	}
 
@@ -185,11 +183,9 @@ class User_model extends CI_Model
 		$id_out = (int) $id_user;
 		$params = array(
 			(int) $id_user,
-			(string) $data['username'],
+			(string) $data['nik_karyawan'],
 			$pwdHash,
 			(string) $data['nama_snapshot'],
-			!empty($data['nik_karyawan']) ? (string) $data['nik_karyawan'] : null,
-			!empty($data['departemen_snapshot']) ? (string) $data['departemen_snapshot'] : null,
 			(int) $data['id_role'],
 			!empty($data['id_departemen']) ? (int) $data['id_departemen'] : null,
 			!empty($data['region']) ? (string) $data['region'] : null,
@@ -198,7 +194,7 @@ class User_model extends CI_Model
 			array(&$id_out, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT)
 		);
 
-		$this->_sp('{CALL dbo.sp_SaveUser(?,?,?,?,?,?,?,?,?,?,?,?)}', $params);
+		$this->_sp('{CALL dbo.sp_SaveUser(?,?,?,?,?,?,?,?,?,?)}', $params);
 		return (int) $id_out;
 	}
 
@@ -212,6 +208,20 @@ class User_model extends CI_Model
 		$id_out = (int) $id_user;
 		$params = array(
 			(int) $id_user,
+			(string) $user['nik_karyawan'],
+			null, // password tidak berubah
+			(string) $user['nama_snapshot'],
+			(int) $user['id_role'],
+			!empty($user['id_departemen']) ? (int) $user['id_departemen'] : null,
+			!empty($user['region']) ? (string) $user['region'] : null,
+			(int) $is_aktif,
+			$oleh_user ? (int) $oleh_user : null,
+			array(&$id_out, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT)
+		);
+
+		$this->_sp('{CALL dbo.sp_SaveUser(?,?,?,?,?,?,?,?,?,?)}', $params);
+		return (int) $id_out;
+	}
 			(string) $user['username'],
 			null, // pertahankan password
 			(string) $user['nama_snapshot'],

@@ -1,169 +1,219 @@
-# Setup Lingkungan Dev — E-Recruitment RPG
+# Panduan Setup Lingkungan Pengembangan — E-Recruitment RPG
 
-Checklist menyiapkan **satu mesin dev dari nol**. Ikuti berurutan.
-Selesai kalau `php tools/test-koneksi.php` menampilkan **`GERBANG FASE 0 TERBUKA`**.
+Dokumen ini berisi panduan teknis langkah demi langkah untuk menyiapkan **satu mesin komputer pengembang (Developer Workstation) dari nol** hingga sistem siap dijalankan dan diuji.
 
-> Kombinasi yang **sudah terbukti jalan** (mesin Kiki, 3 Sep 2026):
-> PHP 7.4.33 NTS x64 · `sqlsrv`/`pdo_sqlsrv` 5.9.0 · ODBC Driver 17.7 → SQL Server 2008 R2 (10.50.1600).
+Proses setup dinyatakan berhasil sempurna apabila perintah `php tools/test-koneksi.php` menghasilkan status **`>>> GERBANG FASE 0 TERBUKA`**.
 
 ---
 
-## 0. Prasyarat
+## 0. Prasyarat Sistem
 
-- Windows x64
-- Git
-- Akses ke **SQL Server 2008 R2** — dua opsi:
+* **Sistem Operasi:** Windows 10 / 11 x64 (atau Windows Server 2012+).
+* **Git:** Versi terbaru untuk Windows.
+* **Akses ke SQL Server 2008 R2 (SP2, 10.50.4000.0) x64**:
+  * **Opsi A (Instance Lokal):** Install SQL Server 2008 R2 Express atau Developer Edition di komputer sendiri. **Wajib mengaktifkan Mixed Mode Authentication (SQL Server and Windows Authentication)**.
+  * **Opsi B (Instance Bersama / Jaringan Kantor):** Menghubungkan ke server SQL Server 2008 R2 yang sudah aktif di jaringan lokal kantor RPG (port default `1433`).
 
-  | Opsi | Kapan dipakai | Yang perlu diinstal |
-  |---|---|---|
-  | **A. Instance bersama** | mesin dev ada di LAN kantor yang sama dengan instance yang sudah jalan | tidak perlu install SQL Server — cukup bikin database sendiri di instance itu |
-  | **B. Instance lokal** | mesin dev berdiri sendiri / tidak selalu terhubung ke kantor | install SQL Server 2008 R2 (Express/Developer) di mesin sendiri, **wajib Mixed Mode auth** |
-
-  Fase 0 **tidak bisa** divalidasi tanpa SQL Server 2008 R2 asli — versi lain akan meloloskan T-SQL yang seharusnya ditolak.
+> ⚠️ **Catatan Penting Kompatibilitas T-SQL:**  
+> Pengujian sistem **wajib menggunakan SQL Server 2008 R2 asli**. Versi yang lebih baru (2012, 2019, 2022) akan meloloskan sintaks T-SQL modern (seperti `CONCAT`, `OFFSET FETCH`, `TRY_CONVERT`, atau `THROW`) yang akan langsung menyebabkan error fatal saat kode dideploy ke server produksi RPG.
 
 ---
 
-## 1. PHP 7.4 (NTS x64)
+## 1. Pemasangan PHP 7.4.33 (NTS x64)
 
-PHP 7.4 sudah EOL, ambil dari arsip resmi:
+Karena PHP 7.4 sudah berstatus arsip resmi, unduh dari repositori resmi Windows PHP:
 
-- <https://windows.php.net/downloads/releases/archives/php-7.4.33-nts-Win32-vc15-x64.zip>
-- Extract ke `C:\php7.4`
+1. Unduh file zip:  
+   👉 [php-7.4.33-nts-Win32-vc15-x64.zip](https://windows.php.net/downloads/releases/archives/php-7.4.33-nts-Win32-vc15-x64.zip)
+2. Ekstrak file zip tersebut ke direktori:  
+   `C:\php7.4` *(atau ke folder PHP Laragon jika menggunakan Laragon)*.
 
-> NTS cukup untuk lolos gerbang lewat CLI. Kalau nanti runtime **produksi** = Apache mod_php, butuh build **TS** — itu keputusan terpisah di Fase 0 (§ "Putuskan runtime produksi" di `docs/RENCANA_DEVELOPMENT.md`).
+---
 
-## 2. Driver `sqlsrv` 5.9 (satu-satunya seri untuk PHP 7.4)
+## 2. Pemasangan Driver `sqlsrv` & `pdo_sqlsrv` 5.9
 
-- <https://windows.php.net/downloads/pecl/releases/sqlsrv/5.9.0/php_sqlsrv-5.9.0-7.4-nts-vc15-x64.zip>
-- <https://windows.php.net/downloads/pecl/releases/pdo_sqlsrv/5.9.0/php_pdo_sqlsrv-5.9.0-7.4-nts-vc15-x64.zip>
+Driver versi **5.9.0** adalah satu-satunya seri driver Microsoft resmi yang dirancang dan diuji untuk PHP 7.4:
 
-Dari tiap zip ambil `php_sqlsrv.dll` / `php_pdo_sqlsrv.dll` → taruh di `C:\php7.4\ext\`.
-(File `.pdb` tidak perlu.)
+1. Unduh kedua paket driver PECL resmi:
+   * [php_sqlsrv-5.9.0-7.4-nts-vc15-x64.zip](https://windows.php.net/downloads/pecl/releases/sqlsrv/5.9.0/php_sqlsrv-5.9.0-7.4-nts-vc15-x64.zip)
+   * [php_pdo_sqlsrv-5.9.0-7.4-nts-vc15-x64.zip](https://windows.php.net/downloads/pecl/releases/pdo_sqlsrv/5.9.0/php_pdo_sqlsrv-5.9.0-7.4-nts-vc15-x64.zip)
+2. Dari masing-masing file zip, ambil file:
+   * `php_sqlsrv.dll`
+   * `php_pdo_sqlsrv.dll`
+3. Salin kedua file `.dll` tersebut ke dalam folder ekstensi PHP:  
+   `C:\php7.4\ext\`
 
-## 3. Microsoft ODBC Driver 17 for SQL Server (17.4+)
+---
 
-- Cari **"Microsoft ODBC Driver 17 for SQL Server"**, install versi **x64**.
-- **JANGAN Driver 18** — tidak mendukung SQL Server 2008 R2, koneksi akan gagal.
-- Cek: PowerShell → `Get-OdbcDriver | ? { $_.Name -like "*17*" }`
+## 3. Pemasangan Microsoft ODBC Driver 17 for SQL Server
 
-## 4. `php.ini`
+Sistem membutuhkan driver ODBC level sistem operasi agar PHP dapat berkomunikasi dengan SQL Server:
 
+1. Unduh dan pasang **Microsoft ODBC Driver 17 for SQL Server** (versi 17.4+ x64).
+2. ⛔ **JANGAN MENGGUNAKAN DRIVER 18:**  
+   Microsoft ODBC Driver 18 telah memutus dukungan untuk SQL Server 2008 R2 dan koneksi database akan selalu ditolak (*Handshake Failure*).
+3. Verifikasi instalasi driver melalui PowerShell:
+   ```powershell
+   Get-OdbcDriver | Where-Object { $_.Name -like "*17*" }
+   ```
+
+---
+
+## 4. Konfigurasi `php.ini`
+
+1. Masuk ke `C:\php7.4\` dan buat file `php.ini`:
+   ```powershell
+   copy C:\php7.4\php.ini-development C:\php7.4\php.ini
+   ```
+2. Buka file `php.ini` dengan teks editor, pastikan direktif berikut aktif (hilangkan tanda titik koma `;` di depannya):
+   ```ini
+   extension_dir = "ext"
+   ```
+3. Tambahkan baris konfigurasi ekstensi dan zona waktu berikut pada bagian paling bawah file:
+   ```ini
+   extension=sqlsrv
+   extension=pdo_sqlsrv
+   extension=mbstring
+   extension=openssl
+   extension=curl
+   extension=fileinfo
+   extension=gd
+
+   date.timezone = Asia/Jakarta
+   ```
+
+---
+
+## 5. Menambahkan PHP ke User Environment Variable (PATH)
+
+1. Tambahkan `C:\php7.4` ke dalam **User Environment Variable `Path`** Windows.
+2. Tutup seluruh jendela terminal, lalu buka terminal **PowerShell** baru.
+3. Jalankan pengujian:
+   ```powershell
+   php -v
+   # Harus menampilkan: PHP 7.4.33 ... NTS ... x64
+
+   php -m
+   # Harus memuat: sqlsrv, pdo_sqlsrv, mbstring, curl, gd
+   ```
+
+---
+
+## 6. Clone Repositori Proyek
+
+```powershell
+git clone https://github.com/GoRPGdev/e-recruitmentRPG.git e-recruitmentRPG
+cd e-recruitmentRPG
 ```
-copy C:\php7.4\php.ini-development C:\php7.4\php.ini
+
+---
+
+## 7. Inisialisasi Database Pengembang (Sekali Saja)
+
+Jalankan skrip bootstrap menggunakan akun administrator SQL Server (`sa` atau anggota grup `sysadmin`):
+
+```powershell
+# Contoh untuk mesin dev Kahfi:
+sqlcmd -S localhost -U sa -P PasswordSaAnda -i database\bootstrap\create_dev_db_KAHFI.sql
 ```
 
-Edit `C:\php7.4\php.ini`:
+> **Sebelum menjalankan:** Buka file `create_dev_db_KAHFI.sql`, sesuaikan kata sandi login pengguna database `erec_app` yang diinginkan. Kata sandi ini nantinya dimasukkan ke file `tools/koneksi.local.php`.
 
-- hilangkan `;` di depan → `extension_dir = "ext"`
-- tambahkan di bagian bawah:
+---
 
-  ```ini
-  extension=sqlsrv
-  extension=pdo_sqlsrv
-  extension=mbstring
-  extension=openssl
-  extension=curl
-  extension=fileinfo
-  date.timezone = Asia/Jakarta
-  ```
+## 8. Konfigurasi Koneksi Lokal (`tools/koneksi.local.php`)
 
-## 5. PATH
+Salin file contoh konfigurasi lokal:
 
-Tambahkan `C:\php7.4` ke **User environment variable `Path`**, lalu buka terminal **baru**.
-
-Cek:
-```
-php -v      -> PHP 7.4.33 ... NTS ... x64
-php -m      -> ada "sqlsrv" dan "pdo_sqlsrv"
-```
-
-## 6. Clone repo
-
-```
-git clone https://github.com/hilqudz/e-recruitmentRPG.git e-recruitment
-cd e-recruitment
-```
-
-> SSH belum di-set untuk repo ini. Kalau mau SSH: `ssh-keygen -t ed25519 -C "email"`, tambahkan isi `~/.ssh/id_ed25519.pub` ke GitHub → Settings → SSH keys, lalu `git remote set-url origin git@github.com:hilqudz/e-recruitmentRPG.git`.
-
-## 7. Buat database dev sendiri (sekali)
-
-Jalankan sebagai `sa` / anggota `sysadmin`:
-
-```
-sqlcmd -S <host> -U sa -P <pass> -i database\bootstrap\create_dev_db_KAHFI.sql
-```
-
-- Kiki  → `database/bootstrap/create_dev_db_KIKI.sql`
-- Kahfi → `database/bootstrap/create_dev_db_KAHFI.sql`
-
-**Sebelum jalan:** buka file, ganti `MASUKKAN_PASSWORD_KUAT_DI_SINI` dengan password pilihan sendiri. Password yang sama nanti dipakai di `tools/koneksi.local.php`.
-
-Script ini **bukan migrasi** — dijalankan manual, sekali, tidak dicatat di `SCHEMA_MIGRATIONS`. Isinya cuma: database kosong + login `erec_app` + hak DDL di DB itu saja. Detail di `database/bootstrap/README.md`.
-
-**Opsi A (instance bersama):** blok `CREATE LOGIN erec_app` otomatis dilewati kalau login-nya sudah ada. Kalau koneksi remote gagal, di mesin yang punya instance: aktifkan **TCP/IP** di SQL Server Configuration Manager, jalankan service **SQL Server Browser**, buka **port 1433** di firewall, restart service SQL Server.
-
-## 8. Config koneksi lokal
-
-```
+```powershell
 copy tools\koneksi.local.sample.php tools\koneksi.local.php
 ```
 
-| field | Kiki | Kahfi — instance lokal | Kahfi — instance bersama |
-|---|---|---|---|
-| `host` | `localhost` | `localhost` | `DESKTOP-E34JC3H` atau `192.168.x.x` |
-| `database` | `RPG_EREC_DEV_KIKI` | `RPG_EREC_DEV_KAHFI` | `RPG_EREC_DEV_KAHFI` |
-| `user` | `erec_app` | `erec_app` | `erec_app` |
-| `password` | (dari script bootstrap) | (dari script bootstrap) | (password `erec_app` di instance bersama) |
-| `storage` | folder di luar webroot, mis. `D:\erecruitment-storage` | folder sendiri | folder sendiri |
+Sesuaikan isinya:
 
-`tools/koneksi.local.php` **tidak ikut Git** (`.gitignore`). **Jangan pernah commit password.**
-
-## 9. Gerbang Fase 0
-
+```php
+<?php
+return array(
+    'host'     => 'localhost',              // Atau IP server instance bersama
+    'database' => 'RPG_EREC_DEV_KAHFI',     // Nama database pengembang Anda
+    'user'     => 'erec_app',               // Akun pengguna aplikasi
+    'password' => 'KataSandiErecAppAnda',   // Kata sandi dari skrip bootstrap
+    'storage'  => 'D:\\erecruitment-storage',// Direktori fisik penyimpanan berkas (DI LUAR webroot)
+);
 ```
+
+> 🔒 **Keamanan:** File `tools/koneksi.local.php` telah dimasukkan ke `.gitignore` dan tidak akan pernah ter-commit ke GitHub. Jangan pernah membagikan atau meng-commit kata sandi basis data.
+
+---
+
+## 9. Validasi Gerbang Fase 0 (Koneksi & Driver)
+
+Jalankan skrip pengujian gerbang utama:
+
+```powershell
 php tools/test-koneksi.php
 ```
 
-Harus berakhir: **`>>> GERBANG FASE 0 TERBUKA`**.
+Pastikan skrip berakhir dengan tulisan hijau:
+```text
+==============================================================
+  RINGKASAN
+==============================================================
+  Lulus      : 19
+  Peringatan : 1 (Peringatan DriverName pada ODBC 17 wajar & aman diabaikan)
+  Gagal      : 0
 
-> Peringatan `Driver ODBC tidak dikenali` dengan `DriverVer: 17.xx` **boleh diabaikan** — skrip membaca `DriverName` yang tidak selalu diisi oleh `sqlsrv` 5.9; yang menentukan adalah `DriverVer`, dan 17.4+ sudah benar.
+  >>> GERBANG FASE 0 TERBUKA.
+```
 
 ---
 
-## 10. Loop harian setelah setup
+## 10. Eksekusi Migrasi Skema & Stored Procedure
 
-| Langkah | Siapa | Perintah |
-|---|---|---|
-| Butuh tabel / kolom baru | siapa saja | tulis file baru `database/migrations/YYYYMMDD_HHMM__deskripsi.sql` |
-| Uji di DB sendiri | penulis | `php tools/migrate.php up` |
-| Bagikan | penulis | `git add` file itu → `git commit` → `git push` |
-| Ikut berubah | yang lain | `git pull --rebase origin main` → `php tools/migrate.php up` |
-| Cek sinkron | siapa saja | `php tools/migrate.php status` |
-| Deploy ulang stored procedure | siapa saja | `php tools/migrate.php proc` |
+Setelah gerbang terbuka, terapkan seluruh migrasi tabel dan prosedur:
 
-`migrate.php` mencatat tiap file yang dijalankan ke `SCHEMA_MIGRATIONS` (nama file + hash isi). Efeknya: file yang sudah jalan tidak diulang; file yang **diedit setelah** dijalankan → runner berhenti dan protes.
+```powershell
+# 1. Jalankan seluruh skrip migrasi database:
+php tools/migrate.php up
 
-### Aturan yang menjaga dua DB tetap identik
+# 2. Deploy seluruh Stored Procedure T-SQL:
+php tools/migrate.php proc
 
-1. **File migrasi yang sudah di-push TIDAK PERNAH diedit.** Salah? Buat file koreksi baru (`..__perbaiki_xxx.sql`).
-2. **Nama file pakai timestamp**, bukan `V001`/`V002` — dua orang bikin migrasi di hari sama, jam beda → tidak tabrakan.
-3. **Semua perubahan skema lewat file migrasi.** Prototyping di SSMS boleh, tapi buang lalu tulis ulang sebagai file.
-4. **Migrasi master pertama ditulis berdua, satu layar** — semua modul bergantung ke situ.
+# 3. Periksa status sinkronisasi:
+php tools/migrate.php status
+# Seluruh baris migrasi harus berstatus [ OK ]
+```
 
 ---
 
-## 11. Alur Git
+## 11. Menjalankan Aplikasi Web
 
-```
-main                          selalu jalan, hanya lewat Pull Request
- ├─ feat/master-requisition    Kahfi
- └─ feat/intake-form           Kiki
-```
+Jalankan server pengembangan bawaan:
 
-```
-git pull --rebase origin main      # sebelum mulai & sebelum push
-git push origin feat/<modul>
+```powershell
+php -S localhost:8080 -t web router.php
 ```
 
-Branch per modul dipecah **setelah** migrasi master pertama masuk `main` dan kedua DB sudah `migrate.php up`.
+Buka peramban di: **[http://localhost:8080/auth/login](http://localhost:8080/auth/login)**
+
+* **Super Admin Login:**  
+  NIK: `EMP-001`  
+  Password: `demo123`
+* **User Departemen Login:**  
+  NIK: `EMP-010`  
+  Password: `demo123`
+
+---
+
+## 12. Menjalankan Automated Test Suite (Verifikasi Kesiapan)
+
+Untuk memastikan seluruh aspek keamanan, penanganan token, proteksi kebocoran path server, dan validasi berkas berjalan 100% sempurna:
+
+```powershell
+# Jalankan uji kesiapan produksi:
+php tools/test-production-hardening.php
+
+# Jalankan uji keamanan unggah berkas CV & MIME spoofing:
+php tools/test-file-upload.php
+```
+Kedua pengujian di atas harus memberikan hasil **100% PASS**.

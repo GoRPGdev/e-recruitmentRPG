@@ -113,15 +113,15 @@ $roles = array('SUPER_ADMIN', 'USER_DEPT');
 $deptMkt = scalar($conn, "SELECT id_departemen FROM dbo.M_DEPARTEMEN WHERE kode = 'MKT'");
 $uid = array();
 foreach ($roles as $r) {
-    $u = 'demo_' . strtolower($r);
+    $nik = ($r === 'SUPER_ADMIN') ? 'EMP-001' : 'EMP-010';
     $row = array(
-        'username' => $u, 'password_hash' => password_hash('demo123', PASSWORD_DEFAULT),
+        'nik_karyawan' => $nik, 'password_hash' => password_hash('demo123', PASSWORD_DEFAULT),
         'nama_snapshot' => ($r === 'SUPER_ADMIN') ? 'Super Administrator Demo' : 'Demo ' . $r,
         'is_aktif' => 1,
         'id_role' => scalar($conn, "SELECT id_role FROM dbo.M_ROLES WHERE kode_role=?", array($r)),
         'id_departemen' => ($r === 'USER_DEPT') ? $deptMkt : NULL,
     );
-    $id = scalar($conn, "SELECT id_user FROM dbo.M_USERS WHERE username=?", array($u));
+    $id = scalar($conn, "SELECT id_user FROM dbo.M_USERS WHERE nik_karyawan=?", array($nik));
     if ($id) {
         q($conn, "UPDATE dbo.M_USERS SET id_departemen = ?, is_aktif = 1 WHERE id_user = ?",
           array($row['id_departemen'], (int) $id));

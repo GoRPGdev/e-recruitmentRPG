@@ -12,14 +12,25 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class Auth_model extends CI_Model
 {
 	/**
+	 * Mengambil data kredensial login pengguna berbasis NIK Karyawan (termasuk password_hash).
+	 *
+	 * @param string $nik_karyawan
 	 * @return array|null  baris user aktif (termasuk password_hash) atau null
 	 */
-	public function get_user_by_username($username)
+	public function get_user_by_nik($nik_karyawan)
 	{
-		$q = $this->db->query('EXEC dbo.sp_Login ?', array((string) $username));
+		$q = $this->db->query('EXEC dbo.sp_Login ?', array((string) $nik_karyawan));
 		$row = $q->row_array();
 		$q->free_result();
 		return $row ? $row : NULL;
+	}
+
+	/**
+	 * Alias untuk backward compatibility
+	 */
+	public function get_user_by_username($identifier)
+	{
+		return $this->get_user_by_nik($identifier);
 	}
 
 	/**
@@ -28,7 +39,7 @@ class Auth_model extends CI_Model
 	 *
 	 * @return array|null  baris user aktif atau null
 	 */
-	public function get_user_by_nik($nik_karyawan)
+	public function get_user_by_nik_sso($nik_karyawan)
 	{
 		$q = $this->db->query('EXEC dbo.sp_GetUserByNik ?', array((string) $nik_karyawan));
 		$row = $q->row_array();

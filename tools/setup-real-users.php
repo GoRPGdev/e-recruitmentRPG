@@ -30,10 +30,10 @@ function listUsers($conn) {
     echo "\n========================================================================================\n";
     echo "  DAFTAR PENGGUNA SISTEM (dbo.M_USERS)\n";
     echo "========================================================================================\n";
-    printf("  %-5s | %-18s | %-24s | %-14s | %-16s | %-6s\n", "ID", "Username", "Nama", "Role", "Departemen", "Status");
+    printf("  %-5s | %-18s | %-24s | %-14s | %-16s | %-6s\n", "ID", "NIK", "Nama", "Role", "Departemen", "Status");
     echo "----------------------------------------------------------------------------------------\n";
 
-    $sql = "SELECT u.id_user, u.username, u.nama_snapshot, r.kode_role, d.nama AS nama_dept, u.is_aktif
+    $sql = "SELECT u.id_user, u.nik_karyawan, u.nama_snapshot, r.kode_role, d.nama AS nama_dept, u.is_aktif
             FROM dbo.M_USERS u
             JOIN dbo.M_ROLES r ON r.id_role = u.id_role
             LEFT JOIN dbo.M_DEPARTEMEN d ON d.id_departemen = u.id_departemen
@@ -43,16 +43,16 @@ function listUsers($conn) {
         $st = $u['is_aktif'] ? 'AKTIF' : 'NONAKTIF';
         $dept = $u['nama_dept'] ? $u['nama_dept'] : '(Cross-Dept)';
         printf("  %-5d | %-18s | %-24s | %-14s | %-16s | %-6s\n",
-            $u['id_user'], $u['username'], $u['nama_snapshot'], $u['kode_role'], $dept, $st);
+            $u['id_user'], $u['nik_karyawan'], $u['nama_snapshot'], $u['kode_role'], $dept, $st);
     }
     echo "========================================================================================\n\n";
 }
 
-function createUserDirect($conn, $username, $password, $nama, $roleKode, $deptKode = null, $nik = null) {
-    // 1. Cek username
-    $c = sqlsrv_query($conn, "SELECT id_user FROM dbo.M_USERS WHERE username = ?", array($username));
+function createUserDirect($conn, $nik, $password, $nama, $roleKode, $deptKode = null) {
+    // 1. Cek NIK
+    $c = sqlsrv_query($conn, "SELECT id_user FROM dbo.M_USERS WHERE nik_karyawan = ?", array($nik));
     if ($row = sqlsrv_fetch_array($c, SQLSRV_FETCH_ASSOC)) {
-        echo "  [SKIP] Pengguna '$username' sudah ada (ID: {$row['id_user']}).\n";
+        echo "  [SKIP] Pengguna NIK '$nik' sudah ada (ID: {$row['id_user']}).\n";
         return;
     }
 
@@ -67,12 +67,10 @@ function createUserDirect($conn, $username, $password, $nama, $roleKode, $deptKo
 
     // 3. Ambil id_departemen jika ada
     $idDept = null;
-    $deptNama = null;
     if ($deptKode) {
-        $d = sqlsrv_query($conn, "SELECT id_departemen, nama FROM dbo.M_DEPARTEMEN WHERE kode = ?", array($deptKode));
+        $d = sqlsrv_query($conn, "SELECT id_departemen FROM dbo.M_DEPARTEMEN WHERE kode = ?", array($deptKode));
         if ($dRow = sqlsrv_fetch_array($d, SQLSRV_FETCH_ASSOC)) {
             $idDept = (int) $dRow['id_departemen'];
-            $deptNama = $dRow['nama'];
         }
     }
 
@@ -82,31 +80,30 @@ function createUserDirect($conn, $username, $password, $nama, $roleKode, $deptKo
 
     $spParams = array(
         null,
-        $username,
+        $nik,
         $pwdHash,
         $nama,
-        $nik,
-        $deptNama,
         $idRole,
         $idDept,
+        null,
         1,
         null,
         array(&$idOut, SQLSRV_PARAM_OUT, SQLSRV_PHPTYPE_INT)
     );
 
-    $stmt = sqlsrv_query($conn, "{CALL dbo.sp_SaveUser(?,?,?,?,?,?,?,?,?,?,?)}", $spParams);
+    $stmt = sqlsrv_query($conn, "{CALL dbo.sp_SaveUser(?,?,?,?,?,?,?,?,?,?)}", $spParams);
     if ($stmt === false) {
-        echo "  [FAIL] Gagal membuat user '$username': " . print_r(sqlsrv_errors(), true) . "\n";
+        echo "  [FAIL] Gagal membuat user NIK '$nik': " . print_r(sqlsrv_errors(), true) . "\n";
     } else {
-        echo "  [OK] Berhasil membuat user '$username' (Nama: $nama, Role: $roleKode, ID: $idOut)\n";
+        echo "  [OK] Berhasil membuat user NIK '$nik' (Nama: $nama, Role: $roleKode, ID: $idOut)\n";
     }
 }
 
 function disableDemoAccounts($conn) {
     echo "\n>> Menonaktifkan akun demo bawaan sistem (is_aktif = 0)...\n";
-    $stmt = sqlsrv_query($conn, "UPDATE dbo.M_USERS SET is_aktif = 0 WHERE username IN ('demo_super_admin', 'demo_user_dept')");
+    $stmt = sqlsrv_query($conn, "UPDATE dbo.M_USERS SET is_aktif = 0 WHERE nik_karyawan IN ('EMP-001', 'EMP-010')");
     if ($stmt !== false) {
-        echo "  [OK] Akun demo_super_admin dan demo_user_dept telah dinonaktifkan.\n";
+        echo "  [OK] Akun demo EMP-001 dan EMP-010 telah dinonaktifkan.\n";
     } else {
         echo "  [FAIL] Gagal menonaktifkan akun demo: " . print_r(sqlsrv_errors(), true) . "\n";
     }
@@ -116,19 +113,19 @@ function seedInitialRealAccounts($conn) {
     echo "\n>> Menyiapkan Akun Standar Organisasi Ratu Pertiwi Group (RPG)...\n";
 
     // 1. Super Admin Utama (HR / IT)
-    createUserDirect($conn, 'admin.rpg', 'RpgAdmin2026!#', 'Administrator HR RPG', 'SUPER_ADMIN', null, 'EMP-001');
+    createUserDirect($conn, 'EMP-001', 'RpgAdmin2026!#', 'Administrator HR RPG', 'SUPER_ADMIN');
 
     // 2. Akun HR Operasional (Contoh: Mas Fachri)
-    createUserDirect($conn, 'fachri.hr', 'RpgFachri2026!#', 'Fachri - HR Recruitment', 'SUPER_ADMIN', 'HRD', 'EMP-002');
+    createUserDirect($conn, 'EMP-002', 'RpgFachri2026!#', 'Fachri - HR Recruitment', 'SUPER_ADMIN', 'HRD');
 
     // 3. User Departemen - Marketing
-    createUserDirect($conn, 'dept.marketing', 'Marketing2026!#', 'Head of Marketing', 'USER_DEPT', 'MKT', 'EMP-010');
+    createUserDirect($conn, 'EMP-010', 'Marketing2026!#', 'Head of Marketing', 'USER_DEPT', 'MKT');
 
     // 4. User Departemen - Operasional & Outlet
-    createUserDirect($conn, 'dept.operasional', 'Operasional2026!#', 'Head of Operations', 'USER_DEPT', 'OPS', 'EMP-011');
+    createUserDirect($conn, 'EMP-011', 'Operasional2026!#', 'Head of Operations', 'USER_DEPT', 'OPS');
 
     // 5. User Departemen - Finance & Accounting
-    createUserDirect($conn, 'dept.finance', 'Finance2026!#', 'Head of Finance', 'USER_DEPT', 'FIN', 'EMP-012');
+    createUserDirect($conn, 'EMP-012', 'Finance2026!#', 'Head of Finance', 'USER_DEPT', 'FIN');
 
     echo "\n>> Selesai menyiapkan akun. Harap catat atau ubah password default saat pertama kali login.\n";
 }

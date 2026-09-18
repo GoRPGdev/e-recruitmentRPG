@@ -21,8 +21,9 @@ $action_url = $is_edit ? site_url('users/update/' . (int) $user['id_user']) : si
 	<?= form_open($action_url) ?>
 		<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
 			<div>
-				<label for="username">Username <span style="color:var(--crit)">*</span></label>
-				<input type="text" id="username" name="username" value="<?= html_escape($user['username'] ?? '') ?>" required <?= $is_edit ? 'readonly style="background:var(--surface-2)"' : '' ?>>
+				<label for="nik_karyawan">NIK Karyawan <span style="color:var(--crit)">*</span></label>
+				<input type="text" id="nik_karyawan" name="nik_karyawan" value="<?= html_escape($user['nik_karyawan'] ?? '') ?>" placeholder="e.g. EMP-001" required <?= $is_edit ? 'readonly style="background:var(--surface-2)"' : '' ?>>
+				<div style="font-size:11px; color:var(--text-faint); margin-top:3px">Dipakai untuk login sistem &amp; integrasi SSO Payroll.</div>
 			</div>
 			<div>
 				<label for="password">Password <?= $is_edit ? '<span class="faint">(Kosongkan bila tak diubah)</span>' : '<span style="color:var(--crit)">*</span>' ?></label>
@@ -30,14 +31,10 @@ $action_url = $is_edit ? site_url('users/update/' . (int) $user['id_user']) : si
 			</div>
 		</div>
 
-		<label for="nama_snapshot">Nama Lengkap <span style="color:var(--crit)">*</span></label>
-		<input type="text" id="nama_snapshot" name="nama_snapshot" value="<?= html_escape($user['nama_snapshot'] ?? '') ?>" required>
-
-		<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+		<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px">
 			<div>
-				<label for="nik_karyawan">NIK Karyawan (Opsional)</label>
-				<input type="text" id="nik_karyawan" name="nik_karyawan" value="<?= html_escape($user['nik_karyawan'] ?? '') ?>" placeholder="e.g. 20240901">
-				<div style="font-size:11px; color:var(--text-faint); margin-top:3px">Harus sama persis dengan NIK di Payroll -- dipakai untuk login otomatis (SSO) dari sana.</div>
+				<label for="nama_snapshot">Nama Lengkap <span style="color:var(--crit)">*</span></label>
+				<input type="text" id="nama_snapshot" name="nama_snapshot" value="<?= html_escape($user['nama_snapshot'] ?? '') ?>" placeholder="Nama lengkap karyawan" required>
 			</div>
 			<div>
 				<label for="id_role">Peran (Role) <span style="color:var(--crit)">*</span></label>

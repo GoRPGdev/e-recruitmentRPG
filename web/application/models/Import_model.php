@@ -16,8 +16,8 @@ class Import_model extends CI_Model
 	public function create_batch($id_req, $id_channel = NULL, $nama_file = '', $id_user = 0)
 	{
 		$this->db->query(
-			'INSERT INTO dbo.IMPORT_BATCHES (id_req, id_channel, nama_file, status, diimpor_oleh)
-			 VALUES (?, NULL, ?, \'Preview\', ?)',
+			'INSERT INTO dbo.IMPORT_BATCHES (id_req, nama_file, status, diimpor_oleh)
+			 VALUES (?, ?, \'Preview\', ?)',
 			array((int) $id_req, (string) $nama_file, (int) $id_user)
 		);
 		return (int) $this->db->query('SELECT CAST(SCOPE_IDENTITY() AS INT) AS id')->row()->id;
