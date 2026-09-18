@@ -45,6 +45,11 @@ BEGIN
         IF EXISTS (SELECT 1 FROM dbo.M_USERS WHERE username = @username AND (@id_user IS NULL OR id_user <> @id_user))
             RAISERROR('Username sudah digunakan.', 16, 1);
 
+        -- Validasi keunikan NIK karyawan (kalau diisi) -- kunci pencocokan SSO dari Payroll
+        IF @nik_karyawan IS NOT NULL AND LTRIM(RTRIM(@nik_karyawan)) <> ''
+           AND EXISTS (SELECT 1 FROM dbo.M_USERS WHERE nik_karyawan = @nik_karyawan AND (@id_user IS NULL OR id_user <> @id_user))
+            RAISERROR('NIK karyawan ini sudah terhubung ke akun lain.', 16, 1);
+
         DECLARE @aksi VARCHAR(10) = CASE WHEN @id_user IS NULL THEN 'INSERT' ELSE 'UPDATE' END;
 
         IF @id_user IS NULL

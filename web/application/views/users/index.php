@@ -228,6 +228,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 				<div>
 					<label for="u_nik_karyawan" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">NIK Karyawan (Opsional)</label>
 					<input type="text" id="u_nik_karyawan" name="nik_karyawan" placeholder="e.g. 20240901" style="width:100%">
+					<div style="font-size:11px; color:var(--text-faint); margin-top:3px">Harus sama persis dengan NIK di Payroll -- dipakai untuk login otomatis (SSO) dari sana.</div>
 				</div>
 				<div>
 					<label for="u_id_role" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:4px">Peran (Role) <span style="color:var(--crit)">*</span></label>
